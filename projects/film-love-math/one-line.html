@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>一条线 · 30s</title>
+<style>html,body{margin:0;background:#05050F;overflow:hidden}canvas{display:block;width:100vw;height:100vh;object-fit:contain}</style>
+</head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script>
+/* =====================================================================
+   《一条线》 30s —— 解决"信息散、看不出一个主题"
+   做法：全片只有一个视觉对象 —— 一条发光的线。
+     0–6     它是心电图（跳一下）
+     6–13    它收拢成横轴，轴上长出成功率曲线 → 37%
+     13–20   曲线压平成天平横梁，两端垂下托盘 → 5:1
+     20–30   横梁收拢、弯成一颗心，跳一下
+   三个数字（2.7% / 37% / 5:1）固定在同一位置、同一字号、同一动效 = 重复的仪式感。
+   只有 3 次硬切，但线不断 —— 切的是背景，不是主语。
+   ===================================================================== */
+const W=1920,H=1080; window.DUR=30;
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const C={white:'#EAEAF2',gray:'#8A8AA0',dim:'#556',gold:'#C9A96A',gold2:'#E8C88A',pink:'#FF5C86'};
+const FS='"Microsoft YaHei","PingFang SC",sans-serif';
+const FT='"Noto Serif SC","Songti SC",SimSun,serif';
+const FL='Georgia,"Times New Roman",serif';
+const FM='Consolas,"Cascadia Mono",monospace';
+
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeInOut=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const easeOutBack=x=>{const c=1.8;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2);};
+const lerp=(a,b,t)=>a+(b-a)*t;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const stars=(()=>{const r=mulberry32(5),p=[];for(let i=0;i<170;i++)p.push({x:r()*W,y:r()*H,r:.4+r()*1.5,ph:r()*6.28,sp:.4+r()*.9});return p;})();
+const grain=(()=>{const r=mulberry32(3),p=[];for(let i=0;i<650;i++)p.push({x:r()*W,y:r()*H,a:.01+r()*.028,s:1+r()*1.5});return p;})();
+
+function text(str,x,y,{font=`400 40px ${FS}`,color=C.white,align='center',alpha=1,shadow=0,sc='rgba(0,0,0,.85)'}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align;
+  if(shadow>0){ctx.shadowBlur=shadow;ctx.shadowColor=sc;}
+  ctx.fillText(str,x,y);ctx.restore();
+}
+function tracked(str,x,y,tr,{font=`500 21px ${FS}`,color=C.gold,align='center',alpha=1}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;
+  const ch=[...str],w=ch.map(c=>ctx.measureText(c).width);
+  const tot=w.reduce((a,b)=>a+b,0)+tr*Math.max(0,ch.length-1);
+  let cx=align==='center'?x-tot/2:align==='right'?x-tot:x;
+  ch.forEach((c,i)=>{ctx.fillText(c,cx,y);cx+=w[i]+tr;});ctx.restore();
+}
+
+/* ---------------- 路径定义（全部 360 点，方便互相变形） ---------------- */
+const N=360;
+const P_ECG=[], P_AXIS=[], P_BEAM=[], P_HEART=[];
+function ecgY(u){
+  const ph=(u*2.2)%1; let y=0;
+  if(ph<0.10) y=.06*Math.sin(ph/.10*Math.PI);
+  else if(ph<0.15) y=0;
+  else if(ph<0.18) y=-.20*Math.sin((ph-.15)/.03*Math.PI/2);
+  else if(ph<0.24) y=1.0*Math.sin((ph-.18)/.06*Math.PI)-.20;
+  else if(ph<0.31) y=-.38*Math.sin((ph-.24)/.07*Math.PI);
+  else if(ph<0.44) y=.13*Math.sin((ph-.31)/.13*Math.PI);
+  return -y*.55;
+}
+for(let i=0;i<=N;i++){
+  const u=i/N;
+  P_ECG.push({x:lerp(-1,1,u), y:ecgY(u)});
+  P_AXIS.push({x:lerp(-1,1,u), y:0});
+  P_BEAM.push({x:lerp(-.74,.74,u), y:0});
+  const a=u*Math.PI*2;
+  const hx=16*Math.pow(Math.sin(a),3), hy=13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a);
+  P_HEART.push({x:hx/17*.92, y:-hy/17*.92});
+}
+/* 成功率曲线（只在中段出现，画在轴上方） */
+function rate(x){ const d=(x-.37)/.25; return Math.exp(-d*d)*.36; }
+
+/* ---------------- 一条线的渲染（2.5D） ---------------- */
+const SX=W*.30, SY=H*.28;
+function drawLine(pts,{alpha=1,thick=3.4,glow=34,depth=16,color1='#FFB3C8',color2='#FF5C86',color3='#C32B54',squash=1,scale=1,rot=0,oy=0}={}){
+  if(pts.length<2||alpha<=0.01) return;
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.translate(W*.5, H*.44+oy);
+  ctx.rotate(rot);
+  ctx.scale(scale*squash, scale);
+  // 厚度层
+  for(let L=6;L>=1;L--){
+    const k=L/6, dx=-k*depth*.62, dy=k*depth;
+    ctx.beginPath();
+    pts.forEach((p,i)=>{ const x=p.x*SX+dx, y=p.y*SY+dy; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle=`rgba(${Math.round(110+40*(1-k))},${Math.round(20+16*(1-k))},${Math.round(44+18*(1-k))},${.5*(1-k)+.18})`;
+    ctx.lineWidth=thick; ctx.lineJoin='round'; ctx.stroke();
+  }
+  // 主线
+  const lg=ctx.createLinearGradient(0,-SY,0,SY);
+  lg.addColorStop(0,color1); lg.addColorStop(.45,color2); lg.addColorStop(1,color3);
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const x=p.x*SX, y=p.y*SY; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.shadowBlur=glow; ctx.shadowColor='rgba(255,90,130,.8)';
+  ctx.strokeStyle=lg; ctx.lineWidth=thick; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.stroke();
+  // 高光
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const x=p.x*SX-2, y=p.y*SY-2.6; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,240,246,.6)'; ctx.lineWidth=thick*.28; ctx.stroke();
+  ctx.restore();
+}
+
+/* ---------------- 背景：同一色系，只变光位与亮度 ---------------- */
+const CUTS=[6,13,20];
+function backdrop(t){
+  // 0-6 冷蓝 → 6-13 蓝紫 → 13-20 暖金 → 20-30 玫红，同一族深色，不跳色
+  const u=t/window.DUR;
+  const hue=lerp(230,345,easeInOut(clamp(u,0,1)));
+  const g=ctx.createRadialGradient(W*.5,H*.42,60,W*.5,H*.5,W*.86);
+  g.addColorStop(0,`hsl(${hue},42%,9%)`);
+  g.addColorStop(.6,`hsl(${hue},40%,5%)`);
+  g.addColorStop(1,'#040308');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  for(const s of stars){
+    ctx.globalAlpha=.10+.22*(.5+.5*Math.sin(t*4*s.sp+s.ph));
+    ctx.fillStyle='#E6E0F0'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  // 一道随音乐走的横扫光（同一个，全片不换）
+  const sx=lerp(-400,W+400,((t/11)%1));
+  const lg=ctx.createLinearGradient(sx-300,0,sx+300,H);
+  lg.addColorStop(0,'rgba(255,240,220,0)');
+  lg.addColorStop(.5,'rgba(255,240,220,.07)');
+  lg.addColorStop(1,'rgba(255,240,220,0)');
+  ctx.fillStyle=lg; ctx.fillRect(0,0,W,H);
+  for(const p of grain){ ctx.globalAlpha=p.a; ctx.fillStyle='#fff'; ctx.fillRect(p.x,p.y,p.s,p.s); }
+  ctx.globalAlpha=1;
+}
+
+/* ---------------- 数字：固定位置、同一动效 ---------------- */
+const NUM_POS={x:W*.5, y:H*.755};
+const NUMS=[
+  {t0:3.4, t1:6.6, val:'2.7%', lab:'遇见一个人的概率'},
+  {t0:10.4, t1:13.6, val:'37%',  lab:'什么时候该出手'},
+  {t0:16.6, t1:20.2, val:'5 : 1', lab:'善意 : 伤害'}
+];
+function drawNumbers(t){
+  for(const n of NUMS){
+    const a=Math.min(seg(t,n.t0,n.t0+.25),1-seg(t,n.t1-.3,n.t1));
+    if(a<=0.01) continue;
+    const pk=1+.16*Math.sin(Math.PI*clamp(seg(t,n.t0,n.t0+.34),0,1))*Math.pow(1-seg(t,n.t0,n.t0+.34),.4);
+    ctx.save(); ctx.globalAlpha=a;
+    ctx.translate(NUM_POS.x,NUM_POS.y); ctx.scale(pk,pk); ctx.translate(-NUM_POS.x,-NUM_POS.y);
+    text(n.val,NUM_POS.x,NUM_POS.y,{font:`400 128px ${FM}`,color:'#F5E4BE',shadow:52,sc:'rgba(201,169,106,.6)'});
+    ctx.restore();
+    text(n.lab,NUM_POS.x,NUM_POS.y+44,{font:`400 26px ${FS}`,color:C.gray,alpha:a});
+  }
+}
+
+/* ---------------- 主渲染 ---------------- */
+window.render=function(t){
+  const T=clamp(t,0,window.DUR);
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,W,H);
+  backdrop(T);
+
+  /* ---- 线的状态机 ---- */
+  // 0–6   心电图（绘制进度）
+  // 6–8   心电图 → 横轴
+  // 8–13  横轴 + 曲线长出
+  // 13–15 曲线压平成横梁
+  // 15–20 横梁 + 托盘
+  // 20–26 横梁 → 爱心
+  // 26–29 心跳
+  const drawP=seg(T,0.3,3.4);
+  const mAxis=easeInOut(seg(T,6.0,8.0));
+  const mHeart=easeInOut(seg(T,20.0,25.5));
+  const beat=Math.max(
+    Math.sin(Math.PI*clamp(seg(T,26.0,26.5),0,1)),
+    Math.sin(Math.PI*clamp(seg(T,27.2,27.7),0,1))*0.8
+  );
+  const turn=easeInOut(seg(T,25.0,28.5));
+
+  // 主线 = ECG → 横轴 → 横梁 → 爱心 的连续变形
+  const nMain=Math.max(2,Math.floor(N*(T<6?drawP:1)));
+  const main=[];
+  for(let i=0;i<nMain;i++){
+    const u=i/N;
+    const e=P_ECG[i], ax=P_BEAM[i], h=P_HEART[i];
+    // 先 ECG→横轴（这一步让"跳动的线"安静下来）
+    const x1=lerp(e.x,ax.x,mAxis), y1=lerp(e.y,ax.y,mAxis);
+    // 再 横轴→爱心
+    main.push({x:lerp(x1,h.x,mHeart), y:lerp(y1,h.y,mHeart)});
+  }
+
+  const squash=1-0.13*Math.sin(Math.PI*turn);
+  const scale=1+0.06*beat;
+  drawLine(main,{alpha:1,thick:3.6,glow:34+80*beat,depth:16+10*mHeart,
+    squash,scale,rot:-0.05*Math.sin(Math.PI*turn)});
+
+  /* ---- 曲线（8–15，只作为"第二条线"，最后汇入横梁） ---- */
+  const cIn=easeInOut(seg(T,8.2,10.2)), cOut=easeInOut(seg(T,13.0,14.8));
+  if(cIn>0.01&&cOut<0.99){
+    const pts=[];
+    const n=Math.floor(N*cIn);
+    for(let i=0;i<n;i++){
+      const u=i/N, x=lerp(-1,1,u);
+      const yAxis=0, yCurve=-rate(u)*1.55;      // 向上生长
+      pts.push({x, y:lerp(yCurve,yAxis,cOut)});
+    }
+    drawLine(pts,{alpha:(1-cOut)*.95,thick:2.6,glow:26,depth:10,
+      color1:'#FFF0D0',color2:'#E8C88A',color3:'#C9A96A',squash:1,scale:1});
+  }
+
+  /* ---- 托盘（15–20）：从横梁往下垂 ---- */
+  const panA=Math.min(seg(T,15.2,16.2),1-seg(T,19.6,20.4));
+  if(panA>0.01){
+    const cx=W*.5, cy=H*.44;
+    [-1,1].forEach((sgn,i)=>{
+      const bx=cx+sgn*.74*SX;
+      const hgt=(i===0?150:34)*(0.6+0.4*easeOut(seg(T,15.4,17.0)));
+      ctx.save(); ctx.globalAlpha=panA*.9;
+      // 吊绳
+      ctx.strokeStyle='rgba(232,200,138,.55)'; ctx.lineWidth=1.4;
+      ctx.beginPath(); ctx.moveTo(bx,cy); ctx.lineTo(bx,cy+34); ctx.stroke();
+      // 柱体：挂在横梁下方
+      ctx.fillStyle=i===0?'rgba(232,200,138,.85)':'rgba(194,69,46,.8)';
+      ctx.fillRect(bx-46, cy+34, 92, hgt);
+      ctx.restore();
+      text(i===0?'善意':'伤害',bx,cy+34+hgt+30,{font:`400 22px ${FS}`,color:C.gray,alpha:panA*.9});
+    });
+  }
+
+  /* ---- 三个数字：固定位置、同一动效（必须调用，否则不显示） ---- */
+  drawNumbers(T);
+
+  /* ---- 文字（永远最上层） ---- */
+  const SUBS=[
+    [0.8,3.2,'先看一条线'],
+    [3.6,6.4,'它是一次心跳'],
+    [6.8,9.6,'把它拉直，就是一条轴'],
+    [9.8,13.4,'轴上长出成功率，峰值在 37%'],
+    [13.8,16.4,'再把它压平，就是一架天平'],
+    [16.8,20.0,'稳定关系里，善意要五倍于伤害'],
+    [20.4,25.2,'而它其实一直是同一条线'],
+    [25.6,29.2,'—— 它本来是一颗心']
+  ];
+  for(const [a,b,s] of SUBS){
+    const al=Math.min(seg(T,a,a+.22),1-seg(T,b-.2,b));
+    if(al>0.01) text(s,W/2,H*.90,{font:`700 46px ${FS}`,alpha:al,shadow:26});
+  }
+
+  /* ---- 顶栏 ---- */
+  const ha=easeOut(seg(T,0.1,0.8))*(1-seg(T,29.4,30));
+  tracked('@YOURNAME',84,74,3,{align:'left',alpha:.7*ha,color:C.gray,font:`500 21px ${FS}`});
+  tracked('一条线 · 30 秒',W/2,74,2.6,{alpha:.85*ha});
+
+  /* ---- 暗角 ---- */
+  const v=ctx.createRadialGradient(W/2,H/2,H*.34,W/2,H/2,H*1.02);
+  v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.66)');
+  ctx.fillStyle=v; ctx.fillRect(0,0,W,H);
+
+  /* ---- 三次硬切：只闪背景，不断线 ---- */
+  let fl=0;
+  for(const c of CUTS) fl=Math.max(fl, 1-Math.abs(T-c)/0.10);
+  if(fl>0.01){ ctx.save(); ctx.globalAlpha=clamp(fl,0,1)*.45; ctx.fillStyle='#FFF6E2'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+
+  const fo=seg(T,29.3,30);
+  if(fo>0){ ctx.save(); ctx.globalAlpha=fo; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+};
+window.READY=false;
+(async()=>{ try{ await document.fonts.ready; }catch(e){}
+  window.READY=true;
+  const q=new URLSearchParams(location.search);
+  if(q.has('t')){ window.render(parseFloat(q.get('t'))); return; }
+  const t0=performance.now();
+  const loop=()=>{ window.render(((performance.now()-t0)/1000)%window.DUR); requestAnimationFrame(loop); };
+  loop();
+})();
+</script>
+</body></html>

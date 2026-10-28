@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>熵增 · 8s 钩子 Demo（四层构图模板验证片）</title>
+<style>
+  html,body{margin:0;padding:0;background:#05050F;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+/* =====================================================================
+ * 熵增钩子 · 8s · 1920x1080 @30fps
+ * 设计定调：深空冷底（#0A0A18→#1A1030）× 全片唯一暖橙 #E8A87C。
+ *   冷=宇宙/秩序，暖=能量/扩散——"有序→无序"的物理隐喻直接成为色彩语言。
+ * 构图：layer-templates.md 四层骨架（L0氛围/L1支撑/L2主体/L3标注）。
+ *   爆点与重心偏左（x≈0.42），右侧 4.6s 起才有第二视觉——整体重心 <0.47。
+ * 契约：render(t) 纯时间函数；?t= 抓帧模式；固定种子；无跨帧状态。
+ * ===================================================================== */
+const W = 1920, H = 1080;
+const DUR = 8;
+const ACCENT = '#E8A87C';          // 暖橙（唯一强调色）
+const ACCENT_DIM = '232,168,124';
+const INK = '#EAEAF2', GRAY = '#8A8AA0';
+const cv = document.getElementById('c');
+cv.width = W; cv.height = H;
+const ctx = cv.getContext('2d');
+
+/* ---------- 工具 ---------- */
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const easeOutCubic = p => 1 - Math.pow(1 - p, 3);
+const easeOutBack  = p => { const c = 1.70158 * 0.6; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+function seg(t, a, b){ return clamp01((t - a) / (b - a)); }   // t∈[a,b] → 0..1
+
+// drawText：测量 + 手动折行（F8），行宽上限 = maxW * 0.82
+function drawText(text, x, y, opt){
+  const o = Object.assign({ font: '28px "Microsoft YaHei"', color: INK, align: 'center', maxW: W, alpha: 1, track: 0 }, opt);
+  ctx.font = o.font; ctx.textBaseline = 'alphabetic'; ctx.globalAlpha = o.alpha;
+  // 行距从 font 字符串里抓 px 值。不能用 parseInt(font)——'italic 27px Georgia'
+  // 会解析成 NaN，行坐标变 NaN，fillText 静默不画（实测踩过的坑）
+  const fs = parseFloat((o.font.match(/([\d.]+)px/) || [0, 28])[1]);
+  // 逐字折行（中文按字符、英文按单词）
+  const lines = []; let cur = '';
+  const measure = s => ctx.measureText(s).width + s.length * o.track;
+  for (const ch of text){
+    if (measure(cur + ch) > o.maxW * 0.82 && cur){ lines.push(cur); cur = ch; }
+    else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  lines.forEach((ln, i) => {
+    const w = measure(ln);
+    let sx = o.align === 'left' ? x : o.align === 'right' ? x - w : x - w / 2;
+    for (const ch of ln){
+      ctx.fillStyle = o.color; ctx.fillText(ch, sx, y + i * (fs * 1.32));
+      sx += ctx.measureText(ch).width + o.track;
+    }
+  });
+  ctx.globalAlpha = 1;
+  return lines.length;
+}
+
+/* ---------- L0 氛围层 ---------- */
+const GRAIN = (() => { const r = mulberry32(20261027); return Array.from({length: 900}, () => [r()*W, r()*H, r()*0.028+0.012]); })();
+const STARS = (() => { const r = mulberry32(777); return Array.from({length: 170}, () => [r()*W, r()*H, r()*0.34+0.18, r()*1.6+0.4]); })();
+function drawL0(t){
+  const g = ctx.createRadialGradient(W*0.42, H*0.40, 80, W*0.42, H*0.40, 1150);
+  g.addColorStop(0, '#1A1030'); g.addColorStop(1, '#05050F');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // 星点：整层缓慢上浮（6px/8s）+ 每颗独立闪烁（末段唯一持续运动，防收尾静止）
+  const drift = (t / DUR) * 6;
+  STARS.forEach(([x, y, a, s], i) => {
+    const tw = 0.75 + 0.25 * Math.sin(t * 1.8 + i * 1.7);
+    ctx.fillStyle = `rgba(234,234,242,${a * tw})`;
+    ctx.fillRect(x, (y - drift + H) % H, s, s);
+  });
+  // 颗粒
+  for (const [x, y, a] of GRAIN){ ctx.fillStyle = `rgba(255,255,255,${a})`; ctx.fillRect(x, y, 1.5, 1.5); }
+}
+function vignette(){
+  const v = ctx.createRadialGradient(W/2, H/2, H*0.42, W/2, H/2, H*0.95);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.62)');
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+}
+
+/* ---------- L1 支撑层：爆点同心刻度圆（生长式）+ 缓旋 + 径向刻度 ---------- */
+const CX = W * 0.42, CY = H * 0.40;          // 爆点 = 视觉重心（偏左 8%）
+function drawL1(t){
+  const g = easeOutCubic(seg(t, 0.55, 1.75));
+  const rot = t * 0.05;                       // 整组缓旋：给 1.6–4.1s 段持续可见运动
+  for (let i = 1; i <= 5; i++){
+    const rr = i * 118 * g;
+    if (rr < 4) continue;
+    ctx.strokeStyle = `rgba(${ACCENT_DIM},${0.05 + i * 0.012})`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(CX, CY, rr, 0, Math.PI * 2); ctx.stroke();
+    // 刻度短线（每圈 4 根，反向旋转）
+    for (let k = 0; k < 4; k++){
+      const ang = k * Math.PI / 2 + i * 0.35 - rot * 1.6;
+      ctx.beginPath();
+      ctx.moveTo(CX + Math.cos(ang) * (rr - 5), CY + Math.sin(ang) * (rr - 5));
+      ctx.lineTo(CX + Math.cos(ang) * (rr + 5), CY + Math.sin(ang) * (rr + 5));
+      ctx.stroke();
+    }
+  }
+  // 外圈径向刻度（12 条，正向缓旋）：填充 550–660px 环带，抬画面充实度
+  const ga = seg(t, 1.4, 2.4);
+  if (ga > 0){
+    ctx.strokeStyle = `rgba(${ACCENT_DIM},${0.10 * ga})`;
+    ctx.lineWidth = 1;
+    for (let k = 0; k < 12; k++){
+      const ang = k * Math.PI / 6 + rot;
+      ctx.beginPath();
+      ctx.moveTo(CX + Math.cos(ang) * 560 * g, CY + Math.sin(ang) * 560 * g * 0.78);
+      ctx.lineTo(CX + Math.cos(ang) * (560 + 26 * ga) * g, CY + Math.sin(ang) * (560 + 26 * ga) * g * 0.78);
+      ctx.stroke();
+    }
+  }
+}
+
+/* ---------- L2 主体层：粒子爆发（0.6s 起爆，永久缓散） ---------- */
+const PARTS = (() => {
+  const r = mulberry32(2026);
+  return Array.from({ length: 260 }, () => {
+    const ang = r() * Math.PI * 2;
+    // spd 下限压到 0.06：留一批近心粒子，形成"核心密、外围散"的密度梯度（环形空心修正）
+    const spd = 0.06 + Math.pow(r(), 1.8) * 0.94;
+    return { ang, spd, size: r() * 1.8 + 1.0, jitter: (r() - 0.5) * 0.5, ph: r() * Math.PI * 2 };
+  });
+})();
+function drawL2(t){
+  // 0–0.6s：光点亮起（唯一发光元素）
+  const born = easeOutBack(seg(t, 0.05, 0.55));
+  if (t < 0.9){
+    ctx.save();
+    ctx.shadowColor = ACCENT; ctx.shadowBlur = 42;
+    ctx.fillStyle = ACCENT;
+    ctx.beginPath(); ctx.arc(CX, CY, 7 * born, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  // 0.6s 后：粒子扩散。扩散半径 easeOutCubic，2s 内走完 85%，之后缓散
+  const p  = seg(t, 0.60, 8.0);
+  const rMain = easeOutCubic(clamp01(p * 1.9)) * 560;
+  const rSlow = 560 + easeOutCubic(clamp01(p * 0.55 - 0.45)) * 180;
+  const maxR = Math.max(rMain, rSlow);
+  const alphaBase = 0.95 - 0.45 * p;                 // 衰减放缓：后期仍保持能量感
+  for (const pt of PARTS){
+    // 游走幅度加大 + 慢速二次漂移：保证 2s 后画面仍在"呼吸"（QA 静止段修正）
+    const wob = Math.sin(pt.ph + t * 2.2) * (pt.jitter * 22 + 8);
+    const drift = easeOutCubic(clamp01(p * 0.4)) * 34 * pt.spd;
+    const rr = Math.max(4, maxR * pt.spd + drift) + wob;
+    const x = CX + Math.cos(pt.ang) * rr;
+    const y = CY + Math.sin(pt.ang) * rr * 0.78;                // 纵向压扁：像液体泼溅
+    const a = alphaBase * (0.45 + 0.55 * (1 - rr / 780));
+    if (a <= 0.02) continue;
+    // 拖尾（沿径向向后 6-14px），加亮让强调色占比过线
+    const tail = 7 + pt.spd * 11;
+    ctx.strokeStyle = `rgba(${ACCENT_DIM},${a * 0.72})`;
+    ctx.lineWidth = pt.size * 0.9;
+    ctx.beginPath();
+    ctx.moveTo(CX + Math.cos(pt.ang) * (rr - tail), CY + Math.sin(pt.ang) * (rr - tail) * 0.78);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    // 橙色粒子体 + 亮芯：让暖橙真的读得出"橙"
+    ctx.fillStyle = `rgba(${ACCENT_DIM},${a})`;
+    ctx.beginPath(); ctx.arc(x, y, pt.size, 0, Math.PI * 2); ctx.fill();
+    if (pt.size > 2.0){
+      ctx.fillStyle = `rgba(255,224,190,${a * 0.85})`;
+      ctx.beginPath(); ctx.arc(x, y, pt.size * 0.55, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  // 公式显影（2.4–4.6s 淡入，之后保持；整体右移避开左侧杯子，不再压元素）
+  const fa = seg(t, 2.4, 3.4);
+  if (fa > 0){
+    ctx.save();
+    ctx.font = '64px Consolas, monospace';
+    ctx.textBaseline = 'alphabetic';
+    const fw = ctx.measureText('S = k · log W').width;
+    const fx = CX - fw / 2 + 40, fy = CY + 235;   // 爆点正下微右：右缘 1145 < 右侧标签左缘，互不压
+    ctx.globalAlpha = fa;
+    ctx.fillStyle = 'rgba(234,234,242,0.92)';
+    ctx.fillText('S = k · log W', fx, fy);
+    ctx.strokeStyle = ACCENT; ctx.lineWidth = 2;
+    ctx.strokeRect(fx - 26, fy - 58, fw + 52, 84);
+    ctx.restore();
+  }
+}
+
+/* ---------- L2-b：杯子（有序）vs 渍云（无序），4.6s 起，非对称双元素 ---------- */
+function drawContrast(t){
+  const g = easeOutCubic(seg(t, 4.6, 5.8));
+  if (g <= 0) return;
+  // 左：杯子线稿（x≈W*0.22）。5.8–6.6s 做一次转身压缩（伪 3D 第 4 招），该段才有真运动
+  const turn = 1 - 0.12 * Math.sin(Math.PI * seg(t, 5.8, 6.6));
+  const bx = W * 0.22, by = H * 0.44, s = g;
+  ctx.save();
+  ctx.translate(bx, by);
+  ctx.scale(turn, 1);
+  ctx.strokeStyle = `rgba(234,234,242,${0.85 * s})`;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  ctx.moveTo(-78 * s, -90 * s);                               // 杯口左
+  ctx.lineTo(-60 * s, 88 * s);                                // 杯底左
+  ctx.quadraticCurveTo(0, 108 * s, 60 * s, 88 * s);           // 杯底弧
+  ctx.lineTo(78 * s, -90 * s);                                // 杯口右
+  ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(0, -90 * s, 78 * s, 15 * s, 0, 0, Math.PI * 2); ctx.stroke();  // 杯口椭圆
+  ctx.beginPath();                                            // 把手
+  ctx.arc(96 * s, -10 * s, 34 * s, -Math.PI / 2.4, Math.PI / 2.4);
+  ctx.stroke();
+  ctx.restore();
+  drawText('有序', bx, by + 170, { font: '25px "Microsoft YaHei"', color: GRAY, alpha: s });
+  // 右：渍云（x≈W*0.66）——粒子云的自然散布就是渍
+  drawText('无序', W * 0.655, H * 0.44 + 170, { font: '25px "Microsoft YaHei"', color: GRAY, alpha: seg(t, 5.2, 6.2) });
+  // 中间：金色虚线（测量/对应关系的惯用母题），末端带箭头
+  const la = seg(t, 5.6, 6.6);
+  if (la > 0){
+    ctx.save();
+    ctx.strokeStyle = `rgba(${ACCENT_DIM},${0.75 * la})`;
+    ctx.setLineDash([3, 7]); ctx.lineWidth = 1.4;
+    const ex = bx + 130 + 470 * la;
+    ctx.beginPath();
+    ctx.moveTo(bx + 130, by);
+    ctx.lineTo(ex, by);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = `rgba(${ACCENT_DIM},${0.9 * la})`;
+    ctx.beginPath();
+    ctx.moveTo(ex + 14, by); ctx.lineTo(ex - 4, by - 7); ctx.lineTo(ex - 4, by + 7);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ---------- L3 标注层 ---------- */
+function drawL3(t){
+  // 贴爆心左上，与爆点形成对齐关系（不再悬浮）
+  drawText('ENTROPY · 熵', CX - 120, CY - 128, { font: '21px "Microsoft YaHei"', color: GRAY, align: 'right', alpha: seg(t, 1.2, 2.0), track: 6 });
+  // 来源标注挂到公式框正下方（公式在爆点正下微右）
+  drawText('Boltzmann · 1877', CX + 40, CY + 310, { font: '21px Consolas, monospace', color: GRAY, align: 'center', alpha: seg(t, 2.8, 3.6) });
+  drawText('扩散不可逆', W * 0.655, H * 0.44 + 210, { font: '22px "Microsoft YaHei"', color: `rgba(138,138,160,${seg(t, 5.4, 6.4)})`, align: 'center' });
+}
+
+/* ---------- 字幕带（暗角之上；双行整体下移 20px 对齐 QA 验收带 y918–983） ---------- */
+function drawSubtitle(t){
+  // 句 1：0.9–4.4s
+  const a1 = Math.min(seg(t, 0.90, 1.25), 1 - seg(t, 4.15, 4.45));
+  if (a1 > 0){
+    drawText('打翻的咖啡，为什么收不回来？', W / 2, 926, { font: '700 46px "Microsoft YaHei"', color: INK, alpha: a1 });
+    drawText('Why can a spilled cup never unspill?', W / 2, 974, { font: 'italic 27px Georgia', color: '#9C9CB4', alpha: a1 * 0.9 });
+  }
+  // 句 2：6.5–8.0s，带放大冲击 punch（1.0→1.14→1.0，0.36s）
+  const a2 = seg(t, 6.50, 6.80);
+  if (a2 > 0){
+    const pk = t < 7.16 ? Math.sin(Math.PI * seg(t, 6.80, 7.16)) : 0;
+    const scale = 1 + 0.14 * pk;
+    ctx.save();
+    ctx.translate(W / 2, 910);
+    ctx.scale(scale, scale);
+    drawText('有些事，宇宙只许发生一次。', 0, 16, { font: '700 46px "Microsoft YaHei"', color: INK, alpha: a2 });
+    drawText('Some things the universe allows only once.', 0, 64, { font: 'italic 27px Georgia', color: '#9C9CB4', alpha: a2 * 0.9 });
+    ctx.restore();
+  }
+}
+
+/* ---------- 顶栏（全片恒定） ---------- */
+function drawTopbar(t){
+  drawText('@VIBE·DSF', 64, 68, { font: '21px "Microsoft YaHei"', color: 'rgba(138,138,160,0.85)', align: 'left', track: 4 });
+  drawText('熵增 · ENTROPY', W / 2, 68, { font: '21px "Microsoft YaHei"', color: `rgba(232,168,124,0.9)`, track: 8 });
+  const mm = String(Math.floor(t / 60)).padStart(2, '0');
+  const ss = String(Math.floor(t % 60)).padStart(2, '0');
+  const ff = String(Math.floor((t % 1) * 30)).padStart(2, '0');
+  drawText(`${mm}:${ss}:${ff}`, W - 64, 68, { font: '21px Consolas, monospace', color: 'rgba(138,138,160,0.7)', align: 'right' });
+}
+
+/* ---------- 合成 ---------- */
+window.render = function(t){
+  ctx.clearRect(0, 0, W, H);
+  drawL0(t);
+  drawL1(t);
+  drawL2(t);
+  drawContrast(t);
+  vignette();                       // 暗角压在画面上、字幕之下
+  drawL3(t);
+  drawSubtitle(t);
+  drawTopbar(t);
+};
+
+/* ---------- 抓帧模式 / 预览 ---------- */
+window.DUR = DUR;
+window.READY = false;
+if (new URLSearchParams(location.search).has('t')){
+  const t = parseFloat(new URLSearchParams(location.search).get('t'));
+  document.fonts.ready.then(() => { window.render(t); window.READY = true; });
+} else {
+  document.fonts.ready.then(() => { window.READY = true; });
+  const t0 = performance.now();
+  (function loop(now){ window.render(((now || performance.now()) - t0) / 1000 % DUR); requestAnimationFrame(loop); })();
+}
+</script>
+</body>
+</html>

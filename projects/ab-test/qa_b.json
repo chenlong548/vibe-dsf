@@ -1,0 +1,32 @@
+{
+  "raw": {
+    "frames": 120,
+    "fps": 30.0,
+    "width": 1920,
+    "height": 1080,
+    "density": 0.21,
+    "diff_mean": 0.079,
+    "head_density": 0.24,
+    "longest_still": 1.53,
+    "still_runs": [
+      [
+        2.07,
+        3.6
+      ]
+    ],
+    "cuts": 0,
+    "cut_times": [],
+    "edge_bleed": [],
+    "sub_band_empty": []
+  },
+  "score": {
+    "画面密度": 7,
+    "静止控制": 9,
+    "断点数量": 10,
+    "切点节奏": 8,
+    "首帧抓人": 10,
+    "安全区": 10,
+    "字幕覆盖": 10
+  },
+  "avg": 9.14
+}

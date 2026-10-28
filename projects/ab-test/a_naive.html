@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>A · 默认写法（不挂禁令）</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block;width:100vw;height:100vh;object-fit:contain}</style>
+</head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script>
+/* ============ A 组：不加任何禁令时，flash 的默认写法 ============
+   特征（都是"坏习惯"）：
+   · 一切居中、等距、对称
+   · 线性淡入，没有缓动
+   · 8 张卡片同一时刻一起出现
+   · 居中大字 + 渐变背景（最典型的模板感）
+   · 没有微动效，没有强调，没有注释
+*/
+const W = 1920, H = 1080;
+window.DUR = 6;
+
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+const F = '"Microsoft YaHei",sans-serif';
+
+const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+const seg = (t,a,b)=>clamp((t-a)/(b-a),0,1);
+
+const CARDS = ['1','2','3','4','5','6','7','8'];
+
+window.render = function(t){
+  // 渐变背景（模板感第一名）
+  const g = ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0,'#1a1a2e');
+  g.addColorStop(1,'#16213e');
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+
+  // 标题：居中、大字
+  const a1 = seg(t,0.3,1.3);
+  ctx.save();
+  ctx.globalAlpha = a1;
+  ctx.font = `700 84px ${F}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.fillText('37% 法则', W/2, 250);
+  ctx.restore();
+
+  // 副标题：居中
+  const a2 = seg(t,0.8,1.8);
+  ctx.save();
+  ctx.globalAlpha = a2;
+  ctx.font = `400 32px ${F}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.fillText('什么时候该停止选择', W/2, 320);
+  ctx.restore();
+
+  // 8 张卡片：完美等距、同时出现、线性
+  const cardW = 140, gap = 40;
+  const total = CARDS.length*cardW + (CARDS.length-1)*gap;
+  const x0 = (W-total)/2;
+  const a3 = seg(t,1.2,2.6);          // 一起淡入
+  CARDS.forEach((n,i)=>{
+    const x = x0 + i*(cardW+gap);
+    ctx.save();
+    ctx.globalAlpha = a3;
+    ctx.fillStyle = '#2a2a45';
+    ctx.fillRect(x, 500, cardW, 180);
+    ctx.strokeStyle = '#4a4a6a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, 500, cardW, 180);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `400 56px ${F}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(n, x+cardW/2, 610);
+    ctx.restore();
+  });
+
+  // 结论：居中
+  const a4 = seg(t,2.8,4.0);
+  ctx.save();
+  ctx.globalAlpha = a4;
+  ctx.font = `700 56px ${F}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.fillText('先看 37%，再出手', W/2, 880);
+  ctx.restore();
+
+  // 字幕：居中、无英文
+  const a5 = seg(t,3.2,4.2);
+  ctx.save();
+  ctx.globalAlpha = a5;
+  ctx.font = `400 40px ${F}`;
+  ctx.fillStyle = '#cccccc';
+  ctx.textAlign = 'center';
+  ctx.fillText('数学上最优的停止点', W/2, 960);
+  ctx.restore();
+};
+window.READY = false;
+(async()=>{ try{ await document.fonts.ready; }catch(e){}
+  window.READY = true;
+  const q = new URLSearchParams(location.search);
+  if (q.has('t')) { window.render(parseFloat(q.get('t'))); return; }
+  const t0 = performance.now();
+  const loop = ()=>{ window.render(((performance.now()-t0)/1000)%window.DUR); requestAnimationFrame(loop); };
+  loop();
+})();
+</script>
+</body></html>

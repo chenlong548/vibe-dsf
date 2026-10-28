@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>爱情的三个数学事实 · 180s</title>
+<style>html,body{margin:0;background:#05050F;overflow:hidden}canvas{display:block;width:100vw;height:100vh;object-fit:contain}</style>
+</head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script>
+/* =====================================================================
+   《爱情的三个数学事实》 180s / 1920×1080 / 30fps
+   7 场：点阵概率 → 路径相遇 → 37% → 反转 → 5:1 天平 → 依恋 → 落点
+   硬切点：64（卡片行→网格）、82（曲线→直线）、145（天平→依恋卡）
+   ===================================================================== */
+const W=1920,H=1080; window.DUR=180;
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+
+const C={white:'#EAEAF2',gray:'#8A8AA0',dim:'#556',gold:'#C9A96A',gold2:'#E8C88A',
+         red:'#C2452E',bg1:'#12122A',bg0:'#05050F'};
+const FS='"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
+const FT='"Noto Serif SC","Songti SC",SimSun,Georgia,serif';
+const FL='Georgia,"Times New Roman",serif';
+const FM='Consolas,"Cascadia Mono",monospace';
+
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeInOut=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const easeOutBack=x=>{const c=1.6;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2);};
+const lerp=(a,b,t)=>a+(b-a)*t;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+const rnd=(()=>{const r=mulberry32(2026);const a=[];for(let i=0;i<600;i++)a.push(r());return a;})();
+const stars=(()=>{const r=mulberry32(11),p=[];for(let i=0;i<190;i++)p.push({x:r()*W,y:r()*H,r:.5+r()*1.8,ph:r()*6.28,sp:.25+r()*.6});return p;})();
+const grain=(()=>{const r=mulberry32(3),p=[];for(let i=0;i<900;i++)p.push({x:r()*W,y:r()*H,a:.012+r()*.03,s:1+r()*1.6});return p;})();
+
+/* ---------- 基础 ---------- */
+function tracked(str,x,y,tr,{font=`500 21px ${FS}`,color=C.gold,align='left',alpha=1}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;ctx.textBaseline='alphabetic';
+  const ch=[...str],w=ch.map(c=>ctx.measureText(c).width);
+  const tot=w.reduce((a,b)=>a+b,0)+tr*Math.max(0,ch.length-1);
+  let cx=align==='center'?x-tot/2:align==='right'?x-tot:x;
+  ch.forEach((c,i)=>{ctx.fillText(c,cx,y);cx+=w[i]+tr;});ctx.restore();
+}
+function text(str,x,y,{font=`400 30px ${FS}`,color=C.white,align='left',alpha=1,shadow=0,sc='rgba(201,169,106,.5)'}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align;
+  if(shadow>0){ctx.shadowBlur=shadow;ctx.shadowColor=sc;}
+  ctx.fillText(str,x,y);ctx.restore();
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+/* ---------- 机位：锁死（三脚架）。动感全部来自页面本身 ---------- */
+function cam(t){ return {s:1, dx:0, dy:0}; }
+function applyCam(c){ /* 固定机位：不做任何变换 */ }
+
+/* ---------- 强调四件套 ---------- */
+function punch(t, at, amp=0.14, dur=0.36){
+  const u=(t-at)/dur;
+  if(u<0||u>1) return 1;
+  return 1 + amp*Math.sin(Math.PI*u)*Math.pow(1-u,0.4);
+}
+function flashAt(t, at, dur=0.14){
+  const u=(t-at)/dur;
+  if(u<0||u>1) return 0;
+  return 1-u;
+}
+function shakeAt(t, at, amp=7, dur=0.22){
+  const u=(t-at)/dur;
+  if(u<0||u>1) return {x:0,y:0};
+  const k=(1-u)*Math.sin(u*Math.PI*6);
+  return {x:amp*k, y:amp*k*0.35};
+}
+
+/* ---------- 环境层：全片常驻的缓慢运动（不动机位） ---------- */
+const BOKEH=(()=>{
+  const r=mulberry32(31), p=[];
+  for(let i=0;i<20;i++) p.push({
+    x:r()*W, y:r()*H, rad:70+r()*150,
+    ax:60+r()*70, ay:40+r()*50, ph:r()*6.28,
+    a:.08+r()*.10, hue:r()<.5?'255,226,180':'200,220,255'
+  });
+  return p;
+})();
+function ambient(t){
+  // 大光斑以 40–70 px/s 漂移（慢于这个速度，人眼和像素都"看不见"）
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+  for(const b of BOKEH){
+    const x=b.x+Math.sin(t*0.42+b.ph)*b.ax;
+    const y=b.y+Math.cos(t*0.36+b.ph*1.7)*b.ay;
+    const g=ctx.createRadialGradient(x,y,0,x,y,b.rad);
+    g.addColorStop(0,`rgba(${b.hue},${b.a})`);
+    g.addColorStop(.5,`rgba(${b.hue},${b.a*.4})`);
+    g.addColorStop(1,`rgba(${b.hue},0)`);
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,b.rad,0,6.283); ctx.fill();
+  }
+  ctx.restore();
+  // 两道横扫光带（9 秒一周期），保证任何静止段都有大范围明暗变化
+  ctx.save();
+  for(let k=0;k<2;k++){
+    const ph=((t/9)+k*0.5)%1;
+    const sx=lerp(-500,W+500,ph);
+    const lg=ctx.createLinearGradient(sx-320,0,sx+320,H*.6);
+    lg.addColorStop(0,'rgba(255,240,210,0)');
+    lg.addColorStop(.5,'rgba(255,240,210,.075)');
+    lg.addColorStop(1,'rgba(255,240,210,0)');
+    ctx.fillStyle=lg; ctx.fillRect(0,0,W,H);
+  }
+  ctx.restore();
+  // 两道缓慢旋转的长弧
+  ctx.save(); ctx.globalAlpha=.07; ctx.strokeStyle='#E8DCC4'; ctx.lineWidth=1.6;
+  for(let k=0;k<2;k++){
+    const a0=t*0.35+k*Math.PI;
+    ctx.beginPath(); ctx.arc(W*.5,H*.46, 520+k*140, a0, a0+1.1); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ---------- 背景：一章一套 ---------- */
+const CHAPTER_T = [0,22,50,82,105,145,167];
+function chapterOf(t){
+  let i=0; for(let k=0;k<CHAPTER_T.length;k++) if(t>=CHAPTER_T[k]) i=k;
+  return i;
+}
+function backdrop(t){
+  const ch=chapterOf(t);
+  const P=[
+    {c1:'#0A0A18', c2:'#05050F'},   // 0 概率
+    {c1:'#141026', c2:'#08060F'},   // 1 相遇
+    {c1:'#0A1418', c2:'#04090B'},   // 2 最优停止
+    {c1:'#1A0C0A', c2:'#0B0403'},   // 3 失效
+    {c1:'#0A1020', c2:'#04060E'},   // 4 长期
+    {c1:'#161018', c2:'#0A060C'},   // 5 依恋
+    {c1:'#140E06', c2:'#0A0502'}    // 6 落点
+  ][ch];
+  const g=ctx.createRadialGradient(W*.5,H*.42,60,W*.5,H*.5,W*.82);
+  g.addColorStop(0,P.c1); g.addColorStop(.55,P.c2); g.addColorStop(1,'#030308');
+  ctx.fillStyle=g; ctx.fillRect(-40,-40,W+80,H+80);
+
+  // 星点（所有章都有，但密度随章节变）
+  const dens=[1,.7,.5,.45,.8,.6,.9][ch];
+  for(const s of stars){
+    ctx.globalAlpha=(.14+.26*(.5+.5*Math.sin(t*s.sp+s.ph)))*dens;
+    ctx.fillStyle='#DFDFF0';
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  /* --- 每章的专属纹理与运动 --- */
+  if(ch===0){                       // 点阵缓慢上浮
+    const off=(t*16)%60;
+    ctx.save(); ctx.globalAlpha=.10; ctx.fillStyle='#8E8EB0';
+    for(let y=-60+off;y<H+60;y+=60) for(let x=40;x<W;x+=60){
+      ctx.beginPath(); ctx.arc(x,y,1.6,0,6.283); ctx.fill();
+    }
+    ctx.restore();
+  }
+  if(ch===1){                       // 两道斜光束横扫
+    ctx.save();
+    for(let k=0;k<2;k++){
+      const ph=(t*0.045+k*0.5)%1;
+      const bx=lerp(-400,W+400,ph);
+      const lg=ctx.createLinearGradient(bx-260,0,bx+260,H);
+      lg.addColorStop(0,'rgba(150,170,255,0)');
+      lg.addColorStop(.5,'rgba(160,180,255,.10)');
+      lg.addColorStop(1,'rgba(150,170,255,0)');
+      ctx.fillStyle=lg; ctx.fillRect(0,0,W,H);
+    }
+    ctx.restore();
+  }
+  if(ch===2){                       // 斜网格平移
+    ctx.save(); ctx.globalAlpha=.07; ctx.strokeStyle='#7FE0D0'; ctx.lineWidth=1;
+    const off=(t*22)%120;
+    for(let x=-240+off;x<W+240;x+=120){
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x-300,H); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  if(ch===3){                       // 碎屑下落
+    ctx.save();
+    for(let i=0;i<40;i++){
+      const seed=(i*97)%997/997;
+      const y=((t*(30+seed*70)+seed*H)%(H+120))-60;
+      const x=seed*W;
+      ctx.globalAlpha=.12+.18*Math.sin(t*2+i);
+      ctx.fillStyle='#E0896A';
+      rr(x,y,2+seed*2,6+seed*5,2); ctx.fill();
+    }
+    ctx.restore();
+  }
+  if(ch===4){                       // 同心圆缓慢扩张
+    ctx.save(); ctx.globalAlpha=.08; ctx.strokeStyle='#8FB4E8'; ctx.lineWidth=1;
+    for(let k=0;k<5;k++){
+      const r=((t*26+k*160)%800);
+      ctx.beginPath(); ctx.arc(W*.5,H*.45,r,0,6.283); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  if(ch===5){                       // 柔光呼吸
+    const br=.06+.05*(.5+.5*Math.sin(t*0.9));
+    const rg=ctx.createRadialGradient(W*.5,H*.35,40,W*.5,H*.35,700);
+    rg.addColorStop(0,`rgba(230,200,220,${br})`);
+    rg.addColorStop(1,'rgba(230,200,220,0)');
+    ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  }
+  if(ch===6){                       // 光晕脉动
+    const br=.10+.06*(.5+.5*Math.sin(t*1.2));
+    const rg=ctx.createRadialGradient(W*.5,H*.42,40,W*.5,H*.42,760);
+    rg.addColorStop(0,`rgba(240,210,150,${br})`);
+    rg.addColorStop(1,'rgba(240,210,150,0)');
+    ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  }
+
+  for(const p of grain){ ctx.globalAlpha=p.a; ctx.fillStyle='#fff'; ctx.fillRect(p.x,p.y,p.s,p.s); }
+  ctx.globalAlpha=1;
+}
+function vignette(){
+  const v=ctx.createRadialGradient(W/2,H/2,H*.30,W/2,H/2,H*1.02);
+  v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.66)');
+  ctx.fillStyle=v; ctx.fillRect(-140,-140,W+280,H+280);
+}
+
+/* =====================================================================
+   S1  0–22  城市点阵：遇见一个人的概率
+   ===================================================================== */
+const DOTS_COLS=44, DOTS_ROWS=26;
+function s1(t){
+  if(t>22.4) return;
+  const a=easeOut(seg(t,0.2,1.6));
+  // 点阵只占左中区域，右侧留给计数器，互不遮挡
+  const ox=150, oy=280, gw=1060, gh=H*.50;
+  const dx=gw/(DOTS_COLS-1), dy=gh/(DOTS_ROWS-1);
+  // 白点沿折线移动
+  const mv=easeInOut(seg(t,1.2,14.0));
+  const pi=Math.floor(mv*(DOTS_COLS-1));
+  const px=ox+pi*dx, py=oy+(Math.sin(pi*0.55)*.42+.5)*gh;
+  // 结论出现时点阵退到背景
+  const dim=1-0.75*seg(t,17.6,19.0);
+  // 点阵
+  for(let r=0;r<DOTS_ROWS;r++){
+    for(let c=0;c<DOTS_COLS;c++){
+      const i=r*DOTS_COLS+c;
+      const ap=easeOut(seg(t,0.4+i*0.0012,1.2+i*0.0012));
+      if(ap<=0.01) continue;
+      const x=ox+c*dx, y=oy+r*dy;
+      const d=Math.hypot(x-px,y-py);
+      const lit=d<75 && mv>0.02;
+      // 每颗点独立呼吸（整片都在动，不是静止的点阵）
+      const br=1+.22*Math.sin(t*1.7+i*0.29);
+      ctx.save();
+      ctx.globalAlpha=a*ap*dim*(lit?1:0.40)*(0.85+0.3*(.5+.5*Math.sin(t*2.1+i*0.17)));
+      ctx.fillStyle=lit?C.gold2:'#7E7E9A';
+      ctx.beginPath(); ctx.arc(x,y,(lit?4.2:2.4)*br,0,6.283); ctx.fill();
+      ctx.restore();
+    }
+  }
+  // 移动的白点
+  if(mv>0.01&&t<15){
+    ctx.save();
+    ctx.shadowBlur=26; ctx.shadowColor='rgba(245,228,190,.95)';
+    ctx.fillStyle='#FFF6E2'; ctx.beginPath(); ctx.arc(px,py,5,0,6.283); ctx.fill();
+    ctx.restore();
+  }
+  // 计数器
+  const ca=easeOut(seg(t,1.6,2.6))*(1-seg(t,17.4,18.2));
+  if(ca>0.01){
+    let v,lab;
+    if(t<4.4){ v=Math.round(lerp(0,50,easeInOut(seg(t,1.8,4.2)))); lab='每天遇到的陌生人'; }
+    else if(t<9.2){ v=Math.round(lerp(50,18000,easeInOut(seg(t,4.4,9.0)))); lab='一年'; }
+    else if(t<13.8){ v=Math.round(lerp(18000,550000,easeInOut(seg(t,9.2,13.6)))); lab='三十年'; }
+    else { v=Math.round(lerp(550000,20000000,easeInOut(seg(t,13.8,17.2)))); lab='一座城市的人口'; }
+    text(v.toLocaleString(),W-260,300,{font:`400 74px ${FM}`,color:C.gold2,align:'right',alpha:ca,shadow:24,sc:'rgba(201,169,106,.55)'});
+    text(lab,W-260,346,{font:`400 22px ${FS}`,color:C.gray,align:'right',alpha:ca});
+  }
+  // 结论 2.7%（强调点 1：放大冲击 + 白闪）
+  const ra=easeOutBack(seg(t,18.2,19.4));
+  if(ra>0.001){
+    const pk=punch(t,18.2,.16,.4);
+    const sh=shakeAt(t,18.2,5,.2);
+    ctx.save(); ctx.globalAlpha=clamp(ra,0,1);
+    ctx.translate(W/2+sh.x, H*.62+sh.y); ctx.scale(pk,pk); ctx.translate(-W/2,-H*.62);
+    text('2.7%',W/2,H*.62,{font:`400 168px ${FM}`,color:'#F5E4BE',align:'center',shadow:60,sc:'rgba(201,169,106,.6)'});
+    text('遇见某一个人的概率（粗略估算）',W/2,H*.62+62,{font:`400 25px ${FS}`,color:C.gray,align:'center'});
+    ctx.restore();
+  }
+}
+
+/* =====================================================================
+   S2  22–50  两条路径：得同一天走同一条路
+   ===================================================================== */
+function s2(t){
+  if(t<21.8||t>50.4) return;
+  const a=easeOut(seg(t,22.0,23.2))*(1-seg(t,49.4,50.2));
+  const boxX=W*.5-330, boxY=H*.22, boxW=660, boxH=300;
+  ctx.save(); ctx.globalAlpha=a;
+  // 收缩的方框
+  ctx.strokeStyle='rgba(201,169,106,.35)'; ctx.lineWidth=1.4;
+  rr(boxX,boxY,boxW,boxH,6); ctx.stroke();
+  // 两条路径
+  const g1=easeInOut(seg(t,24.0,30.0)), g2=easeInOut(seg(t,25.0,31.0));
+  const P1=[[boxX+40,boxY+boxH-30],[boxX+220,boxY+160],[boxX+boxW/2,boxY+boxH/2-30],[boxX+boxW-40,boxY+70]];
+  const P2=[[boxX+boxW-40,boxY+boxH-30],[boxX+430,boxY+130],[boxX+boxW/2,boxY+boxH/2-30],[boxX+40,boxY+70]];
+  const drawPath=(P,g,col)=>{
+    if(g<=0.001) return;
+    ctx.strokeStyle=col; ctx.lineWidth=2.4; ctx.lineJoin='round';
+    ctx.beginPath();
+    const N=64, upto=Math.floor(N*g);
+    for(let i=0;i<=upto;i++){
+      const u=i/N*(P.length-1), k=Math.min(P.length-2,Math.floor(u)), f=u-k;
+      const x=lerp(P[k][0],P[k+1][0],f), y=lerp(P[k][1],P[k+1][1],f);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  };
+  drawPath(P1,g1,'rgba(232,200,138,.9)');
+  drawPath(P2,g2,'rgba(160,200,240,.75)');
+  // 路径上的流光（虚线偏移，持续流动）
+  const flow=(P,g,col,w)=>{
+    if(g<=0.02) return;
+    ctx.save();
+    ctx.globalAlpha=a*.85;
+    ctx.setLineDash([18,30]); ctx.lineDashOffset=-t*70;
+    ctx.strokeStyle=col; ctx.lineWidth=w; ctx.lineCap='round';
+    ctx.beginPath();
+    const N=64, upto=Math.floor(N*g);
+    for(let i=0;i<=upto;i++){
+      const u=i/N*(P.length-1), k=Math.min(P.length-2,Math.floor(u)), f=u-k;
+      const x=lerp(P[k][0],P[k+1][0],f), y=lerp(P[k][1],P[k+1][1],f);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke(); ctx.restore();
+  };
+  flow(P1,g1,'rgba(255,236,190,.95)',3.2);
+  flow(P2,g2,'rgba(200,230,255,.85)',3);
+  // 相遇闪光
+  const hit=easeOut(seg(t,30.6,31.4))*(1-seg(t,32.6,33.4));
+  if(hit>0.01){
+    const cx=boxX+boxW/2, cy=boxY+boxH/2-30;
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,110);
+    g.addColorStop(0,`rgba(255,246,226,${.85*hit})`);
+    g.addColorStop(1,'rgba(255,220,160,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,110,0,6.283); ctx.fill();
+  }
+  ctx.restore();
+  // 三个条件
+  const conds=[['同一天，同一条路',33.4],['在同一秒抬头',35.6],['都单身，都愿意开口',37.8]];
+  conds.forEach(([s,t0],i)=>{
+    const ap=easeOut(seg(t,t0,t0+.6));
+    if(ap<=0.01) return;
+    const y=H*.60+i*54, x=W*.5-300;
+    ctx.save(); ctx.globalAlpha=a*ap;
+    rr(x-18,y-32,660,46,4);
+    ctx.fillStyle='rgba(201,169,106,.06)'; ctx.fill();
+    text(s,x+10,y,{font:`400 26px ${FS}`,color:'#D6D6E6'});
+    text('✓',x+600,y,{font:`400 26px ${FS}`,color:C.gold,align:'right'});
+    ctx.restore();
+  });
+  // 连续相乘
+  const ma=easeOut(seg(t,40.4,41.4));
+  if(ma>0.01){
+    const steps=[[40.6,0.027],[42.0,0.027*0.5],[43.4,0.027*0.5*0.5],[44.8,0.027*0.5*0.5*0.5],[46.2,0.00008]];
+    let v=0.027;
+    for(const [tt,vv] of steps){ if(t>=tt) v=vv; }
+    const pct=(v*100).toFixed(3).replace(/0+$/,'');
+    ctx.save(); ctx.globalAlpha=a*ma;
+    // 放在右侧空白区，避开条件列表与字幕带
+    text(pct+'%',1720,H*.66,{font:`400 92px ${FM}`,color:C.gold2,align:'right',shadow:40,sc:'rgba(201,169,106,.55)'});
+    text('乘三个条件之后',1720,H*.66+46,{font:`400 22px ${FS}`,color:C.gray,align:'right'});
+    ctx.restore();
+  }
+}
+
+/* =====================================================================
+   S3  50–82  卡片 → 网格 → 曲线
+   ===================================================================== */
+const CUT_A=64, CUT_B=82;
+const N=9, CARD_W=132, CARD_H=176;
+const GAPS=[12,46,10,58,16,38,8,44];
+function s3_cards(t){
+  if(t<49.6||t>=CUT_A) return;
+  const a=easeOut(seg(t,49.8,50.8));
+  const total=N*CARD_W+GAPS.reduce((x,y)=>x+y,0);
+  let x0=(W-total)/2;
+  const pos=[]; let cx=x0;
+  for(let i=0;i<N;i++){ pos.push(cx); cx+=CARD_W+(GAPS[i]||20); }
+  for(let i=0;i<N;i++){
+    const ent=easeOutBack(seg(t, 50.0+i*0.07, 50.7+i*0.07));
+    if(ent<=0.01) continue;
+    const hl=(i===2);
+    const x=pos[i]+CARD_W/2+(1-ent)*500, y=H*.58+(i%2?-12:10)+Math.sin(t*1.1+i*1.7)*3.4;
+    ctx.save(); ctx.globalAlpha=a*clamp(ent,0,1);
+    ctx.translate(x,y); ctx.rotate(((i%2?1.6:-1.4))*Math.PI/180);
+    if(hl){ctx.shadowBlur=30;ctx.shadowColor='rgba(201,169,106,.75)';}
+    rr(-CARD_W/2,-CARD_H/2,CARD_W,CARD_H,6);
+    ctx.fillStyle=hl?'rgba(201,169,106,.13)':'rgba(255,255,255,.045)'; ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle=hl?C.gold:'rgba(255,255,255,.14)'; ctx.lineWidth=hl?2.2:1.1; ctx.stroke();
+    text(String(i+1).padStart(2,'0'),0,16,{font:`400 40px ${FM}`,color:hl?C.gold:'#6E6E85',align:'center'});
+    ctx.restore();
+  }
+  // 规则卡 + 光标
+  const ra=easeOut(seg(t,51.6,52.6));
+  if(ra>0.01){
+    const rx=200,ry=210;
+    ctx.save(); ctx.globalAlpha=a*ra;
+    rr(rx,ry,420,190,6); ctx.fillStyle='rgba(201,169,106,.05)'; ctx.fill();
+    ctx.strokeStyle='rgba(201,169,106,.30)'; ctx.lineWidth=1; ctx.stroke();
+    tracked('游戏规则',rx+24,ry+38,2.4,{font:`500 20px ${FS}`,alpha:.9});
+    ['① 见完不能回头','② 选中即结束','③ 只比较先后'].forEach((s,i)=>{
+      text(s,rx+24,ry+88+i*38,{font:`400 24px ${FS}`,color:'#D6D6E6'});
+    });
+    ctx.restore();
+  }
+  const sa=easeOut(seg(t,52.2,52.8));
+  if(sa>0.01){
+    const u=easeInOut(seg(t,52.4,63.4));
+    const sx=lerp(300,1620,u);
+    ctx.save(); ctx.globalAlpha=a*sa;
+    const g=ctx.createLinearGradient(sx-40,0,sx+40,0);
+    g.addColorStop(0,'rgba(201,169,106,0)'); g.addColorStop(.5,'rgba(232,200,138,.28)'); g.addColorStop(1,'rgba(201,169,106,0)');
+    ctx.fillStyle=g; ctx.fillRect(sx-40,H*.44,80,340);
+    ctx.strokeStyle='rgba(245,228,190,.85)'; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.moveTo(sx,H*.46); ctx.lineTo(sx,H*.46+300); ctx.stroke();
+    ctx.restore();
+    text('正在比较…',300,H*.82,{font:`400 22px ${FS}`,color:C.gray,alpha:a*sa*.8});
+    text(Math.round(u*100)+'%',1620,H*.82,{font:`400 22px ${FM}`,color:C.gold,align:'right',alpha:a*sa*.85});
+  }
+}
+
+const GRIDC=10, GRIDR=6;
+function s3_grid(t){
+  if(t<CUT_A||t>=CUT_B) return;
+  const prog=seg(t,CUT_A+1,76);
+  const cw=96, chh=58, gx=18, gy=16;
+  const ox=190, oy=H*.22;
+  for(let r=0;r<GRIDR;r++)for(let c=0;c<GRIDC;c++){
+    const i=r*GRIDC+c;
+    const on=rnd[(i*7)%600]<prog*0.92;
+    const x=ox+c*(cw+gx), y=oy+r*(chh+gy);
+    const fl=.55+.45*Math.sin(t*3.2+i*.7);
+    rr(x,y,cw,chh,5);
+    ctx.fillStyle=on?`rgba(201,169,106,${.10+.16*fl})`:'rgba(255,255,255,.035)'; ctx.fill();
+    ctx.strokeStyle=on?`rgba(201,169,106,${.35+.3*fl})`:'rgba(255,255,255,.10)'; ctx.lineWidth=1; ctx.stroke();
+    if(on){ ctx.fillStyle=`rgba(232,200,138,${.5+.4*fl})`; ctx.beginPath(); ctx.arc(x+cw/2,y+chh/2,3.2,0,6.283); ctx.fill(); }
+  }
+  // 参数卡
+  const pa=easeOut(seg(t,CUT_A+2,CUT_A+3));
+  if(pa>0.01){
+    const x=1500,y=250,w=330,h=210;
+    ctx.save(); ctx.globalAlpha=pa;
+    rr(x,y,w,h,6); ctx.fillStyle='rgba(201,169,106,.05)'; ctx.fill();
+    ctx.strokeStyle='rgba(201,169,106,.30)'; ctx.lineWidth=1; ctx.stroke();
+    text('模拟参数',x+22,y+38,{font:`400 20px ${FS}`,color:C.gray});
+    text(Math.round(lerp(0,1000,easeInOut(seg(t,CUT_A+2,72)))).toLocaleString(),x+22,y+92,{font:`400 46px ${FM}`,color:C.white});
+    text('次尝试',x+22,y+122,{font:`400 19px ${FS}`,color:C.dim});
+    text(lerp(0,37.4,easeInOut(seg(t,CUT_A+3,74))).toFixed(1)+'%',x+w-22,y+92,{font:`400 46px ${FM}`,color:C.gold2,align:'right'});
+    text('成功率',x+w-22,y+122,{font:`400 19px ${FS}`,color:C.dim,align:'right'});
+    ctx.restore();
+  }
+}
+
+function rate(x){ const d=(x-0.37)/0.26; return Math.exp(-d*d)*0.374+0.03*Math.sin(x*9)*Math.exp(-x*2); }
+function s3_curve(t){
+  if(t<74||t>=CUT_B) return;
+  const a=easeInOut(seg(t,74,76));
+  const x0=420,x1=1500,yb=700,yt=380;
+  ctx.save(); ctx.globalAlpha=a;
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(x0,yb); ctx.lineTo(x1,yb); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x0,yb); ctx.lineTo(x0,yt); ctx.stroke();
+  const grow=easeInOut(seg(t,74.5,80.5));
+  ctx.save(); ctx.shadowBlur=24; ctx.shadowColor='rgba(201,169,106,.6)';
+  ctx.strokeStyle=C.gold; ctx.lineWidth=3; ctx.beginPath();
+  for(let i=0;i<=280*grow;i++){
+    const x=i/280, px=lerp(x0,x1,x), py=yb-(yb-yt)*rate(x)/0.42;
+    i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+  }
+  ctx.stroke(); ctx.restore();
+  const pa=easeOut(seg(t,80.2,81.0));
+  if(pa>0.01){
+    const px=lerp(x0,x1,.37), py=yb-(yb-yt)*rate(.37)/0.42;
+    ctx.save(); ctx.globalAlpha=a*pa;
+    ctx.setLineDash([4,7]); ctx.strokeStyle='rgba(201,169,106,.5)'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,yb); ctx.stroke(); ctx.setLineDash([]);
+    ctx.shadowBlur=26; ctx.fillStyle='#F5E4BE';
+    ctx.beginPath(); ctx.arc(px,py,7.5*(1+.2*Math.sin(t*2.6)),0,6.283); ctx.fill();
+    ctx.restore();
+    // 强调点 2：37% 放大冲击
+    const pk=punch(t,80.2,.15,.36);
+    ctx.save();
+    ctx.translate(px,py-26); ctx.scale(pk,pk); ctx.translate(-px,-(py-26));
+    text('37%',px,py-26,{font:`400 58px ${FM}`,color:C.gold2,align:'center',alpha:a*pa,shadow:22,sc:'rgba(201,169,106,.6)'});
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+/* =====================================================================
+   S4  82–105  反转：直线 + 三个 ✗ + 碎裂
+   ===================================================================== */
+function s4(t){
+  if(t<CUT_B||t>105.4) return;
+  const y=H*.44, x0=300, x1=1620;
+  const shat=easeInOut(seg(t,96,102));
+  // 直线（碎片化前）+ 沿线的流光
+  if(shat<0.02){
+    ctx.save();
+    ctx.strokeStyle=C.gold; ctx.lineWidth=3;
+    ctx.shadowBlur=20; ctx.shadowColor='rgba(201,169,106,.5)';
+    const mid=(x0+x1)/2;
+    const lx=lerp(mid,x0,easeOut(seg(t,82.3,84.0)));
+    const rx=lerp(mid,x1,easeOut(seg(t,82.5,84.2)));
+    ctx.beginPath(); ctx.moveTo(lx,y); ctx.lineTo(rx,y); ctx.stroke();
+    // 一道来回扫的光
+    const sweep=(Math.sin((t-82)*0.9)*0.5+0.5);
+    const sx=lerp(lx,rx,sweep);
+    const g=ctx.createLinearGradient(sx-90,0,sx+90,0);
+    g.addColorStop(0,'rgba(255,246,226,0)');
+    g.addColorStop(.5,'rgba(255,246,226,.95)');
+    g.addColorStop(1,'rgba(255,246,226,0)');
+    ctx.strokeStyle=g; ctx.lineWidth=5; ctx.shadowBlur=30;
+    ctx.beginPath(); ctx.moveTo(Math.max(lx,sx-90),y); ctx.lineTo(Math.min(rx,sx+90),y); ctx.stroke();
+    ctx.restore();
+  }
+  // 三条前提 + ✗
+  const items=[['你不能回头',83.6],['你只能比较先后',86.4],['你也不在选"最优"',89.2]];
+  items.forEach(([s,t0],i)=>{
+    const ap=easeOut(seg(t,t0,t0+.6));
+    if(ap<=0.01||shat>0.9) return;
+    const yy=H*.58+i*62;
+    ctx.save(); ctx.globalAlpha=ap*(1-shat);
+    text(s,W*.5-420,yy,{font:`400 30px ${FS}`,color:'#CFCFDE'});
+    // 红叉
+    const xa=easeOut(seg(t,t0+1.2,t0+1.8));
+    if(xa>0.01){
+      ctx.globalAlpha=ap*xa*(1-shat);
+      ctx.strokeStyle=C.red; ctx.lineWidth=5; ctx.lineCap='round';
+      const cx=W*.5+330;
+      ctx.beginPath(); ctx.moveTo(cx-16,yy-16+Math.sin(t*2.2+i)*2); ctx.lineTo(cx+16,yy+16+Math.sin(t*2.2+i)*2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx+16,yy-16+Math.sin(t*2.2+i)*2); ctx.lineTo(cx-16,yy+16+Math.sin(t*2.2+i)*2); ctx.stroke();
+    }
+    ctx.restore();
+  });
+  // 碎裂
+  if(shat>0.02&&shat<0.999){
+    ctx.save();
+    for(let i=0;i<26;i++){
+      const u=i/25, px=lerp(x0,x1,u);
+      const ph=(i*0.61)%1;
+      const dx=(u-.5)*520*shat, dy=(Math.sin(ph*6.28)*220-40)*shat;
+      ctx.globalAlpha=clamp(1-shat*1.1,0,1)*.85;
+      ctx.fillStyle=i%3?C.gold:C.gold2;
+      ctx.save(); ctx.translate(px+dx, y+dy); ctx.rotate(shat*(ph-.5)*4);
+      rr(-14,-2.2,28,4.4,2); ctx.fill(); ctx.restore();
+    }
+    ctx.restore();
+  }
+  const qa=easeOut(seg(t,100.4,101.6));
+  if(qa>0.01){
+    text('它算不出爱',W/2,H*.62,{font:`900 76px ${FT}`,color:C.gold2,align:'center',alpha:qa,shadow:36,sc:'rgba(201,169,106,.5)'});
+  }
+}
+
+/* =====================================================================
+   S5  105–145  天平：5 : 1
+   ===================================================================== */
+function s5(t){
+  if(t<104.8||t>145.4) return;
+  const a=easeOut(seg(t,105.0,106.2))*(1-seg(t,144.4,145.2));
+  const cx=W*.5, cy=H*.40, armW=520;
+  // 比例：稳定 5:1 → 破裂 1:1
+  const r=lerp(5,1,easeInOut(seg(t,126,133)));
+  const tilt=clamp((5-r)/4,0,1)*0.16;              // 弧度
+  ctx.save(); ctx.globalAlpha=a;
+  // 支柱
+  ctx.strokeStyle='rgba(255,255,255,.20)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(cx,cy+200); ctx.lineTo(cx,cy); ctx.stroke();
+  // 横梁
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(tilt);
+  ctx.strokeStyle='rgba(232,200,138,.9)'; ctx.lineWidth=3.4;
+  ctx.beginPath(); ctx.moveTo(-armW,0); ctx.lineTo(armW,0); ctx.stroke();
+  // 两端托盘
+  [-armW,armW].forEach(px=>{ ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,34); ctx.stroke(); });
+  ctx.restore();
+  // 左右柱状（用托盘的垂直位置表示重量）
+  const bars=[[cx-armW,1],[cx+armW,1/r]];
+  bars.forEach(([bx,val],i)=>{
+    const jitter=1+0.05*Math.sin(t*2.4+i*2.1);      // 柱子持续微颤
+    const hgt=Math.min(180, 26*val)*jitter;
+    const by=cy+64+(i===0? -tilt*armW : tilt*armW);
+    ctx.save(); ctx.globalAlpha=a*.9;
+    ctx.fillStyle=i===0?'rgba(232,200,138,.85)':'rgba(194,69,46,.75)';
+    rr(bx-46,by-hgt,92,hgt,4); ctx.fill();
+    ctx.restore();
+    text(i===0?'善意':'伤害',bx,by+34,{font:`400 22px ${FS}`,color:C.gray,align:'center',alpha:a*.9});
+  });
+  // 样本量读数（持续跳动）
+  const sa=easeOut(seg(t,106,107));
+  if(sa>0.01){
+    const n=Math.round(lerp(0,1043,easeInOut(seg(t,106,124))));
+    text('n = '+n.toLocaleString()+' 对伴侣',W-200,H*.86,{font:`400 26px ${FM}`,color:C.gray,align:'right',alpha:sa*.9});
+  }
+  ctx.restore();
+  // 5 : 1 数字（强调点 3）
+  const na=easeOut(seg(t,112,113.4));
+  if(na>0.01){
+    const pk=punch(t,112,.15,.4);
+    const sh=shakeAt(t,112,6,.22);
+    ctx.save();
+    ctx.translate(cx+sh.x,cy-120+sh.y); ctx.scale(pk,pk); ctx.translate(-cx,-(cy-120));
+    text('5 : 1',cx,cy-120,{font:`400 110px ${FM}`,color:C.gold2,align:'center',alpha:na,shadow:40,sc:'rgba(201,169,106,.55)'});
+    ctx.restore();
+    text('稳定关系里的正负互动比',cx,cy-66,{font:`400 24px ${FS}`,color:C.gray,align:'center',alpha:na});
+  }
+  // 五枚补上的圆点
+  const da=easeOut(seg(t,134,135));
+  if(da>0.01){
+    for(let i=0;i<5;i++){
+      const ap=easeOut(seg(t,134+i*.5,134.4+i*.5));
+      if(ap<=0.01) continue;
+      const x=cx-200+i*100, y=H*.76;
+      ctx.save(); ctx.globalAlpha=da*ap;
+      ctx.fillStyle=C.gold2; ctx.beginPath(); ctx.arc(x,y,9*ap,0,6.283); ctx.fill();
+      ctx.restore();
+    }
+    text('一次争吵，需要五次善意来抵',cx,H*.76+50,{font:`400 26px ${FS}`,color:'#CFCFDE',align:'center',alpha:da});
+  }
+}
+
+/* =====================================================================
+   S6  145–167  依恋类型三张卡
+   ===================================================================== */
+function s6(t){
+  if(t<144.8||t>167.4) return;
+  const a=easeOut(seg(t,145.0,145.8))*(1-seg(t,166.4,167.2));
+  const data=[['安全型','56%','#E8C88A',0.56],['回避型','25%','#8FA8C8',0.25],['焦虑型','19%','#C88A8A',0.19]];
+  const cw=360,chh=300, gap=60;
+  const totalW=cw*3+gap*2;
+  data.forEach(([name,pct,col,v],i)=>{
+    const x=W*.5-totalW/2+i*(cw+gap), y=H*.30;
+    ctx.save(); ctx.globalAlpha=a;
+    rr(x,y,cw,chh,8);
+    ctx.fillStyle='rgba(255,255,255,.04)'; ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=1.6; ctx.stroke();
+    text(name,x+28,y+64,{font:`700 34px ${FS}`,color:'#E4E4F0'});
+    // 竖条填充
+    const fill=easeInOut(seg(t,146.4+i*.3,149.0+i*.3));
+    const bh=(chh-140)*fill*v/0.6;
+    ctx.fillStyle=col; ctx.globalAlpha=a*.5;
+    rr(x+28,y+chh-56-bh,60,bh,3); ctx.fill();
+    ctx.globalAlpha=a;
+    const pk=punch(t,149.4+i*.1,.12,.34);   // 强调点 4：三个百分比依次冲击
+    ctx.save();
+    ctx.translate(x+cw-28,y+chh-40); ctx.scale(pk,pk); ctx.translate(-(x+cw-28),-(y+chh-40));
+    text(pct,x+cw-28,y+chh-40,{font:`400 54px ${FM}`,color:col,align:'right'});
+    ctx.restore();
+    ctx.restore();
+  });
+  const la=easeOut(seg(t,150,151));
+  if(la>0.01){
+    text('安全型约 56%，回避型约 25%，焦虑型约 19%',W/2,H*.78,{font:`400 30px ${FS}`,color:'#CFCFDE',align:'center',alpha:la});
+    text('Hazan & Shaver, 1987',W/2,H*.78+42,{font:`italic 400 22px ${FL}`,color:C.dim,align:'center',alpha:la});
+  }
+}
+
+/* =====================================================================
+   S7  167–180  落点
+   ===================================================================== */
+function s7(t){
+  if(t<166.8) return;
+  const a=easeOut(seg(t,167.0,168.2));
+  const w=1100,h=380,x=(W-w)/2,y=H*.24;
+  ctx.save(); ctx.globalAlpha=a;
+  rr(x,y,w,h,8);
+  ctx.fillStyle='rgba(201,169,106,.06)'; ctx.fill();
+  ctx.strokeStyle='rgba(201,169,106,.35)'; ctx.lineWidth=1.2; ctx.stroke();
+  text('爱情',x+w/2,y+120,{font:`900 84px ${FT}`,color:C.gold2,align:'center',shadow:40,sc:'rgba(201,169,106,.45)'});
+  text('既不是运气，也不是算法',x+w/2,y+190,{font:`400 34px ${FS}`,color:'#D8C8B8',align:'center'});
+  text('它是每天重新做一次的选择',x+w/2,y+242,{font:`400 34px ${FS}`,color:'#D8C8B8',align:'center'});
+  text('参考：Gottman & Levenson (1992)；Hazan & Shaver (1987)；37% 为秘书问题的经典解',
+    x+w/2,y+318,{font:`400 18px ${FS}`,color:C.dim,align:'center'});
+  ctx.restore();
+  const b=easeOut(seg(t,174,175));
+  text('@YOURNAME 出品 · 全片由代码渲染 · 无实拍素材',W/2,860,{font:`400 20px ${FS}`,color:C.dim,align:'center',alpha:b*.9});
+}
+
+/* =====================================================================
+   字幕 / HUD / 注释
+   ===================================================================== */
+const CHAPTERS=[[0,'概率'],[22,'相遇'],[50,'最优停止'],[82,'失效'],[105,'长期'],[145,'依恋'],[167,'落点']];
+const SUBS=[
+  [1.2, 4.6,'先说一个数字','Start with a number'],
+  [4.8, 9.2,'你每天会“遇到”大约 50 个陌生人','You cross paths with ~50 strangers a day'],
+  [9.4,13.6,'一年一万八千，三十年五十五万','18,000 a year. 550,000 in thirty'],
+  [13.8,17.4,'在一个人口两千万的城市里','In a city of twenty million'],
+  [17.6,22.0,'你遇见某一个人的概率，是 2.7%','The odds of meeting any one: 2.7%'],
+  [22.6,26.4,'而这只是“遇见”','And that is only meeting'],
+  [26.6,30.4,'还得同一天走同一条路','You need the same road, same day'],
+  [30.6,34.4,'在同一秒抬头','The same second to look up'],
+  [34.6,38.6,'都单身，都愿意开口','Both free. Both willing to speak'],
+  [38.8,43.6,'三个条件一乘，剩下不到万分之一','Multiply three conditions: below 1 in 10,000'],
+  [44.0,50.2,'所以“遇见”本身，就已经是极小概率事件','Meeting at all is already the rare event'],
+  [50.6,54.6,'数学对爱情唯一有用的地方','The one place math helps love'],
+  [54.8,58.6,'是“什么时候停”','Is knowing when to stop'],
+  [58.8,62.8,'见完不能回头，选中就结束','No going back. Pick, and it ends'],
+  [64.2,68.4,'一千次模拟，只改一个变量','A thousand trials, one variable'],
+  [68.6,73.6,'答案是 37%：先看 37%，再出手','The answer: look at 37%, then leap'],
+  [74.2,78.4,'这是“最优停止”问题的经典解','The classic optimal-stopping solution'],
+  [78.6,82.0,'但它有三个前提','But it rests on three assumptions'],
+  [82.4,86.2,'你不能回头 —— 可现实里人可以等','No going back — but people can wait'],
+  [86.4,90.2,'你只能比较 —— 可人会变','Only compare — but people change'],
+  [90.4,95.6,'而且你也不是在“选最优”','And you are not picking an optimum'],
+  [96.0,100.2,'模型算得出概率，算不出爱','It can compute odds, not love'],
+  [100.6,105.0,'真正决定关系长短的，是另一组数字','What decides length is another set'],
+  [105.4,110.4,'研究者跟踪了上千对伴侣','Researchers followed hundreds of couples'],
+  [110.6,115.6,'稳定关系里，善意与伤害的比例约为 5 : 1','Stable couples run about 5:1'],
+  [115.8,121.6,'这不是道德要求，是统计结果','Not a moral rule — a statistical one'],
+  [122.0,127.4,'比例掉到 1 : 1 以下，多数在几年内分开','Below 1:1, most part within years'],
+  [127.6,133.4,'一次争吵，需要五次善意来抵','One fight costs five kindnesses'],
+  [134.0,139.4,'所以“合适”不是找到的，是每天维护出来的','Fit is not found. It is maintained'],
+  [140.0,144.6,'还有更早的变量：你小时候被怎么对待','An earlier variable: how you were raised'],
+  [145.4,150.2,'安全型约 56%，回避型 25%，焦虑型 19%','Secure 56%, avoidant 25%, anxious 19%'],
+  [150.4,155.4,'它影响你怎么靠近，也怎么逃开','It shapes how you come close — and flee'],
+  [155.6,160.4,'但它不是判决，是可以改的','It is not a sentence. It can change'],
+  [160.6,166.2,'同一个模式，可以在下一段关系里重写','The pattern can be rewritten'],
+  [167.4,172.4,'爱情既不是运气，也不是算法','Love is neither luck nor algorithm'],
+  [172.6,178.6,'它是每天重新做一次的选择','It is a choice you remake daily']
+];
+function subs(t){
+  for(const [a,b,zh,en] of SUBS){
+    const al=Math.min(seg(t,a,a+.35),1-seg(t,b-.3,b));
+    if(al<=0.01) continue;
+    text(zh,W/2,912,{font:`700 46px ${FS}`,color:C.white,align:'center',alpha:al,shadow:26,sc:'rgba(0,0,0,.85)'});
+    text(en,W/2,956,{font:`italic 400 27px ${FL}`,color:'#9C9CB4',align:'center',alpha:al*.95});
+  }
+}
+function hud(t){
+  const a=easeOut(seg(t,.6,1.6))*(1-seg(t,178.4,179.4));
+  tracked('@YOURNAME',84,74,3,{color:C.gray,alpha:.75*a});
+  const ch=CHAPTERS.filter(c=>t>=c[0]).pop();
+  tracked(ch[1],W/2,74,2.6,{align:'center',alpha:.9*a});
+  ctx.save(); ctx.globalAlpha=.5*a; ctx.strokeStyle='rgba(201,169,106,.5)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W/2-18,92); ctx.lineTo(W/2+18,92); ctx.stroke(); ctx.restore();
+  const f=Math.floor((t%1)*30),s=Math.floor(t)%60,m=Math.floor(t/60);
+  text(`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}:${String(f).padStart(2,'0')}`,W-84,74,
+    {font:`400 21px ${FM}`,color:C.dim,align:'right',alpha:.85*a});
+}
+
+/* ---------- 主渲染 ---------- */
+window.render=function(t){
+  const T=clamp(t,0,window.DUR);
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,W,H);
+  const c=cam(T);
+  ctx.save(); applyCam(c); backdrop(T); ambient(T); ctx.restore();
+  ctx.save(); applyCam(c);
+  s1(T); s2(T); s3_cards(T); s3_grid(T); s3_curve(T); s4(T); s5(T); s6(T); s7(T);
+  ctx.restore();
+  // 层级：暗角 → 文字 → 白闪（文字永远在暗角之上）
+  vignette();
+  hud(T); subs(T);
+  // 章节切换白闪（强调点之间的分隔，不做连续闪）
+  const flashes=[22.0,50.0,82.0,105.0,145.0,167.0];
+  let fl=0;
+  for(const fa of flashes) fl=Math.max(fl, flashAt(T,fa,.13));
+  if(fl>0.01){ ctx.save(); ctx.globalAlpha=fl*0.22; ctx.fillStyle='#FFF6E2'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+  const fi=1-seg(T,0,.6), fo=seg(T,179.2,180);
+  if(fi>0.001){ ctx.save(); ctx.globalAlpha=fi; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+  if(fo>0.001){ ctx.save(); ctx.globalAlpha=fo; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+};
+window.READY=false;
+(async()=>{ try{ await document.fonts.ready; }catch(e){}
+  window.READY=true;
+  const q=new URLSearchParams(location.search);
+  if(q.has('t')){ window.render(parseFloat(q.get('t'))); return; }
+  const t0=performance.now();
+  const loop=()=>{ window.render(((performance.now()-t0)/1000)%window.DUR); requestAnimationFrame(loop); };
+  loop();
+})();
+</script>
+</body></html>

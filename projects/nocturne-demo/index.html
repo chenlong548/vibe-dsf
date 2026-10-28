@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>深空理性 · nocturne 验证帧</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block;width:100vw;height:100vh;object-fit:contain}</style>
+</head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script>
+/* ============ 风格包 B「深空理性」验证片段 ============
+   配方：近纯黑 + 极细网格 + 坐标轴生长 + 曲线生长 + 移动发光点
+        + 等宽大数字 + 参数卡 + 双语字幕
+   选题示范：样本均值的收敛（大数定律）
+*/
+const W=1920,H=1080; window.DUR=8;
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const C={grid:'rgba(255,255,255,.08)',axis:'rgba(255,255,255,.20)',curve:'#C8E6F5',
+         point:'#F5E4BE',white:'#FFFFFF',gray:'#6E6E85',dim:'#4A4A5A'};
+const FS='"Microsoft YaHei","PingFang SC",sans-serif';
+const FM='Consolas,"Cascadia Mono",monospace';
+const FL='Georgia,"Times New Roman",serif';
+
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeInOut=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const stars=(()=>{const r=mulberry32(23),p=[];for(let i=0;i<90;i++)p.push({x:r()*W,y:r()*H,r:.4+r()*1.2,ph:r()*6.28});return p;})();
+
+/* 收敛曲线：running mean → 1，带衰减振荡（确定性） */
+const f = tt => 1 + 0.55*Math.exp(-tt*1.1)*Math.cos(tt*7.5) + 0.06*Math.exp(-tt*0.4)*Math.sin(tt*3.1);
+
+function tracked(str,x,y,tr,{font=`500 20px ${FS}`,color=C.gray,align='left',alpha=1}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;ctx.textBaseline='alphabetic';
+  const ch=[...str],w=ch.map(c=>ctx.measureText(c).width);
+  const tot=w.reduce((a,b)=>a+b,0)+tr*Math.max(0,ch.length-1);
+  let cx=align==='center'?x-tot/2:align==='right'?x-tot:x;
+  ch.forEach((c,i)=>{ctx.fillText(c,cx,y);cx+=w[i]+tr;});ctx.restore();
+}
+function text(str,x,y,{font=`400 28px ${FS}`,color=C.white,align='left',alpha=1,shadow=0,sc='rgba(200,230,245,.6)'}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align;
+  if(shadow>0){ctx.shadowBlur=shadow;ctx.shadowColor=sc;}
+  ctx.fillText(str,x,y);ctx.restore();
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+window.render=function(t){
+  // 背景：近纯黑
+  const g=ctx.createRadialGradient(W*.45,H*.45,40,W*.5,H*.5,W*.75);
+  g.addColorStop(0,'#0A0A14'); g.addColorStop(1,'#000000');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  for(const s of stars){ ctx.globalAlpha=.12+.25*(.5+.5*Math.sin(t*.6+s.ph));
+    ctx.fillStyle='#CFE6F5'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill(); }
+  ctx.globalAlpha=1;
+
+  const x0=360,x1=1460,yb=700,yt=280;
+
+  // 网格
+  const ga=easeOut(seg(t,.1,.9));
+  for(let i=1;i<=5;i++){
+    const gy=yb-(yb-yt)*(i/5);
+    ctx.strokeStyle=C.grid; ctx.lineWidth=1; ctx.globalAlpha=ga;
+    ctx.beginPath(); ctx.moveTo(x0,gy); ctx.lineTo(x1,gy); ctx.stroke();
+  }
+  for(let i=1;i<=6;i++){
+    const gx=x0+(x1-x0)*(i/6);
+    ctx.strokeStyle=C.grid; ctx.globalAlpha=ga;
+    ctx.beginPath(); ctx.moveTo(gx,yt); ctx.lineTo(gx,yb); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+
+  // 坐标轴（描边生长）
+  const ax=easeInOut(seg(t,.2,1.1));
+  ctx.strokeStyle=C.axis; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(x0,yb); ctx.lineTo(x0+(x1-x0)*ax,yb); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x0,yb); ctx.lineTo(x0,yb-(yb-yt)*ax); ctx.stroke();
+  text('n（样本量）',x1+16,yb+8,{font:`400 22px ${FS}`,color:C.gray,alpha:ax});
+  text('均值',x0-16,yt-24,{font:`400 22px ${FS}`,color:C.gray,align:'right',alpha:ax});
+  text('0',x0-14,yb+8,{font:`400 20px ${FM}`,color:C.dim,align:'right',alpha:ax});
+  text('1',x0-14,yt+4,{font:`400 20px ${FM}`,color:C.dim,align:'right',alpha:ax});
+
+  // 真值虚线
+  const ta=easeOut(seg(t,1.0,1.8));
+  ctx.save(); ctx.globalAlpha=ta*.55; ctx.setLineDash([6,8]);
+  ctx.strokeStyle=C.point; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(x0,yt); ctx.lineTo(x1,yt); ctx.stroke(); ctx.restore();
+  text('真值 μ', x1, yt-16, {font:`italic 400 22px ${FL}`,color:C.point,align:'right',alpha:ta*.9});
+
+  // 曲线生长
+  const grow=easeInOut(seg(t,1.2,5.4));
+  const pos=u=>({x:x0+(x1-x0)*u, y:yb-(yb-yt)*clamp(f(u*7.5)/1.6,0,1)});
+  if(grow>0.001){
+    ctx.save();
+    ctx.shadowBlur=22; ctx.shadowColor='rgba(200,230,245,.55)';
+    ctx.strokeStyle=C.curve; ctx.lineWidth=2.6; ctx.lineJoin='round';
+    ctx.beginPath();
+    const N=300;
+    for(let i=0;i<=N*grow;i++){ const q=pos(i/N); i===0?ctx.moveTo(q.x,q.y):ctx.lineTo(q.x,q.y); }
+    ctx.stroke(); ctx.restore();
+  }
+
+  // 移动点 + 投影
+  if(grow>0.02){
+    const q=pos(grow);
+    ctx.save();
+    ctx.setLineDash([3,6]); ctx.strokeStyle='rgba(245,228,190,.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(q.x,q.y); ctx.lineTo(q.x,yb); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(q.x,q.y); ctx.lineTo(x0,q.y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowBlur=26; ctx.shadowColor='rgba(245,228,190,.95)';
+    ctx.fillStyle=C.point; ctx.beginPath(); ctx.arc(q.x,q.y,7,0,6.283); ctx.fill();
+    ctx.restore();
+    const n=Math.round(Math.pow(10,1+grow*3));
+    text('n = '+n.toLocaleString(), q.x, yb+44, {font:`400 22px ${FM}`,color:C.point,align:'center'});
+  }
+
+  // 参数卡（右下）
+  const ca=easeOut(seg(t,2.4,3.2));
+  if(ca>0.001){
+    const cw=300,chh=140,cxp=1500,cyp=430;
+    ctx.save(); ctx.globalAlpha=ca;
+    rr(cxp,cyp,cw,chh,4);
+    ctx.fillStyle='rgba(200,230,245,.05)'; ctx.fill();
+    ctx.strokeStyle='rgba(200,230,245,.25)'; ctx.lineWidth=1; ctx.stroke();
+    text('误差（标准误）',cxp+22,cyp+40,{font:`400 21px ${FS}`,color:C.gray});
+    // 标准误 ≈ 1/√n：n=10 → 32%，n=10,000 → 1%
+    const nNow=Math.pow(10,1+grow*3);
+    const err=100/Math.sqrt(nNow);
+    text('±'+err.toFixed(1)+'%',cxp+22,cyp+92,{font:`400 44px ${FM}`,color:C.curve});
+    text('随 n 收敛，慢得反直觉',cxp+22,cyp+122,{font:`400 19px ${FS}`,color:C.dim});
+    ctx.restore();
+  }
+
+  // 顶栏
+  const hud=easeOut(seg(t,.1,.8));
+  tracked('@YOURNAME',84,74,3,{alpha:.75*hud});
+  tracked('概率 · 收敛',W/2,74,2.4,{color:C.curve,align:'center',alpha:.9*hud});
+  text('00:0'+Math.floor(t)+':'+String(Math.floor((t%1)*30)).padStart(2,'0'),W-84,74,
+       {font:`400 21px ${FM}`,color:C.dim,align:'right',alpha:.85*hud});
+
+  // 注释 + 双语字幕
+  const na=easeOut(seg(t,4.2,4.9));
+  text('样本越多，均值越靠近真值 —— 但慢得反直觉', W/2, 792,
+       {font:`400 25px ${FS}`,color:C.gray,align:'center',alpha:.9*na});
+  const sa=easeOut(seg(t,4.6,5.3));
+  text('它不是"平均"，是"收敛"', W/2, 900,
+       {font:`700 46px ${FS}`,color:C.white,align:'center',alpha:sa,shadow:22,sc:'rgba(0,0,0,.85)'});
+  text('Not averaging. Converging.', W/2, 946,
+       {font:`italic 400 27px ${FL}`,color:'#8E8EA6',align:'center',alpha:.95*sa});
+};
+window.READY=false;
+(async()=>{ try{ await document.fonts.ready; }catch(e){}
+  window.READY=true;
+  const q=new URLSearchParams(location.search);
+  if(q.has('t')){ window.render(parseFloat(q.get('t'))); return; }
+  const t0=performance.now();
+  const loop=()=>{ window.render(((performance.now()-t0)/1000)%window.DUR); requestAnimationFrame(loop); };
+  loop();
+})();
+</script>
+</body></html>

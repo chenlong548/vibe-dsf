@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>镜头 · 心电图化爱心（2.5D）</title>
+<style>html,body{margin:0;background:#05050F;overflow:hidden}canvas{display:block;width:100vw;height:100vh;object-fit:contain}</style>
+</head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script>
+/* =====================================================================
+   动态镜头：心电图线 → 长出爱心（2.5D 伪立体）
+   技术要点（写进生态的 PSEUDO-3D 规范）：
+     · 一条折线先作为心电图扫过，再"形变"成爱心轮廓
+     · 立体感靠三层：厚度层（多份偏移叠画）+ 高光层 + 地面投影
+     · 用 rotateY 式横向压缩 + 轻微 rotateZ 做"转身"，不动机位
+     · 心跳脉冲时整条线发光增强
+   DUR=6s，1920×1080，30fps
+   ===================================================================== */
+const W=1920,H=1080; window.DUR=6;
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeInOut=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const easeOutBack=x=>{const c=1.7;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2);};
+const lerp=(a,b,t)=>a+(b-a)*t;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const R=(()=>{const r=mulberry32(9);const a=[];for(let i=0;i<600;i++)a.push(r());return a;})();
+const stars=(()=>{const r=mulberry32(5),p=[];for(let i=0;i<170;i++)p.push({x:r()*W,y:r()*H,r:.4+r()*1.6,ph:r()*6.28,sp:.4+r()*.9});return p;})();
+const FS='"Microsoft YaHei","PingFang SC",sans-serif';
+const FM='Consolas,"Cascadia Mono",monospace';
+
+function text(str,x,y,{font=`400 36px ${FS}`,color='#EFE6D0',align='center',alpha=1,shadow=0,sc='rgba(0,0,0,.8)'}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align;
+  if(shadow>0){ctx.shadowBlur=shadow;ctx.shadowColor=sc;}
+  ctx.fillText(str,x,y);ctx.restore();
+}
+function tracked(str,x,y,tr,{font=`500 22px ${FS}`,color='#C9A96A',alpha=1}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;
+  const ch=[...str],w=ch.map(c=>ctx.measureText(c).width);
+  const tot=w.reduce((a,b)=>a+b,0)+tr*Math.max(0,ch.length-1);
+  let cx=x-tot/2;
+  ch.forEach((c,i)=>{ctx.fillText(c,cx,y);cx+=w[i]+tr;});ctx.restore();
+}
+
+/* ---------- 形状采样：心电图 & 爱心 ---------- */
+const NP=420;                      // 采样点数（够顺滑，也不算慢）
+function ecgPoint(u){              // u:0..1 → 归一化坐标(-1..1, -1..1)
+  const x=lerp(-1,1,u);
+  // 一个心动周期里放两个 QRS（更像监护仪）
+  const ph=(u*2)%1;
+  let y=0;
+  if(ph<0.10) y=0.06*Math.sin(ph/0.10*Math.PI);                       // P 波
+  else if(ph<0.16) y=0;
+  else if(ph<0.19) y=-0.18*Math.sin((ph-0.16)/0.03*Math.PI/2);        // Q
+  else if(ph<0.24) y=1.0*Math.sin((ph-0.19)/0.05*Math.PI)-0.18;       // R 尖峰
+  else if(ph<0.30) y=-0.35*Math.sin((ph-0.24)/0.06*Math.PI);          // S
+  else if(ph<0.42) y=0.12*Math.sin((ph-0.30)/0.12*Math.PI);           // T 波
+  else y=0;
+  return {x, y:-y*0.62};
+}
+function heartPoint(u){            // 经典心形参数方程
+  const a=u*Math.PI*2;
+  const hx=16*Math.pow(Math.sin(a),3);
+  const hy=13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a);
+  return {x:hx/17, y:-hy/17};
+}
+
+/* 预采样两条路径 */
+const ECG=[], HEART=[];
+for(let i=0;i<=NP;i++){ const u=i/NP; ECG.push(ecgPoint(u)); HEART.push(heartPoint(u)); }
+
+/* ---------- 伪立体绘制：一条折线画 N 层 ---------- */
+function drawShape(pts,{alpha=1,thick=3,color='#FF6B8A',layers=7,depth=10,glow=30,scale=1,rot=0,squash=1,ox=0,oy=0}={}){
+  if(pts.length<2) return;
+  const SX=W*.30, SY=H*.30;
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.translate(W*.5+ox, H*.40+oy);
+  ctx.rotate(rot);
+  ctx.scale(scale*squash*0.94, scale*0.94);   // squash 模拟 rotateY；整体略缩，给字幕留白
+  // 1) 厚度层：斜向挤出（x 与 y 同时偏），颜色由深到浅，形成"侧面"
+  for(let L=layers;L>=1;L--){
+    const k=L/layers;
+    const dx=-k*depth*0.62, dy=k*depth;         // 光从左上来 → 厚度往右下
+    ctx.beginPath();
+    pts.forEach((p,i)=>{ const x=p.x*SX+dx, y=p.y*SY+dy; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle=`rgba(${Math.round(90+50*(1-k))},${Math.round(14+18*(1-k))},${Math.round(38+20*(1-k))},${0.55*(1-k)+0.2})`;
+    ctx.lineWidth=thick; ctx.lineJoin='round';
+    ctx.stroke();
+  }
+  // 2) 主体：沿走向的渐变描边（上亮下暗 = 受光）
+  const lg=ctx.createLinearGradient(0,-SY,0,SY);
+  lg.addColorStop(0,'#FFB3C8');
+  lg.addColorStop(.45,color);
+  lg.addColorStop(1,'#C32B54');
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const x=p.x*SX, y=p.y*SY; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.shadowBlur=glow; ctx.shadowColor='rgba(255,90,130,.85)';
+  ctx.strokeStyle=lg; ctx.lineWidth=thick; ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.stroke();
+  // 3) 高光（细一档、偏左上，制造"受光面"）
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const x=p.x*SX-2.2, y=p.y*SY-3.0; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.shadowBlur=0; ctx.strokeStyle='rgba(255,240,246,.65)'; ctx.lineWidth=thick*.30;
+  ctx.stroke();
+  ctx.restore();
+}
+/* 地面投影（压扁、模糊、低透明） */
+function drawShadow(pts,alpha,scale,rot,oy){
+  if(alpha<=0.01) return;
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.filter='blur(16px)';
+  ctx.translate(W*.5, H*.40+oy);
+  ctx.rotate(rot);
+  ctx.scale(scale*0.94, scale*0.94*0.22);
+  ctx.beginPath();
+  pts.forEach((p,i)=>{ const x=p.x*W*.30, y=p.y*H*.30; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+  ctx.strokeStyle='rgba(0,0,0,.75)'; ctx.lineWidth=26; ctx.lineJoin='round';
+  ctx.stroke();
+  ctx.restore();
+}
+
+window.render=function(t){
+  // 背景
+  const g=ctx.createRadialGradient(W*.5,H*.45,40,W*.5,H*.5,W*.85);
+  g.addColorStop(0,'#141024'); g.addColorStop(.55,'#08060F'); g.addColorStop(1,'#040309');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  for(const s of stars){
+    ctx.globalAlpha=.12+.26*(.5+.5*Math.sin(t*4*s.sp+s.ph));
+    ctx.fillStyle='#E6E0F0'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  // 环境光
+  const gl=.07+.05*Math.sin(t*2.2);
+  const gg=ctx.createRadialGradient(W*.5,H*.5,40,W*.5,H*.5,700);
+  gg.addColorStop(0,`rgba(255,110,150,${gl})`); gg.addColorStop(1,'rgba(255,110,150,0)');
+  ctx.fillStyle=gg; ctx.fillRect(0,0,W,H);
+
+  /* ---- 时间轴 ----
+     0.00–1.05  心电图横扫（从左往右画）
+     1.05–2.80  形变：线从心电图长成爱心（两条路径插值）
+     2.80–3.20  心跳脉冲（QRS 闪一下 + 整体发光）
+     3.20–5.20  爱心"转身"（squash 从 1 → 0.86 → 1），厚度层加深
+     5.20–6.00  收尾：光晕扩散 + 字幕
+  */
+  const drawP=seg(t,0.05,1.05);                 // 心电图绘制进度
+  const morph=easeInOut(seg(t,1.05,2.80));      // 形变进度
+  const beat=Math.max(0,Math.sin(Math.PI*clamp(seg(t,2.80,3.20),0,1)));
+  const beat2=Math.max(0,Math.sin(Math.PI*clamp(seg(t,3.55,3.80),0,1)));
+  const turn=easeInOut(seg(t,3.20,5.10));
+
+  // 当前形状 = 心电图 ∩ 爱心
+  const n=Math.max(2,Math.floor(NP*drawP));
+  const pts=[];
+  for(let i=0;i<n;i++){
+    const u=i/NP;
+    const e=ECG[i], h=HEART[Math.floor(u*NP)];
+    const m=morph;
+    // 形变时加一点"弹"的过冲
+    const bump=Math.sin(Math.PI*m)*0.06;
+    pts.push({
+      x:lerp(e.x,h.x,m)*(1+bump),
+      y:lerp(e.y,h.y,m)*(1+bump)
+    });
+  }
+
+  const squash=1-0.14*Math.sin(Math.PI*turn);           // 转身压缩
+  const rot=-0.04*Math.sin(Math.PI*turn);               // 轻微侧倾
+  const scale=1+0.05*beat+0.03*beat2;
+  const glow=34+70*beat+40*beat2;
+  const depth=10+16*morph+10*Math.sin(Math.PI*turn);
+
+  // 投影（先画，压在最底）
+  drawShadow(pts, 0.30*morph, scale*0.96, rot, H*.30);
+  // 主体（伪立体）
+  drawShape(pts,{alpha:1,thick:3.2,color:'#FF5C86',layers:8,depth,glow,scale,rot,squash});
+
+  // 心跳时的冲击闪
+  const hit=Math.max(beat*0.55,beat2*0.35);
+  if(hit>0.01){
+    ctx.save(); ctx.globalAlpha=hit*0.22;
+    ctx.fillStyle='#FFD9E4'; ctx.fillRect(0,0,W,H); ctx.restore();
+  }
+  // QRS 尖峰处的小光点
+  if(t<3.4){
+    const u=clamp(drawP,0,1);
+    const p=pts[Math.max(0,pts.length-1)];
+    if(p){
+      ctx.save();
+      ctx.shadowBlur=40; ctx.shadowColor='rgba(255,120,160,.95)';
+      ctx.fillStyle='#FFF0F5';
+      ctx.beginPath(); ctx.arc(W*.5+p.x*W*.30*squash, H*.48+p.y*H*.30, 5.5, 0, 6.283); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // 文字（永远最上层）
+  const ta=easeOut(seg(t,3.9,4.5));
+  text('心动一次，只需要 0.8 秒',W/2,H*.80,{font:`700 52px ${FS}`,color:'#F6ECF0',alpha:ta,shadow:26});
+  const tb=easeOut(seg(t,4.4,5.0));
+  text('One heartbeat takes 0.8 seconds',W/2,H*.80+48,{font:`italic 400 28px Georgia,serif`,color:'#9C9CB4',alpha:tb*.95});
+
+  // 顶栏
+  const ha=easeOut(seg(t,0.1,0.8));
+  tracked('@YOURNAME',84,74,3,{alpha:.75*ha,color:'#8A8AA0',font:`500 21px ${FS}`});
+  tracked('镜头 · 心电图',W/2,74,2.6,{alpha:.9*ha});
+  const f=Math.floor((t%1)*30),s=Math.floor(t)%60,m=Math.floor(t/60);
+  text(`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}:${String(f).padStart(2,'0')}`,W-84,74,
+    {font:`400 21px ${FM}`,color:'#556',align:'right',alpha:.85*ha});
+
+  // 暗角
+  const v=ctx.createRadialGradient(W/2,H/2,H*.34,W/2,H/2,H*1.05);
+  v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.66)');
+  ctx.fillStyle=v; ctx.fillRect(0,0,W,H);
+
+  // 结尾淡出
+  const fo=seg(t,5.75,6.0);
+  if(fo>0){ ctx.save(); ctx.globalAlpha=fo; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+};
+window.READY=false;
+(async()=>{ try{ await document.fonts.ready; }catch(e){}
+  window.READY=true;
+  const q=new URLSearchParams(location.search);
+  if(q.has('t')){ window.render(parseFloat(q.get('t'))); return; }
+  const t0=performance.now();
+  const loop=()=>{ window.render(((performance.now()-t0)/1000)%window.DUR); requestAnimationFrame(loop); };
+  loop();
+})();
+</script>
+</body></html>

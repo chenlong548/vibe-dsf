@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>37% 法则 · 60s</title>
+<style>html,body{margin:0;background:#05050F;overflow:hidden}canvas{display:block;width:100vw;height:100vh;object-fit:contain}</style>
+</head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script>
+/* =====================================================================
+   《37% 法则》 60s / 1920×1080 / 30fps
+   原则：
+     · 同一个"卡片对象"贯穿全片：卡片摞 → 卡片行 → 网格 → 曲线上的点
+       所以每个过渡都是"元素变形"，不是淡入淡出
+     · 每帧都有连续运动：卡片浮动 / 计数器滚动 / 网格闪烁 / 相机微推
+     · 五区布局：顶栏 / 主视觉 / 注释 / 双语字幕
+   ===================================================================== */
+const W=1920,H=1080; window.DUR=60;
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+
+const C={white:'#EAEAF2',gray:'#8A8AA0',dim:'#556',gold:'#C9A96A',gold2:'#E8C88A',
+         bg1:'#12122A',bg0:'#05050F',line:'rgba(201,169,106,.28)'};
+const FS='"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif';
+const FT='"Noto Serif SC","Songti SC",SimSun,Georgia,serif';
+const FL='Georgia,"Times New Roman",serif';
+const FM='Consolas,"Cascadia Mono",monospace';
+
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeInOut=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const easeOutBack=x=>{const c=1.6;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2);};
+const lerp=(a,b,t)=>a+(b-a)*t;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+const rnd=(()=>{const r=mulberry32(2026);const a=[];for(let i=0;i<400;i++)a.push(r());return a;})();
+const stars=(()=>{const r=mulberry32(11),p=[];for(let i=0;i<190;i++)p.push({x:r()*W,y:r()*H,r:.5+r()*1.8,ph:r()*6.28,sp:.25+r()*.6});return p;})();
+const grain=(()=>{const r=mulberry32(3),p=[];for(let i=0;i<900;i++)p.push({x:r()*W,y:r()*H,a:.012+r()*.03,s:1+r()*1.6});return p;})();
+
+/* ---------- 基础绘制 ---------- */
+function tracked(str,x,y,tr,{font=`500 21px ${FS}`,color=C.gold,align='left',alpha=1}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;ctx.textBaseline='alphabetic';
+  const ch=[...str],w=ch.map(c=>ctx.measureText(c).width);
+  const tot=w.reduce((a,b)=>a+b,0)+tr*Math.max(0,ch.length-1);
+  let cx=align==='center'?x-tot/2:align==='right'?x-tot:x;
+  ch.forEach((c,i)=>{ctx.fillText(c,cx,y);cx+=w[i]+tr;});ctx.restore();
+}
+function text(str,x,y,{font=`400 30px ${FS}`,color=C.white,align='left',alpha=1,shadow=0,sc='rgba(201,169,106,.5)',maxW=0}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align;
+  if(shadow>0){ctx.shadowBlur=shadow;ctx.shadowColor=sc;}
+  if(maxW>0){
+    // 手动折行（禁止依赖浏览器换行）
+    const chars=[...str];let line='',ly=y;
+    for(const ch of chars){
+      if(ctx.measureText(line+ch).width>maxW&&line){
+        ctx.fillText(line,x,ly); line=ch; ly+=parseInt(font.match(/(\d+)px/)[1])*1.45;
+      } else line+=ch;
+    }
+    if(line) ctx.fillText(line,x,ly);
+  } else ctx.fillText(str,x,y);
+  ctx.restore();
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+/* ---------- 背景 + 相机 ---------- */
+function cam(t){
+  // 可见的推镜 + 漂移：60 秒推 8.5%，约 2px/帧 —— 这是"不像 PPT"的关键
+  const u=t/window.DUR;
+  const s=1+.085*easeInOut(clamp(u,0,1));
+  const dx=Math.sin(t*0.18)*55;
+  const dy=Math.cos(t*0.15)*38;
+  return {s,dx,dy};
+}
+function applyCam(c){ ctx.translate(W/2,H/2); ctx.scale(c.s,c.s); ctx.translate(-W/2+c.dx,-H/2+c.dy); }
+
+function backdrop(t){
+  const g=ctx.createRadialGradient(W*.5,H*.42,60,W*.5,H*.5,W*.82);
+  g.addColorStop(0,C.bg1); g.addColorStop(.55,'#0A0A18'); g.addColorStop(1,C.bg0);
+  ctx.fillStyle=g; ctx.fillRect(-40,-40,W+80,H+80);
+  // 星点（呼吸）
+  for(const s of stars){
+    const a=.16+.32*(.5+.5*Math.sin(t*s.sp+s.ph));
+    ctx.globalAlpha=a; ctx.fillStyle='#DFDFF0';
+    ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  // 极淡流动网格（暗示"数据"）
+  ctx.save(); ctx.globalAlpha=.055; ctx.strokeStyle='#C9A96A'; ctx.lineWidth=1;
+  const off=(t*14)%120;
+  for(let x=-120+off;x<W+120;x+=120){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x-160,H); ctx.stroke(); }
+  ctx.restore();
+  // 颗粒
+  for(const p of grain){ ctx.globalAlpha=p.a; ctx.fillStyle='#fff'; ctx.fillRect(p.x,p.y,p.s,p.s); }
+  ctx.globalAlpha=1;
+}
+function vignette(){
+  const v=ctx.createRadialGradient(W/2,H/2,H*.30,W/2,H/2,H*1.02);
+  v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.66)');
+  ctx.fillStyle=v; ctx.fillRect(-60,-60,W+120,H+120);
+}
+
+/* =====================================================================
+   卡片对象：全片只有一套卡片，靠"布局插值"变形
+   ===================================================================== */
+const N=9;
+const CARD_W=132, CARD_H=176;
+
+/* 布局 A：一摞（叠在一起，扇形微散）—— 放在右侧，避开标题 */
+function layoutStack(k){
+  const r=rnd;
+  return idx=>({
+    x: W*.735 + (idx-4)*7,
+    y: H*.52 + (idx-4)*5,
+    w: CARD_W*1.2, h: CARD_H*1.2,
+    rot: (idx-4)*2.2 + (r[idx]-.5)*4,
+    a: 1, hl: idx===0, stack:true
+  });
+}
+/* 布局 B：一行（不等距，故意打破等分）—— 放到标题下方 */
+const GAPS=[12,46,10,58,16,38,8,44];
+function layoutRow(k){
+  const total = N*CARD_W + GAPS.reduce((a,b)=>a+b,0);
+  let x=(W-total)/2;
+  const pos=[];
+  for(let i=0;i<N;i++){ pos.push(x); x+=CARD_W+(GAPS[i]||20); }
+  return idx=>({
+    x: pos[idx]+CARD_W/2,
+    y: H*.63 + (idx%2? -12: 10) + (rnd[idx+20]-.5)*10,
+    w: CARD_W, h: CARD_H,
+    rot: (idx%2? 1.6:-1.4) + (rnd[idx+40]-.5)*1.6,
+    a: 1, hl: idx===2, stack:false
+  });
+}
+/* 布局 C：网格起点（随后由 drawGrid 接管，卡片退场） */
+function layoutGrid(k){
+  const cols=9, gapX=(W-560)/(cols-1), x0=280;
+  return idx=>({
+    x: x0 + idx*gapX,
+    y: H*.34 + k*40,
+    w: 96, h: 62,
+    rot: 0, a: 1, hl: idx===2, stack:false
+  });
+}
+
+/* 卡片集合：给定 t，算出当前布局与插值进度
+   硬切点：15.9 秒（卡片行 → 网格），卡片直接消失，不留变形 */
+const CUT1=15.9;
+function cardState(t){
+  const kStack=layoutStack(0), kRow=layoutRow(0);
+  let from=kStack, to=kStack, p=0, base=1;
+  if(t<3.2){ from=to=kStack; p=0; base=easeOut(seg(t,.4,1.6)); }
+  else if(t<5.6){ from=kStack; to=kRow; p=easeInOut(seg(t,3.2,5.4)); base=1; }
+  else { from=to=kRow; p=0; base=1; }
+  const f=from, tt=to;
+  return idx=>{
+    const a=f(idx), b=tt(idx);
+    // 硬切：15.9 之后卡片不再存在（不是淡出）
+    const alive = t<CUT1 ? 1 : 0;
+    let x=lerp(a.x,b.x,p), y=lerp(a.y,b.y,p), rot=lerp(a.rot,b.rot,p);
+    let al=base*alive;
+    // 开场：卡片从画面右侧逐个飞入（第 0.05 秒就开始，首帧不能空）
+    if(t<3.2){
+      const ent=easeOutBack(seg(t, 0.05+idx*0.05, 0.75+idx*0.05));
+      x += (1-ent)*820;
+      rot += (1-ent)*22;
+      al *= clamp(ent,0,1);
+    }
+    return { x, y, w:lerp(a.w,b.w,p), h:lerp(a.h,b.h,p), rot,
+             a: al, hl: idx===2, stack: a.stack && p<0.35 };
+  };
+}
+
+function drawCards(t){
+  const st=cardState(t);
+  for(let i=0;i<N;i++){
+    const c=st(i);
+    if(c.a<=0.01) continue;
+    const floatY=Math.sin(t*1.1+i*1.7)*2.6;      // 持续浮动
+    ctx.save();
+    ctx.globalAlpha=c.a*(c.stack?.72:1);         // 摞在一起时压暗，避免数字糊成一片
+    ctx.translate(c.x, c.y+floatY);
+    ctx.rotate(c.rot*Math.PI/180);
+    if(c.hl){ ctx.shadowBlur=30; ctx.shadowColor='rgba(201,169,106,.75)'; }
+    rr(-c.w/2,-c.h/2,c.w,c.h,6);
+    ctx.fillStyle=c.hl?'rgba(201,169,106,.13)':'rgba(255,255,255,.045)';
+    ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.strokeStyle=c.hl?C.gold:'rgba(255,255,255,.14)';
+    ctx.lineWidth=c.hl?2.2:1.1; ctx.stroke();
+    if(!c.stack){                                 // 摞的时候不画编号
+      const label=String(i+1).padStart(2,'0');
+      text(label,0,c.h*0.09,{font:`400 ${Math.min(40,Math.round(c.h*0.24))}px ${FM}`,color:c.hl?C.gold:'#6E6E85',align:'center'});
+    }
+    ctx.restore();
+  }
+}
+
+/* =====================================================================
+   网格：96 格随机点亮 + 成功率滚动（模拟段）
+   ===================================================================== */
+const GRIDC=10, GRIDR=6;
+function drawGrid(t){
+  // 硬切进场：15.9 秒直接满帧出现（不是淡入），出场仍在 32.4 后淡出
+  if(t<CUT1) return;
+  const a = t<32.4 ? 1 : (1-seg(t,32.4,33.6));
+  if(a<=0.01) return;
+  const cw=96, chh=58, gx=18, gy=16;
+  const gw=GRIDC*cw+(GRIDC-1)*gx, gh=GRIDR*chh+(GRIDR-1)*gy;
+  const ox=190, oy=H*.22;
+  const prog=seg(t,16.05,29);
+  ctx.save(); ctx.globalAlpha=a;
+  for(let r=0;r<GRIDR;r++){
+    for(let c=0;c<GRIDC;c++){
+      const i=r*GRIDC+c;
+      const on=rnd[(i*7)%400]<prog*0.92;
+      const x=ox+c*(cw+gx), y=oy+r*(chh+gy);
+      const flick=.55+.45*Math.sin(t*3.2+i*.7);      // 闪烁
+      rr(x,y,cw,chh,5);
+      ctx.fillStyle = on? `rgba(201,169,106,${.10+.16*flick})` : 'rgba(255,255,255,.035)';
+      ctx.fill();
+      ctx.strokeStyle = on? `rgba(201,169,106,${.35+.3*flick})` : 'rgba(255,255,255,.10)';
+      ctx.lineWidth=1; ctx.stroke();
+      if(on){
+        ctx.fillStyle=`rgba(232,200,138,${.5+.4*flick})`;
+        ctx.beginPath(); ctx.arc(x+cw/2,y+chh/2,3.2,0,6.283); ctx.fill();
+      }
+    }
+  }
+  ctx.restore();
+}
+
+/* =====================================================================
+   曲线（结论段）
+   ===================================================================== */
+function rate(x){ // x: 0..1 观察比例；峰值在 0.37
+  const d=(x-0.37)/0.26;
+  return Math.exp(-d*d)*0.374 + 0.03*Math.sin(x*9)*Math.exp(-x*2);
+}
+function drawCurve(t){
+  // 硬切出场：44.0 秒整段消失，直接切到标签
+  if(t>=44.0) return;
+  const a=easeOut(seg(t,33.2,34.6));
+  if(a<=0.01) return;
+  const x0=420,x1=1500,yb=700,yt=380;
+  ctx.save(); ctx.globalAlpha=a;
+  // 轴
+  const ax=easeInOut(seg(t,33.2,34.6));
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(x0,yb); ctx.lineTo(x0+(x1-x0)*ax,yb); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x0,yb); ctx.lineTo(x0,yb-(yb-yt)*ax); ctx.stroke();
+  text('只看不选的比例',x1,yb+76,{font:`400 22px ${FS}`,color:C.gray,align:'right',alpha:ax});
+  text('成功率',x0-16,yt-16,{font:`400 22px ${FS}`,color:C.gray,align:'right',alpha:ax});
+  // 横轴刻度 0 / 50% / 100%
+  [[0,'0'],[0.5,'50%'],[1,'100%']].forEach(([u,lab])=>{
+    const px=lerp(x0,x1,u);
+    ctx.strokeStyle='rgba(255,255,255,.20)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(px,yb-8); ctx.lineTo(px,yb+8); ctx.stroke();
+    text(lab,px,yb+34,{font:`400 20px ${FM}`,color:C.dim,align:'center',alpha:ax});
+  });
+  // 对照：50% 阈值（成功率约 25%）—— 细灰线，只做对比
+  const cmp=easeOut(seg(t,41.0,42.4));
+  if(cmp>0.01){
+    ctx.save(); ctx.globalAlpha=a*cmp*.55;
+    ctx.strokeStyle='#8A8AA0'; ctx.lineWidth=1.6; ctx.setLineDash([6,6]);
+    ctx.beginPath();
+    for(let i=0;i<=120;i++){
+      const x=i/120, px=lerp(x0,x1,x);
+      const v=0.25*Math.exp(-Math.pow((x-0.5)/0.24,2));
+      const py=yb-(yb-yt)*v/0.42;
+      i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+    text('50% 阈值 → 约 25%',lerp(x0,x1,.74),yb-(yb-yt)*0.25*0.55/0.42-18,
+      {font:`400 22px ${FS}`,color:'#9C9CB4',alpha:a*cmp});
+  }
+  // 曲线生长
+  const grow=easeInOut(seg(t,34.4,38.2));
+  if(grow>0.005){
+    ctx.save();
+    ctx.shadowBlur=24; ctx.shadowColor='rgba(201,169,106,.6)';
+    ctx.strokeStyle=C.gold; ctx.lineWidth=3; ctx.lineJoin='round';
+    ctx.beginPath();
+    const STEPS=280;
+    for(let i=0;i<=STEPS*grow;i++){
+      const x=i/STEPS, px=lerp(x0,x1,x), py=yb-(yb-yt)*rate(x)/0.42;
+      i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);
+    }
+    ctx.stroke(); ctx.restore();
+  }
+  // 峰值标注
+  const pa=easeOut(seg(t,38.6,39.6));
+  if(pa>0.01){
+    const px=lerp(x0,x1,0.37), py=yb-(yb-yt)*rate(0.37)/0.42;
+    ctx.save(); ctx.globalAlpha=a*pa;
+    ctx.setLineDash([4,7]); ctx.strokeStyle='rgba(201,169,106,.5)'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,yb); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(x0,py); ctx.stroke();
+    ctx.setLineDash([]);
+    // 呼吸的点
+    const pulse=1+.22*Math.sin(t*2.6);
+    ctx.shadowBlur=26*pulse; ctx.shadowColor='rgba(232,200,138,.95)';
+    ctx.fillStyle='#F5E4BE'; ctx.beginPath(); ctx.arc(px,py,7.5*pulse,0,6.283); ctx.fill();
+    ctx.restore();
+    const v=lerp(0,36.8,easeInOut(seg(t,38.8,40.4)));
+    text('37%',px,py-30,{font:`400 62px ${FM}`,color:C.gold2,align:'center',alpha:pa,shadow:22,sc:'rgba(201,169,106,.6)'});
+    // 横扫的读图光标：让"读完数字"那几秒一直在动
+    const sweep=easeInOut(seg(t,39.2,43.4));
+    if(sweep>0.001&&sweep<0.999){
+      const sx=lerp(x0,x1,sweep);
+      ctx.save(); ctx.globalAlpha=a*.7;
+      const sg=ctx.createLinearGradient(sx-60,0,sx+60,0);
+      sg.addColorStop(0,'rgba(201,169,106,0)');
+      sg.addColorStop(.5,'rgba(232,200,138,.22)');
+      sg.addColorStop(1,'rgba(201,169,106,0)');
+      ctx.fillStyle=sg; ctx.fillRect(sx-60,yt-30,120,(yb-yt)+60);
+      ctx.strokeStyle='rgba(245,228,190,.55)'; ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.moveTo(sx,yt-30); ctx.lineTo(sx,yb); ctx.stroke();
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+/* 设定段：一道金色"挑选光标"横扫卡片（避免这段静止） */
+function scanCursor(t){
+  const a=easeOut(seg(t,8.6,9.0))*(t<CUT1?1:0);
+  if(a<=0.01) return;
+  const x0=300, x1=1620;
+  const u=easeInOut(seg(t,8.9,15.6));
+  const x=lerp(x0,x1,u);
+  ctx.save();
+  ctx.globalAlpha=a*.85;
+  const g=ctx.createLinearGradient(x-40,0,x+40,0);
+  g.addColorStop(0,'rgba(201,169,106,0)');
+  g.addColorStop(.5,'rgba(232,200,138,.30)');
+  g.addColorStop(1,'rgba(201,169,106,0)');
+  ctx.fillStyle=g; ctx.fillRect(x-40,H*.44,80,340);
+  ctx.strokeStyle='rgba(245,228,190,.85)'; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(x,H*.46); ctx.lineTo(x,H*.46+300); ctx.stroke();
+  ctx.restore();
+  text('正在比较…',x0,H*.82,{font:`400 22px ${FS}`,color:C.gray,alpha:a*.8});
+  text(String(Math.round(u*100))+'%',x1,H*.82,{font:`400 22px ${FM}`,color:C.gold,align:'right',alpha:a*.85});
+}
+function rulePanel(t){
+  const a=easeOut(seg(t,8.4,9.4))*(t<CUT1?1:0);
+  if(a<=0.01) return;
+  const x=250,y=250,w=420,h=210;
+  ctx.save(); ctx.globalAlpha=a;
+  rr(x,y,w,h,6);
+  ctx.fillStyle='rgba(201,169,106,.05)'; ctx.fill();
+  ctx.strokeStyle='rgba(201,169,106,.30)'; ctx.lineWidth=1; ctx.stroke();
+  tracked('游戏规则',x+24,y+40,2.4,{font:`500 20px ${FS}`,alpha:.9});
+  const rules=[['① 见完不能回头',9.0],['② 选中即结束',9.6],['③ 只比较先后',10.2]];
+  rules.forEach(([s,t0],i)=>{
+    const ap=easeOut(seg(t,t0,t0+.5));
+    text(s,x+24,y+92+i*40,{font:`400 25px ${FS}`,color:'#D6D6E6',alpha:ap});
+  });
+  ctx.restore();
+  // 已看计数
+  const b=easeOut(seg(t,9.8,10.6))*(1-seg(t,15.6,16.4));
+  if(b>0.01){
+    const seen=Math.min(9,Math.floor(lerp(0,9,easeInOut(seg(t,10.2,15.4)))));
+    text(String(seen).padStart(2,'0')+' / 09', W-250, 330, {font:`400 54px ${FM}`,color:C.gold2,align:'right',alpha:b,shadow:20,sc:'rgba(201,169,106,.5)'});
+    text('已看', W-250, 372, {font:`400 20px ${FS}`,color:C.gray,align:'right',alpha:b});
+  }
+}
+function paramCard(t){
+  const a=easeOut(seg(t,19.2,20.2))*(1-seg(t,32.6,33.4));
+  if(a<=0.01) return;
+  const x=1500,y=250,w=330,h=210;
+  ctx.save(); ctx.globalAlpha=a;
+  rr(x,y,w,h,6);
+  ctx.fillStyle='rgba(201,169,106,.05)'; ctx.fill();
+  ctx.strokeStyle='rgba(201,169,106,.30)'; ctx.lineWidth=1; ctx.stroke();
+  text('模拟参数',x+22,y+38,{font:`400 20px ${FS}`,color:C.gray});
+  const tries=Math.round(lerp(0,1000,easeInOut(seg(t,19.4,27))));
+  const rate=lerp(0,37.4,easeInOut(seg(t,20,30)));
+  text(tries.toLocaleString(),x+22,y+92,{font:`400 46px ${FM}`,color:C.white});
+  text('次尝试',x+22,y+122,{font:`400 19px ${FS}`,color:C.dim});
+  text(rate.toFixed(1)+'%',x+w-22,y+92,{font:`400 46px ${FM}`,color:C.gold2,align:'right'});
+  text('成功率',x+w-22,y+122,{font:`400 19px ${FS}`,color:C.dim,align:'right'});
+  ctx.restore();
+}
+
+/* =====================================================================
+   标签列（泛化段）
+   ===================================================================== */
+const TAGS=['看房','招聘','找车位','选 offer'];
+function drawTags(t){
+  // 硬切进场：44.0 秒直接出现在画面上
+  if(t<44.0) return;
+  const a=1-seg(t,52.2,53.0);
+  if(a<=0.01) return;
+  const baseY=520;
+  TAGS.forEach((s,i)=>{
+    // 硬切：44.0 秒四张标签已经在画面上（不再逐个弹出）
+    const x=560, y=baseY+i*88;
+    ctx.save(); ctx.globalAlpha=a;
+    rr(x,y,360,64,4);
+    ctx.fillStyle='rgba(201,169,106,.08)'; ctx.fill();
+    ctx.strokeStyle='rgba(201,169,106,.35)'; ctx.lineWidth=1; ctx.stroke();
+    text(s,x+26,y+42,{font:`500 30px ${FS}`,color:C.white});
+    text(String(i+1).padStart(2,'0'),x+330,y+42,{font:`400 22px ${FM}`,color:C.gold,align:'right'});
+    ctx.restore();
+  });
+  // 右侧：标签 → 同一个 37%
+  const b=easeOut(seg(t,46.4,47.6));
+  if(b>0.01){
+    ctx.save(); ctx.globalAlpha=a*b;
+    ctx.strokeStyle='rgba(201,169,106,.45)'; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(940, baseY+30); ctx.lineTo(1180, baseY+30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(1180,baseY+30); ctx.lineTo(1170,baseY+24); ctx.lineTo(1170,baseY+36); ctx.closePath();
+    ctx.fillStyle='rgba(201,169,106,.6)'; ctx.fill();
+    text('同一个 37%',1180,baseY+90,{font:`400 30px ${FS}`,color:C.gold2});
+    ctx.restore();
+  }
+}
+
+/* =====================================================================
+   HUD / 字幕 / 注释
+   ===================================================================== */
+const CHAPTERS=[[0,'提问'],[7.5,'设定'],[16,'推演'],[33,'结论'],[44,'泛化'],[52,'收束']];
+const SUBS=[
+  [1.0, 3.4,'你这一辈子，都在做同一道题','You keep solving the same problem'],
+  [3.6, 7.4,'什么时候，该停止选择','When should you stop looking'],
+  [8.2,12.0,'一列候选人，见完就不能回头','A queue of candidates. No going back'],
+  [12.2,15.8,'规则只有一条：选中就结束','One rule: pick, and it ends'],
+  [16.4,21.0,'数学家让它跑了一千次','Mathematicians ran it a thousand times'],
+  [21.2,25.6,'只改一个变量：什么时候出手','Changing one variable: when to leap'],
+  [25.8,30.4,'成功率 37.4%，峰值就在这里','37.4% — the peak sits right here'],
+  [31.0,33.2,'不是 50%，不是 100%','Not 50%. Not 100%'],
+  [33.8,38.0,'把所有比例都试一遍','Try every threshold'],
+  [38.2,43.6,'最优解：先看 37% 再出手','The optimum: look at 37%, then leap'],
+  [44.6,48.2,'看房、招聘、找车位','Apartments, hiring, parking'],
+  [48.4,52.0,'都是同一道题的不同皮肤','Same problem, different skin'],
+  [52.8,56.4,'先看 37%，再出手','Look at the first 37%. Then leap'],
+  [56.6,59.4,'剩下的，交给运气','And let luck do the rest']
+];
+function subs(t){
+  for(const [a,b,zh,en] of SUBS){
+    const al=Math.min(seg(t,a,a+.35),1-seg(t,b-.3,b));
+    if(al<=0.01) continue;
+    text(zh,W/2,912,{font:`700 46px ${FS}`,color:C.white,align:'center',alpha:al,shadow:26,sc:'rgba(0,0,0,.85)'});
+    text(en,W/2,956,{font:`italic 400 27px ${FL}`,color:'#9C9CB4',align:'center',alpha:al*.95});
+  }
+}
+function note(t){
+  const N=[[19.6,25.4,'每次选中的人，只能比之前见过的都好'],
+           [25.6,30.2,'先看前 37%，建立"基准线"'],
+           [34.6,38.0,'横轴：看多少比例就停　纵轴：成功率'],
+           [45.0,51.8,'同一个数学结构，换了个场景']];
+  for(const [a,b,s] of N){
+    const al=Math.min(seg(t,a,a+.4),1-seg(t,b-.3,b));
+    if(al<=0.01) continue;
+    text(s,W/2,790,{font:`400 25px ${FS}`,color:C.gray,align:'center',alpha:al*.95});
+    ctx.save(); ctx.globalAlpha=.25*al; ctx.strokeStyle=C.gold; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(W/2,804); ctx.lineTo(W/2,818); ctx.stroke(); ctx.restore();
+  }
+}
+function hud(t){
+  const a=easeOut(seg(t,.5,1.4))*(1-seg(t,58.6,59.4));
+  tracked('@YOURNAME',84,74,3,{color:C.gray,alpha:.75*a});
+  const ch=CHAPTERS.filter(c=>t>=c[0]).pop();
+  tracked(ch[1],W/2,74,2.6,{align:'center',alpha:.9*a});
+  ctx.save(); ctx.globalAlpha=.5*a; ctx.strokeStyle='rgba(201,169,106,.5)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W/2-18,92); ctx.lineTo(W/2+18,92); ctx.stroke(); ctx.restore();
+  const f=Math.floor((t%1)*30),s=Math.floor(t)%60,m=Math.floor(t/60);
+  text(`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}:${String(f).padStart(2,'0')}`,W-84,74,
+    {font:`400 21px ${FM}`,color:C.dim,align:'right',alpha:.85*a});
+}
+
+/* =====================================================================
+   片名卡 / 收束
+   ===================================================================== */
+function titleIn(t){
+  // 标题从左侧滑入（不是淡入）—— 提到 1 秒，让开场两秒一直在动
+  const a=easeOut(seg(t,1.05,2.05));
+  if(a<=0.001||t>8.6) return;
+  const ex=1-seg(t,7.6,8.4);
+  ctx.save();
+  ctx.globalAlpha=a*ex;
+  ctx.translate(lerp(-260,0,a),0);
+  tracked('THE 37% RULE',300,318,6,{font:`500 20px ${FS}`,alpha:.85});
+  text('《37% 法则》',296,430,{font:`900 96px ${FT}`,color:C.gold,shadow:44,sc:'rgba(201,169,106,.4)'});
+  text('什么时候该停止选择',300,494,{font:`400 34px ${FS}`,color:'#CFCFDE'});
+  text('When to stop looking',300,532,{font:`italic 400 24px ${FL}`,color:C.gray,alpha:.95});
+  ctx.restore();
+}
+function outro(t){
+  const a=easeOut(seg(t,52.6,53.6));
+  if(a<=0.001) return;
+  ctx.save(); ctx.globalAlpha=a;
+  // 结论卡
+  const w=980,h=330,x=(W-w)/2,y=H*.26;
+  rr(x,y,w,h,8);
+  ctx.fillStyle='rgba(201,169,106,.06)'; ctx.fill();
+  ctx.strokeStyle='rgba(201,169,106,.35)'; ctx.lineWidth=1.2; ctx.stroke();
+  text('37%',x+w/2,y+150,{font:`400 128px ${FM}`,color:C.gold2,align:'center',shadow:36,sc:'rgba(201,169,106,.5)'});
+  text('先看 37%，再出手',x+w/2,y+220,{font:`700 40px ${FS}`,color:C.white,align:'center'});
+  text('Look at the first 37%. Then leap.',x+w/2,y+262,{font:`italic 400 26px ${FL}`,color:C.gray,align:'center'});
+  text('参考：T. S. Ferguson, “Who Solved the Secretary Problem?”, Statistical Science (1989)',
+    x+w/2,y+306,{font:`400 19px ${FS}`,color:C.dim,align:'center'});
+  ctx.restore();
+  // 署名
+  const b=easeOut(seg(t,56.6,57.4));
+  text('@YOURNAME 出品 · 由代码渲染 · 无实拍素材',W/2,860,{font:`400 20px ${FS}`,color:C.dim,align:'center',alpha:b*.9});
+}
+
+/* =====================================================================
+   主渲染
+   ===================================================================== */
+window.render=function(t){
+  const T=clamp(t,0,window.DUR);
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,W,H);
+
+  const c=cam(T);
+  ctx.save(); applyCam(c); backdrop(T); ctx.restore();
+
+  ctx.save(); applyCam(c);
+  drawCards(T);
+  drawGrid(T);
+  drawCurve(T);
+  drawTags(T);
+  rulePanel(T);
+  scanCursor(T);
+  titleIn(T);
+  outro(T);
+  ctx.restore();
+
+  paramCard(T);
+  hud(T);
+  note(T);
+  subs(T);
+  vignette();
+
+  const fi=1-seg(T,0,.5), fo=seg(T,59.4,60);
+  if(fi>0.001){ ctx.save(); ctx.globalAlpha=fi; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+  if(fo>0.001){ ctx.save(); ctx.globalAlpha=fo; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+};
+window.READY=false;
+(async()=>{ try{ await document.fonts.ready; }catch(e){}
+  window.READY=true;
+  const q=new URLSearchParams(location.search);
+  if(q.has('t')){ window.render(parseFloat(q.get('t'))); return; }
+  const t0=performance.now();
+  const loop=()=>{ window.render(((performance.now()-t0)/1000)%window.DUR); requestAnimationFrame(loop); };
+  loop();
+})();
+</script>
+</body></html>

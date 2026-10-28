@@ -1,0 +1,24 @@
+# ===== 内部工作目录（不上库）=====
+.workbuddy/
+
+# ===== Python =====
+__pycache__/
+*.pyc
+
+# ===== 渲染产物（全部可用管线重新生成，见 README 第五节）=====
+frames/
+stills/
+ft_stills/
+cover_stills/
+shot_stills/
+s60_stills/
+fast_stills/
+line_stills/
+preview/
+*.png
+*.wav
+*.mp4
+
+# ===== QA 报告（每次渲染重新生成）=====
+qa.json
+qa_v2.json

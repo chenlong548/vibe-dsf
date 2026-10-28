@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>快剪样片 · 30s</title>
+<style>html,body{margin:0;background:#05050F;overflow:hidden}canvas{display:block;width:100vw;height:100vh;object-fit:contain}</style>
+</head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script>
+/* =====================================================================
+   快剪样片 30s：验证"中档快剪"三件事
+     1) 单镜 4.5–5.5 秒（旧版 22–43 秒）
+     2) 硬切 5 处，每处 = 3 帧白闪 + 进场过冲 + 前后方向相反
+     3) 每镜一套背景色，切点前 0.3 秒骤停（元素瞬间定住）
+   镜头：点阵 → 卡片 → 网格 → 曲线 → 天平 → 心电图爱心
+   ===================================================================== */
+const W=1920,H=1080; window.DUR=30;
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const C={white:'#EAEAF2',gray:'#8A8AA0',dim:'#556',gold:'#C9A96A',gold2:'#E8C88A',red:'#C2452E'};
+const FS='"Microsoft YaHei","PingFang SC",sans-serif';
+const FT='"Noto Serif SC","Songti SC",SimSun,serif';
+const FL='Georgia,"Times New Roman",serif';
+const FM='Consolas,"Cascadia Mono",monospace';
+
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a),0,1);
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeInOut=x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2;
+const easeOutBack=x=>{const c=2.2;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2);};
+const lerp=(a,b,t)=>a+(b-a)*t;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const R=(()=>{const r=mulberry32(12);const a=[];for(let i=0;i<600;i++)a.push(r());return a;})();
+const stars=(()=>{const r=mulberry32(5),p=[];for(let i=0;i<170;i++)p.push({x:r()*W,y:r()*H,r:.4+r()*1.6,ph:r()*6.28,sp:.4+r()*.9});return p;})();
+const grain=(()=>{const r=mulberry32(3),p=[];for(let i=0;i<700;i++)p.push({x:r()*W,y:r()*H,a:.01+r()*.03,s:1+r()*1.6});return p;})();
+
+function text(str,x,y,{font=`400 40px ${FS}`,color=C.white,align='center',alpha=1,shadow=0,sc='rgba(0,0,0,.85)'}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;ctx.textAlign=align;
+  if(shadow>0){ctx.shadowBlur=shadow;ctx.shadowColor=sc;}
+  ctx.fillText(str,x,y);ctx.restore();
+}
+function tracked(str,x,y,tr,{font=`500 22px ${FS}`,color=C.gold,align='center',alpha=1}={}){
+  ctx.save();ctx.globalAlpha*=alpha;ctx.font=font;ctx.fillStyle=color;
+  const ch=[...str],w=ch.map(c=>ctx.measureText(c).width);
+  const tot=w.reduce((a,b)=>a+b,0)+tr*Math.max(0,ch.length-1);
+  let cx=align==='center'?x-tot/2:align==='right'?x-tot:x;
+  ch.forEach((c,i)=>{ctx.fillText(c,cx,y);cx+=w[i]+tr;});ctx.restore();
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+/* ---------- 转场：白闪 + 骤停 ---------- */
+const CUTS=[5,10.5,15.5,20.5,25.5];
+function cutFlash(t){
+  let a=0;
+  for(const c of CUTS) a=Math.max(a, 1-Math.abs(t-c)/0.10);
+  return clamp(a,0,1);
+}
+function punchAt(t,at,amp=.10,dur=.34){
+  const u=(t-at)/dur; if(u<0||u>1) return 1;
+  return 1+amp*Math.sin(Math.PI*u)*Math.pow(1-u,.4);
+}
+/* 进场：从"与上一镜相反"的方向冲入 */
+function enter(t,t0,dir=1,amp=180){
+  const u=easeOutBack(seg(t,t0,t0+.42));
+  return {dx:(1-u)*amp*dir, sc:.90+.10*u, ap:clamp(u,0,1.4)};
+}
+
+/* ---------- 每镜背景 ---------- */
+const THEMES=[
+  {c1:'#0A0A18',c2:'#05050F',acc:'#8E8EB0'},
+  {c1:'#141026',c2:'#08060F',acc:'#9AA8FF'},
+  {c1:'#0A1418',c2:'#04090B',acc:'#7FE0D0'},
+  {c1:'#181008',c2:'#0A0603',acc:'#E8C88A'},
+  {c1:'#0A1020',c2:'#04060E',acc:'#8FB4E8'},
+  {c1:'#140A10',c2:'#08040A',acc:'#FF6B8A'}
+];
+function themeAt(t){
+  const i=Math.min(THEMES.length-1, Math.max(0, CUTS.filter(c=>t>=c).length));
+  return THEMES[i];
+}
+function backdrop(t,i){
+  const P=THEMES[i];
+  const g=ctx.createRadialGradient(W*.5,H*.42,60,W*.5,H*.5,W*.86);
+  g.addColorStop(0,P.c1); g.addColorStop(.6,P.c2); g.addColorStop(1,'#030308');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  for(const s of stars){
+    ctx.globalAlpha=.10+.24*(.5+.5*Math.sin(t*4*s.sp+s.ph));
+    ctx.fillStyle='#DFDFF0'; ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,6.283); ctx.fill();
+  }
+  ctx.globalAlpha=1;
+  // 每镜专属纹理
+  if(i===0){ const off=(t*40)%70; ctx.globalAlpha=.10; ctx.fillStyle='#8E8EB0';
+    for(let y=-70+off;y<H+70;y+=70) for(let x=30;x<W;x+=70){ ctx.beginPath(); ctx.arc(x,y,1.8,0,6.283); ctx.fill(); }
+    ctx.globalAlpha=1; }
+  if(i===1){ for(let k=0;k<2;k++){ const ph=(t*.35+k*.5)%1, bx=lerp(-400,W+400,ph);
+    const lg=ctx.createLinearGradient(bx-260,0,bx+260,H);
+    lg.addColorStop(0,'rgba(150,170,255,0)'); lg.addColorStop(.5,'rgba(160,180,255,.12)'); lg.addColorStop(1,'rgba(150,170,255,0)');
+    ctx.fillStyle=lg; ctx.fillRect(0,0,W,H); } }
+  if(i===2){ ctx.globalAlpha=.08; ctx.strokeStyle='#7FE0D0'; ctx.lineWidth=1;
+    const off=(t*70)%120;
+    for(let x=-240+off;x<W+240;x+=120){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x-300,H); ctx.stroke(); }
+    ctx.globalAlpha=1; }
+  if(i===3){ ctx.globalAlpha=.10; ctx.strokeStyle='#E8C88A'; ctx.lineWidth=1;
+    const cx=W/2,cy=H*.45;
+    for(let k=0;k<4;k++){ const r=((t*90+k*180)%720); ctx.beginPath(); ctx.arc(cx,cy,r,0,6.283); ctx.stroke(); }
+    ctx.globalAlpha=1; }
+  if(i===4){ ctx.globalAlpha=.07; ctx.strokeStyle='#8FB4E8'; ctx.lineWidth=1;
+    for(let k=0;k<5;k++){ const r=((t*70+k*160)%800); ctx.beginPath(); ctx.arc(W*.5,H*.45,r,0,6.283); ctx.stroke(); }
+    ctx.globalAlpha=1; }
+  if(i===5){ const br=.10+.06*Math.sin(t*3);
+    const rg=ctx.createRadialGradient(W*.5,H*.42,40,W*.5,H*.42,720);
+    rg.addColorStop(0,`rgba(255,120,160,${br})`); rg.addColorStop(1,'rgba(255,120,160,0)');
+    ctx.fillStyle=rg; ctx.fillRect(0,0,W,H); }
+  for(const p of grain){ ctx.globalAlpha=p.a; ctx.fillStyle='#fff'; ctx.fillRect(p.x,p.y,p.s,p.s); }
+  ctx.globalAlpha=1;
+}
+
+/* ================= 镜头 1：点阵 + 2.7% ================= */
+function shotDots(t,p){
+  const e=enter(t,0,1,220);
+  ctx.save(); ctx.globalAlpha=e.ap*.98;
+  ctx.translate(e.dx,0);
+  const cols=36, rows=14, ox=200, oy=300, gw=W-400, gh=H*.42;
+  const dx=gw/(cols-1), dy=gh/(rows-1);
+  const lit=Math.min(1,p*1.9);
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+    const i=r*cols+c;
+    const on=R[i%600]<lit*0.55;
+    const br=1+.3*Math.sin(t*9+i*0.3);
+    ctx.globalAlpha=e.ap*(on?0.95:0.28);
+    ctx.fillStyle=on?C.gold2:'#7E7E9A';
+    ctx.beginPath(); ctx.arc(ox+c*dx, oy+r*dy, (on?4.4:2.2)*br, 0, 6.283); ctx.fill();
+  }
+  ctx.globalAlpha=e.ap;
+  const pk=punchAt(p,.62,.18,.4);
+  ctx.save(); ctx.translate(W/2,H*.72); ctx.scale(pk,pk); ctx.translate(-W/2,-H*.72);
+  text('2.7%',W/2,H*.72,{font:`400 176px ${FM}`,color:'#F5E4BE',alpha:seg(p,.30,.44),shadow:60,sc:'rgba(201,169,106,.6)'});
+  ctx.restore();
+  text('遇见一个人的概率',W/2,H*.72+58,{font:`400 28px ${FS}`,color:C.gray,alpha:seg(p,.42,.56)});
+  ctx.restore();
+}
+
+/* ================= 镜头 2：卡片 + 挑选光标 ================= */
+function shotCards(t,p){
+  const e=enter(t,5,-1,200);
+  ctx.save(); ctx.globalAlpha=e.ap; ctx.translate(e.dx,0);
+  const N=9, CW=132, CH=176, GAPS=[12,46,10,58,16,38,8,44];
+  const total=N*CW+GAPS.reduce((a,b)=>a+b,0);
+  let x=(W-total)/2;
+  for(let i=0;i<N;i++){
+    const ap=easeOutBack(seg(t,5.05+i*.05,5.45+i*.05));
+    if(ap>.01){
+      const hl=i===2;
+      const cy=H*.56+(i%2?-14:12)+Math.sin(t*2.2+i*1.6)*4;
+      ctx.save(); ctx.globalAlpha=e.ap*clamp(ap,0,1.2);
+      ctx.translate(x+CW/2+(1-ap)*380, cy); ctx.rotate(((i%2?1.8:-1.6))*Math.PI/180);
+      if(hl){ctx.shadowBlur=34;ctx.shadowColor='rgba(201,169,106,.8)';}
+      rr(-CW/2,-CH/2,CW,CH,6);
+      ctx.fillStyle=hl?'rgba(201,169,106,.15)':'rgba(255,255,255,.05)'; ctx.fill();
+      ctx.shadowBlur=0; ctx.strokeStyle=hl?C.gold:'rgba(255,255,255,.16)'; ctx.lineWidth=hl?2.4:1.1; ctx.stroke();
+      text(String(i+1).padStart(2,'0'),0,16,{font:`400 40px ${FM}`,color:hl?C.gold:'#6E6E85',alpha:1});
+      ctx.restore();
+    }
+    x+=CW+GAPS[i];
+  }
+  // 光标横扫
+  const u=easeInOut(seg(t,5.5,9.6));
+  const sx=lerp(320,1600,u);
+  ctx.save(); ctx.globalAlpha=e.ap*.9;
+  const g=ctx.createLinearGradient(sx-46,0,sx+46,0);
+  g.addColorStop(0,'rgba(201,169,106,0)'); g.addColorStop(.5,'rgba(232,200,138,.35)'); g.addColorStop(1,'rgba(201,169,106,0)');
+  ctx.fillStyle=g; ctx.fillRect(sx-46,H*.40,92,360);
+  ctx.strokeStyle='rgba(245,228,190,.9)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(sx,H*.42); ctx.lineTo(sx,H*.42+310); ctx.stroke();
+  ctx.restore();
+  text('见完不能回头',W/2,H*.82,{font:`700 44px ${FS}`,alpha:e.ap*seg(p,.25,.4),shadow:22});
+  ctx.restore();
+}
+
+/* ================= 镜头 3：网格 + 参数卡 ================= */
+function shotGrid(t,p){
+  const e=enter(t,10.5,1,200);
+  ctx.save(); ctx.globalAlpha=e.ap; ctx.translate(e.dx,0);
+  const GC=12, GR=6, cw=94, chh=56, gx=16, gy=14;
+  const ox=230, oy=H*.20;
+  for(let r=0;r<GR;r++)for(let c=0;c<GC;c++){
+    const i=r*GC+c;
+    const on=R[(i*7)%600]<p*1.15;
+    const fl=.55+.45*Math.sin(t*7+i*.7);
+    const x=ox+c*(cw+gx), y=oy+r*(chh+gy);
+    rr(x,y,cw,chh,5);
+    ctx.fillStyle=on?`rgba(201,169,106,${.12+.20*fl})`:'rgba(255,255,255,.035)'; ctx.fill();
+    ctx.strokeStyle=on?`rgba(201,169,106,${.40+.35*fl})`:'rgba(255,255,255,.10)'; ctx.lineWidth=1; ctx.stroke();
+  }
+  // 参数卡
+  const x=1500,y=250,w=330,h=210;
+  rr(x,y,w,h,6); ctx.fillStyle='rgba(201,169,106,.06)'; ctx.fill();
+  ctx.strokeStyle='rgba(201,169,106,.32)'; ctx.lineWidth=1; ctx.stroke();
+  text('模拟参数',x+22,y+38,{font:`400 20px ${FS}`,color:C.gray,align:'left'});
+  text(Math.round(lerp(0,1000,p)).toLocaleString(),x+22,y+92,{font:`400 46px ${FM}`,color:C.white,align:'left'});
+  text(lerp(0,37.4,p).toFixed(1)+'%',x+w-22,y+92,{font:`400 46px ${FM}`,color:C.gold2,align:'right'});
+  text('成功率',x+w-22,y+122,{font:`400 19px ${FS}`,color:C.dim,align:'right'});
+  text('一千次模拟',W/2,H*.82,{font:`700 44px ${FS}`,alpha:e.ap*seg(p,.3,.45),shadow:22});
+  ctx.restore();
+}
+
+/* ================= 镜头 4：曲线 → 37% ================= */
+function rate(x){ const d=(x-.37)/.26; return Math.exp(-d*d)*.374+.03*Math.sin(x*9)*Math.exp(-x*2); }
+function shotCurve(t,p){
+  const e=enter(t,15.5,-1,200);
+  ctx.save(); ctx.globalAlpha=e.ap; ctx.translate(e.dx,0);
+  const x0=380,x1=1520,yb=700,yt=360;
+  ctx.strokeStyle='rgba(255,255,255,.20)'; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(x0,yb); ctx.lineTo(x1,yb); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x0,yb); ctx.lineTo(x0,yt); ctx.stroke();
+  const grow=easeInOut(seg(t,15.6,18.4));
+  ctx.save(); ctx.shadowBlur=26; ctx.shadowColor='rgba(201,169,106,.65)';
+  ctx.strokeStyle=C.gold; ctx.lineWidth=3.4; ctx.beginPath();
+  for(let i=0;i<=300*grow;i++){ const x=i/300, px=lerp(x0,x1,x), py=yb-(yb-yt)*rate(x)/.42;
+    i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+  ctx.stroke(); ctx.restore();
+  const px=lerp(x0,x1,.37), py=yb-(yb-yt)*rate(.37)/.42;
+  const pa=seg(p,.55,.7);
+  if(pa>.01){
+    ctx.save(); ctx.globalAlpha=e.ap*pa;
+    ctx.setLineDash([4,7]); ctx.strokeStyle='rgba(201,169,106,.55)'; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,yb); ctx.stroke(); ctx.setLineDash([]);
+    ctx.shadowBlur=30; ctx.fillStyle='#F5E4BE';
+    ctx.beginPath(); ctx.arc(px,py,9*(1+.18*Math.sin(t*8)),0,6.283); ctx.fill();
+    ctx.restore();
+    const pk=punchAt(p,.62,.18,.4);
+    ctx.save(); ctx.translate(px,py-46); ctx.scale(pk,pk); ctx.translate(-px,-(py-46));
+    text('37%',px,py-46,{font:`400 84px ${FM}`,color:C.gold2,alpha:e.ap*pa,shadow:26,sc:'rgba(201,169,106,.6)'});
+    ctx.restore();
+  }
+  text('先看 37%，再出手',W/2,H*.84,{font:`700 44px ${FS}`,alpha:e.ap*seg(p,.5,.65),shadow:22});
+  ctx.restore();
+}
+
+/* ================= 镜头 5：天平 5:1 ================= */
+function shotScale(t,p){
+  const e=enter(t,20.5,1,200);
+  ctx.save(); ctx.globalAlpha=e.ap; ctx.translate(e.dx,0);
+  const cx=W*.5, cy=H*.40, arm=520;
+  ctx.strokeStyle='rgba(255,255,255,.22)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(cx,cy+210); ctx.lineTo(cx,cy); ctx.stroke();
+  ctx.save(); ctx.translate(cx,cy);
+  ctx.strokeStyle='rgba(232,200,138,.9)'; ctx.lineWidth=3.6;
+  ctx.beginPath(); ctx.moveTo(-arm,0); ctx.lineTo(arm,0); ctx.stroke();
+  [-arm,arm].forEach(x=>{ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,34); ctx.stroke(); });
+  ctx.restore();
+  const bars=[[cx-arm,1,'rgba(232,200,138,.85)','善意'],[cx+arm,1/5,'rgba(194,69,46,.8)','伤害']];
+  bars.forEach(([bx,v,col,lab])=>{
+    const hgt=Math.min(180,26*v*5)*(0.6+0.4*p);
+    ctx.fillStyle=col; rr(bx-46,cy+64-hgt,92,hgt,4); ctx.fill();
+    text(lab,bx,cy+100,{font:`400 22px ${FS}`,color:C.gray});
+  });
+  const pk=punchAt(p,.55,.18,.4);
+  ctx.save(); ctx.translate(cx,cy-130); ctx.scale(pk,pk); ctx.translate(-cx,-(cy-130));
+  text('5 : 1',cx,cy-130,{font:`400 116px ${FM}`,color:C.gold2,alpha:e.ap*seg(p,.25,.4),shadow:44,sc:'rgba(201,169,106,.55)'});
+  ctx.restore();
+  text('善意 : 伤害',cx,cy-76,{font:`400 24px ${FS}`,color:C.gray,alpha:e.ap*seg(p,.3,.45)});
+  ctx.restore();
+}
+
+/* ================= 镜头 6：心电图 → 爱心 ================= */
+const NP=380, ECG=[], HEART=[];
+function ecgPoint(u){
+  const x=lerp(-1,1,u), ph=(u*2)%1; let y=0;
+  if(ph<0.10) y=.06*Math.sin(ph/.10*Math.PI);
+  else if(ph<0.16) y=0;
+  else if(ph<0.19) y=-.18*Math.sin((ph-.16)/.03*Math.PI/2);
+  else if(ph<0.24) y=1.0*Math.sin((ph-.19)/.05*Math.PI)-.18;
+  else if(ph<0.30) y=-.35*Math.sin((ph-.24)/.06*Math.PI);
+  else if(ph<0.42) y=.12*Math.sin((ph-.30)/.12*Math.PI);
+  return {x, y:-y*.62};
+}
+function heartPoint(u){
+  const a=u*Math.PI*2;
+  const hx=16*Math.pow(Math.sin(a),3);
+  const hy=13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a);
+  return {x:hx/17,y:-hy/17};
+}
+for(let i=0;i<=NP;i++){ ECG.push(ecgPoint(i/NP)); HEART.push(heartPoint(i/NP)); }
+
+function shotHeart(t,p){
+  const e=enter(t,25.5,-1,180);
+  const drawP=seg(p,0,.30);                    // 心电图扫描
+  const m1=easeInOut(seg(p,.30,.56));          // 心电图收拢淡出
+  const m2=easeInOut(seg(p,.34,.80));          // 爱心逐段画出
+  const beat=Math.max(0,Math.sin(Math.PI*clamp(seg(p,.80,.90),0,1)));
+  const turn=easeInOut(seg(p,.86,1));
+  const SX=W*.30, SY=H*.30;
+  const squash=1-.14*Math.sin(Math.PI*turn);
+  const scale=(1+.05*beat)*.94;
+  const depth=10+18*m2;
+
+  // 心电图（收拢 + 淡出）
+  if(m1<0.99){
+    const n=Math.max(2,Math.floor(NP*drawP));
+    const ptsE=[]; for(let i=0;i<n;i++) ptsE.push(ECG[i]);
+    ctx.save(); ctx.globalAlpha=e.ap*(1-m1);
+    ctx.translate(W*.5+(0), H*.40);
+    const sc=(1-.12*m1)*scale;
+    ctx.scale(sc*squash,sc);
+    // 厚度 + 主线
+    ctx.beginPath();
+    ptsE.forEach((q,i)=>{ const x=q.x*SX,y=q.y*SY; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle='#FF5C86'; ctx.lineWidth=3.2; ctx.lineJoin='round';
+    ctx.shadowBlur=36+70*beat; ctx.shadowColor='rgba(255,90,130,.85)';
+    ctx.stroke(); ctx.restore();
+  }
+
+  // 爱心（逐段画出 + 伪立体）
+  if(m2>0.01){
+    const n=Math.max(2,Math.floor(NP*m2));
+    const ptsH=[]; for(let i=0;i<n;i++) ptsH.push(HEART[i]);
+    ctx.save(); ctx.globalAlpha=e.ap*clamp(m2*1.3,0,1);
+    ctx.translate(W*.5, H*.40); ctx.rotate(-.04*Math.sin(Math.PI*turn)); ctx.scale(scale*squash,scale);
+    for(let L=8;L>=1;L--){
+      const k=L/8, ddx=-k*depth*.62, ddy=k*depth;
+      ctx.beginPath();
+      ptsH.forEach((q,i)=>{ const x=q.x*SX+ddx,y=q.y*SY+ddy; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+      ctx.strokeStyle=`rgba(${Math.round(90+50*(1-k))},${Math.round(14+18*(1-k))},${Math.round(38+20*(1-k))},${.55*(1-k)+.2})`;
+      ctx.lineWidth=3.2; ctx.lineJoin='round'; ctx.stroke();
+    }
+    const lg=ctx.createLinearGradient(0,-SY,0,SY);
+    lg.addColorStop(0,'#FFB3C8'); lg.addColorStop(.45,'#FF5C86'); lg.addColorStop(1,'#C32B54');
+    ctx.beginPath();
+    ptsH.forEach((q,i)=>{ const x=q.x*SX,y=q.y*SY; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.shadowBlur=36+70*beat; ctx.shadowColor='rgba(255,90,130,.85)';
+    ctx.strokeStyle=lg; ctx.lineWidth=3.2; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.stroke();
+    ctx.restore();
+  }
+
+  if(beat>.02){ ctx.save(); ctx.globalAlpha=beat*.20*e.ap; ctx.fillStyle='#FFD9E4'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+  // 不再画镜头内标题：全局字幕已有一模一样的一句，两条会叠在一起
+}
+
+/* ---------- 主渲染 ---------- */
+const SHOTS=[[0,5,shotDots],[5,10.5,shotCards],[10.5,15.5,shotGrid],[15.5,20.5,shotCurve],[20.5,25.5,shotScale],[25.5,30,shotHeart]];
+window.render=function(t){
+  const T=clamp(t,0,window.DUR);
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,W,H);
+  const i=Math.min(SHOTS.length-1, SHOTS.findIndex(s=>T>=s[0]&&T<s[1])>>>0);
+  const idx=(()=>{ for(let k=0;k<SHOTS.length;k++) if(T>=SHOTS[k][0]&&T<SHOTS[k][1]) return k; return SHOTS.length-1; })();
+  backdrop(T,idx);
+  const [t0,t1,fn]=SHOTS[idx];
+  const p=(T-t0)/(t1-t0);
+  fn(T,p);
+  // 切点前 0.3 秒"骤停"：整体压暗 + 冻结感
+  let freeze=0;
+  for(const c of CUTS) if(T>c-.3&&T<c) freeze=Math.max(freeze,(T-(c-.3))/.3);
+  if(freeze>0){ ctx.save(); ctx.globalAlpha=freeze*.35; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+  // HUD
+  tracked('@YOURNAME',84,74,3,{align:'left',alpha:.7,color:C.gray,font:`500 21px ${FS}`});
+  tracked('快剪样片 · 30 秒',W/2,74,2.6,{alpha:.85});
+  // 字幕（永远最上层）
+  const SUBS=[[1.0,4.3,'遇见一个人的概率，是 2.7%'],[5.3,9.6,'见完不能回头，选中就结束'],
+              [10.8,14.8,'一千次模拟，只改一个变量'],[15.8,20.2,'答案是 37%'],
+              [20.8,25.2,'稳定关系里，善意 : 伤害 ≈ 5 : 1'],[25.8,29.4,'心动一次，0.8 秒']];
+  for(const [a,b,s] of SUBS){
+    const al=Math.min(seg(T,a,a+.25),1-seg(T,b-.2,b));
+    if(al>.01) text(s,W/2,930,{font:`700 48px ${FS}`,alpha:al,shadow:26});
+  }
+  // 暗角
+  const v=ctx.createRadialGradient(W/2,H/2,H*.34,W/2,H/2,H*1.02);
+  v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.66)');
+  ctx.fillStyle=v; ctx.fillRect(0,0,W,H);
+  // 白闪（最上）
+  const fl=cutFlash(T);
+  if(fl>.01){ ctx.save(); ctx.globalAlpha=fl*.55; ctx.fillStyle='#FFF6E2'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+  const fo=seg(T,29.4,30);
+  if(fo>0){ ctx.save(); ctx.globalAlpha=fo; ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H); ctx.restore(); }
+};
+window.READY=false;
+(async()=>{ try{ await document.fonts.ready; }catch(e){}
+  window.READY=true;
+  const q=new URLSearchParams(location.search);
+  if(q.has('t')){ window.render(parseFloat(q.get('t'))); return; }
+  const t0=performance.now();
+  const loop=()=>{ window.render(((performance.now()-t0)/1000)%window.DUR); requestAnimationFrame(loop); };
+  loop();
+})();
+</script>
+</body></html>
