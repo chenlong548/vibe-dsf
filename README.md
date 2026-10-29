@@ -74,15 +74,20 @@ vibe-dsf/
 │   ├── nocturne.md              ✅ 已出帧（物理/数学/算法）
 │   ├── romance.md               ✅ 已出帧（爱情/亲情/怀念）
 │   └── fable.md                 ⬜ 仅竖屏版，横屏待改（心理/行为）
-├── pipeline/                   模型无关的四件套（已实测）
-│   ├── render_frames.mjs        逐帧抓图（并行 / 只重渲某段）
-│   ├── qa_check.py              像素级验收
+├── pipeline/                   模型无关的五件套（已实测）
+│   ├── render_frames.mjs        逐帧抓图（CDP 快模式 0.13s/帧 / 只重渲某段）
+│   ├── qa_check.py              像素级验收 v2（11 指标，avg≥8 硬门禁）
 │   ├── synth_bgm.py             确定性 BGM（ambient 纪录片 / vibe 电子两种风格）
 │   ├── wave_png.py              把 wav 画成波形图（agent 听不见，只能看图验）
 │   ├── build.ps1 / build.sh     ffmpeg 合成（−14 LUFS）
+│   ├── run_all.ps1              一键流水线：渲染→QA 闸→BGM→合成
+│   ├── scene_writer/            ★ 场景规划自动化：PROMPT 任务书 + validate_plan 硬闸 + build_html 组装
+│   ├── blocks/                  ★ 场景积木库（过 QA 才入库）：entropy-burst / data-chart / beat-counter / vs-counters
 │   └── requirements.txt
 ├── projects/
 │   ├── demo-26s/               ★ 已出片样片（纸金风，26 秒 1080p30）
+│   ├── demo-hook-entropy/      ★ 熵增 8s 钩子（四层构图验证片，QA 8.5）
+│   ├── demo-hook-compound/     ★ 复利 9.5s 钩子（首条 SCENE-WRITER 全自动片，QA 9.1）
 │   ├── nocturne-demo/          深空理性验证帧（8 秒）
 │   └── ab-test/                A/B 对照实验（同镜头两种写法）
 └── scripts/
@@ -170,7 +175,12 @@ node ..\..\pipeline\render_frames.mjs --start 41 --end 47
 
 ## 七、下一步
 
-生态已就绪，等你给三样东西开工：**领域 / 观众要记住的一句话 / 选哪套画风**（纸金 或 深空理性 —— 只做横屏 1920×1080，画幅不用选）。
+**最快出片路径（SCENE-WRITER，2026-10-29 起）**：给一句话主题 + 时长，走
+`docs/12-SCENE-WRITER.md` 的四步链路——规划、校验、组装、渲染全部自动，
+成片不过 QA 门禁不放行。人工只做两件事：给主题、看成片。
+
+整片定制（7 步全流程）依旧可用：**领域 / 观众要记住的一句话 / 选哪套画风**
+（纸金 或 深空理性 —— 只做横屏 1920×1080，画幅不用选）。
 
 我会按 7 步走，每步停下来给你确认；每条片跑完把 **token 账** 打在最后，让你看清钱花在哪。
 

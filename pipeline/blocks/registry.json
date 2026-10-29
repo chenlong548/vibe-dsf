@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "note": "blocks 注册表。过 QA（avg>=8）的积木才能入库；params 语义见各 lib/*.js 头注释。",
+  "blocks": [
+    {
+      "name": "entropy-burst",
+      "use": "粒子爆发/能量释放，钩子爆点主力",
+      "segments": ["hook", "turn"],
+      "params": {
+        "cx": "0.40-0.46 或 0.54-0.60（禁 0.5）",
+        "cy": "0.30-0.55",
+        "area_pct": "0.14-0.18",
+        "seed": "int，确定性种子",
+        "count": "粒子数，默认 260",
+        "t_birth": "[a,b] 光点亮起窗口",
+        "t_burst": "起爆时刻",
+        "r_max": "最大扩散半径 px",
+        "squash": "纵向压扁比，默认 0.78"
+      },
+      "qa": "8.5/10 @ demo-hook-entropy（2026-10-27）"
+    },
+    {
+      "name": "data-chart",
+      "use": "双曲线分叉对比（增长/趋势叙事），自带生长式坐标轴（l1 可省）",
+      "segments": ["hook", "anchor", "reason"],
+      "params": {
+        "cx": "0.40-0.46 或 0.54-0.60",
+        "cy": "0.38-0.55",
+        "w": "图宽 px，默认 980",
+        "h": "图高 px，默认 560",
+        "area_pct": "0.14-0.18",
+        "t_axes": "[a,b] 轴生长窗口",
+        "t_grow": "[a,b] 曲线生长窗口",
+        "series": "[{kind:'flat'|'exp', color:'ink'|'gray'|'accent', width>=2, level, k, label, label_font}]"
+      },
+      "qa": "9.1/10 @ demo-hook-compound（2026-10-29）"
+    },
+    {
+      "name": "beat-counter",
+      "use": "大数字滚动 + 公式框（数字锚点/机制推演）",
+      "segments": ["anchor", "reason"],
+      "params": {
+        "cx": "0.40-0.46 或 0.54-0.60",
+        "cy": "0.34-0.50",
+        "area_pct": "0.14-0.17",
+        "font_px": "160-220",
+        "to": "目标数字",
+        "decimals": "小数位",
+        "prefix": "前缀如 ×",
+        "suffix": "后缀",
+        "expr": "公式文本，如 1.01^365",
+        "t_count": "[a,b] 计数窗口",
+        "t_expr": "[a,b] 公式显影窗口"
+      },
+      "qa": "9.1/10 @ demo-hook-compound（2026-10-29）"
+    },
+    {
+      "name": "vs-counters",
+      "use": "左右双数字对撞（双结局/反转落点），右侧染强调色",
+      "segments": ["turn", "land"],
+      "params": {
+        "font_px": "120-180",
+        "cy": "0.34-0.50",
+        "area_pct": "0.15-0.18",
+        "t_count": "[a,b] 计数窗口",
+        "left": "{cx, cy, to, decimals, label, expr, t_label}",
+        "right": "同 left（cx 默认 0.69，染强调色）"
+      },
+      "qa": "9.1/10 @ demo-hook-compound（2026-10-29）"
+    }
+  ]
+}

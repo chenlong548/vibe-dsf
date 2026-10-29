@@ -1,0 +1,97 @@
+{
+  "version": "1.0",
+  "meta": {
+    "topic": "复利效应",
+    "hook_title": "复利 · COMPOUND",
+    "duration": 9.5238,
+    "fps": 30,
+    "bpm": 126,
+    "style": "deep-space",
+    "pattern": "dots",
+    "drift_period": 8,
+    "palette": {
+      "bg_in": "#141026",
+      "bg_out": "#05050F",
+      "accent": "#E8A87C",
+      "ink": "#EAEAF2",
+      "gray": "#8A8AA0"
+    },
+    "watermark": "@VIBE·DSF"
+  },
+  "scenes": [
+    {
+      "id": "S1",
+      "segment": "hook",
+      "t_in": 0.0,
+      "t_out": 3.81,
+      "l1": { "kind": "grid", "stroke": 2, "grow": [0.1, 0.95] },
+      "l2": {
+        "block": "data-chart",
+        "params": {
+          "cx": 0.42, "cy": 0.46, "w": 1060, "h": 600, "area_pct": 0.17,
+          "t_axes": [0.05, 0.7], "t_grow": [0.35, 2.9],
+          "series": [
+            { "kind": "flat", "color": "gray", "width": 3, "level": 0.12, "label": "×3.0", "label_font": 30 },
+            { "kind": "exp", "color": "accent", "width": 5, "k": 6, "label": "?", "label_font": 48 }
+          ]
+        }
+      },
+      "l3": [
+        { "text": "单利 vs 复利", "x": 0.30, "y": 0.155, "font": 21, "align": "center", "t_in": 1.3 },
+        { "text": "365 天 · 指数坐标", "x": 0.845, "y": 0.63, "font": 20, "align": "right", "mono": true, "t_in": 1.9 }
+      ],
+      "beats": [1.905, 3.333],
+      "sfx": [ { "t": 3.333, "name": "riser" } ]
+    },
+    {
+      "id": "S2",
+      "segment": "anchor",
+      "t_in": 3.81,
+      "t_out": 7.143,
+      "l1": { "kind": "rings", "stroke": 2, "grow": [3.95, 5.0] },
+      "l2": {
+        "block": "beat-counter",
+        "params": {
+          "cx": 0.42, "cy": 0.42, "font_px": 200, "area_pct": 0.15,
+          "to": 37.8, "decimals": 1, "prefix": "×",
+          "expr": "1.01^365 = 37.8",
+          "t_count": [4.286, 6.19], "t_expr": [4.5, 5.3]
+        },
+        "glow_window": [4.286, 6.59]
+      },
+      "l3": [
+        { "text": "每天进步 1%", "x": 0.30, "y": 0.24, "font": 22, "align": "center", "t_in": 4.1 },
+        { "text": "一年 = 365 个复利周期", "x": 0.42, "y": 0.70, "font": 20, "align": "center", "t_in": 4.6 }
+      ],
+      "beats": [4.286, 6.19],
+      "sfx": [ { "t": 3.81, "name": "impact-low" } ]
+    },
+    {
+      "id": "S3",
+      "segment": "land",
+      "t_in": 7.143,
+      "t_out": 9.5238,
+      "l2": {
+        "block": "vs-counters",
+        "params": {
+          "font_px": 160, "cy": 0.40, "area_pct": 0.17,
+          "t_count": [7.619, 8.571],
+          "left": { "cx": 0.315, "to": 0.03, "decimals": 2, "label": "每天退步 1%", "expr": "0.99^365" },
+          "right": { "cx": 0.575, "to": 37.8, "decimals": 1, "prefix": "×", "label": "每天进步 1%", "expr": "1.01^365" }
+        },
+        "glow_window": [7.619, 8.971]
+      },
+      "l3": [
+        { "text": "同一年的时间差", "x": 0.5, "y": 0.20, "font": 22, "align": "center", "t_in": 7.4 },
+        { "text": "1% · EVERY DAY", "x": 0.09, "y": 0.155, "font": 20, "align": "left", "mono": true, "track": 3, "t_in": 7.8 }
+      ],
+      "beats": [7.619, 8.571],
+      "sfx": [ { "t": 7.143, "name": "impact-low" }, { "t": 8.571, "name": "tick" } ]
+    }
+  ],
+  "subtitles": [
+    { "zh": "每天进步 1%，一年后会怎样？", "en": "Improve 1% a day — what about a year?", "t_in": 0.62, "t_out": 3.60, "punch": false },
+    { "zh": "1.01 的 365 次方，是 37.8 倍。", "en": "1.01^365 = 37.8 times.", "t_in": 4.286, "t_out": 6.90, "punch": false },
+    { "zh": "复利不是魔法，是时间的形状。", "en": "Compounding isn't magic — it's the shape of time.", "t_in": 7.40, "t_out": 9.30, "punch": true }
+  ]
+}
