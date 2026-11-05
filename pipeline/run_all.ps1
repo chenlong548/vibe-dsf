@@ -1,5 +1,5 @@
 ﻿# =====================================================================
-# run_all.ps1 —— 一键流水线：渲染 → QA 闸门 → BGM → 合成 → 报告
+# run_all.ps1 —— 一键流水线：渲染 → QA 闸门 → BGM → 旁白 → 混音 → 合成 → 报告
 #
 #   解决的问题：以前 5 条命令人肉跑、闸门靠自觉。
 #   film-love-math 7.14 分（低于 8 分线）照样出了片——这条流水线会让它停在 QA。
@@ -7,16 +7,17 @@
 # 用法（在项目目录里跑，或用 -Project 指定）：
 #   powershell -File ..\..\pipeline\run_all.ps1 -Duration 26                 # 全片
 #   powershell -File ..\..\pipeline\run_all.ps1 -Start 12 -End 18            # 只重渲一段
-#   powershell -File ..\..\pipeline\run_all.ps1 -Duration 184 -BgmStyle vibe -Bpm 96
-#   powershell -File ..\..\pipeline\run_all.ps1 -SkipRender                  # 只做 QA+BGM+合成
+#   powershell -File ..\..\pipeline\run_all.ps1 -Duration 11.43 -BgmStyle vibe -Bpm 126   # SCENE-PLAN 带 narration 时自动加旁白
+#   powershell -File ..\..\pipeline\run_all.ps1 -SkipRender                  # 只做 QA+BGM+旁白+合成
 #   powershell -File ..\..\pipeline\run_all.ps1 -NoGate                      # QA 只出报告不拦截
 #
-# 退出码：0 成功 / 1 渲染失败 / 2 QA 闸门拦截 / 3 BGM 或合成失败
+# 退出码：0 成功 / 1 渲染失败 / 2 QA 闸门拦截 / 3 BGM 或合成失败 / 4 旁白或混音失败
 # =====================================================================
 param(
   [string]$Project  = ".",
   [string]$Html     = "index.html",
   [string]$Frames   = "frames",
+  [string]$Plan     = "SCENE-PLAN.json",   # 存在且带 narration 数组时启用旁白阶段
   [double]$Duration = 0,
   [double]$Start    = -1,
   [double]$End      = -1,
@@ -24,6 +25,9 @@ param(
   [double]$Bpm      = 0,              # 0 = 用 synth_bgm 的风格默认值
   [string]$BgmStyle = "ambient",      # ambient（纪录片 77）| vibe（电子 96）
   [string]$Bgm      = "bgm.wav",
+  [string]$NarrOut  = "narration.wav",
+  [string]$MixOut   = "final_audio.wav",
+  [string]$VoiceRate = "+15%",        # TTS 全局语速（plan 单句可覆盖）
   [string]$Out      = "final.mp4",
   [switch]$SkipRender,
   [switch]$SkipBgm,
@@ -90,7 +94,7 @@ $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
 # ---------- 1. 渲染 ----------
 if (-not $SkipRender) {
-  Write-Host "`n[1/4] 渲染帧…" -ForegroundColor Cyan
+  Write-Host "`n[1/5] 渲染帧…" -ForegroundColor Cyan
   Push-Location $project
   try {
     $renderArgs = @("$pipeline\render_frames.mjs", "--html", $Html, "--out", $Frames, "--fps", "$Fps")
@@ -101,7 +105,7 @@ if (-not $SkipRender) {
     if ($LASTEXITCODE -ne 0) { Write-Host "[X]渲染失败" -ForegroundColor Red; exit 1 }
   } finally { Pop-Location }
 } else {
-  Write-Host "`n[1/4] 跳过渲染（-SkipRender）"
+  Write-Host "`n[1/5] 跳过渲染（-SkipRender）"
 }
 
 if (-not (Test-Path $framesDir)) { Write-Host "[X]帧目录不存在：$framesDir" -ForegroundColor Red; exit 1 }
@@ -111,7 +115,7 @@ $seconds = [math]::Round($frameCount / $Fps, 2)
 Write-Host "    帧数 $frameCount（$seconds 秒 @ ${Fps}fps）"
 
 # ---------- 2. QA 闸门 ----------
-Write-Host "`n[2/4] QA 验收（11 项）…" -ForegroundColor Cyan
+Write-Host "`n[2/5] QA 验收（11 项）…" -ForegroundColor Cyan
 Push-Location $project
 try {
   $qaArgs = @("$pipeline\qa_check.py", $Frames, "--fps", "$Fps", "--json", "qa.json")
@@ -128,7 +132,7 @@ if ($qaCode -ne 0) {
 # ---------- 3. BGM ----------
 $bgmPath = Join-Path $project $Bgm
 if (-not $SkipBgm) {
-  Write-Host "`n[3/4] 合成 BGM（style=$BgmStyle）…" -ForegroundColor Cyan
+  Write-Host "`n[3/5] 合成 BGM（style=$BgmStyle）…" -ForegroundColor Cyan
   Push-Location $project
   try {
     $bgmArgs = @("$pipeline\synth_bgm.py", $Bgm, "--style", $BgmStyle, "--duration", "$seconds")
@@ -137,13 +141,38 @@ if (-not $SkipBgm) {
     if ($LASTEXITCODE -ne 0) { Write-Host "[X]BGM 合成失败" -ForegroundColor Red; exit 3 }
   } finally { Pop-Location }
 } else {
-  Write-Host "`n[3/4] 跳过 BGM（-SkipBgm）"
+  Write-Host "`n[3/5] 跳过 BGM（-SkipBgm）"
 }
 
-# ---------- 4. 合成 ----------
-Write-Host "`n[4/4] ffmpeg 合成…" -ForegroundColor Cyan
+# ---------- 4. 旁白（SCENE-PLAN 带 narration 时）+ 闪避混音 ----------
+$narrPath = Join-Path $project $NarrOut
+$mixPath  = Join-Path $project $MixOut
+$planPath = Join-Path $project $Plan
+$hasNarr = $false
+if (Test-Path $planPath) {
+  $probe = & $python -c "import json,sys; d=json.load(open(sys.argv[1],encoding='utf-8')); print('yes' if d.get('narration') else 'no')" $planPath 2>$null
+  if ("$probe".Trim() -eq "yes") { $hasNarr = $true }
+}
+if ($hasNarr) {
+  Write-Host "`n[4/5] 旁白合成 + 闪避混音…" -ForegroundColor Cyan
+  Push-Location $project
+  try {
+    & $python "$pipeline\narrate\build_narration.py" $Plan --out $NarrOut --rate $VoiceRate
+    if ($LASTEXITCODE -ne 0) { Write-Host "[X]旁白合成失败" -ForegroundColor Red; exit 4 }
+    $mixArgs = @("$pipeline\narrate\mix_audio.py", "--narration", $NarrOut, "--duration", "$seconds", "--out", $MixOut)
+    if ((Test-Path $bgmPath) -and -not $SkipBgm) { $mixArgs += @("--bgm", $Bgm) }
+    & $python @mixArgs
+    if ($LASTEXITCODE -ne 0) { Write-Host "[X]混音失败" -ForegroundColor Red; exit 4 }
+  } finally { Pop-Location }
+} else {
+  Write-Host "`n[4/5] 跳过旁白（无 $Plan 或 plan 不带 narration）"
+}
+
+# ---------- 5. 合成 ----------
+Write-Host "`n[5/5] ffmpeg 合成…" -ForegroundColor Cyan
 $buildArgs = @{ Frames = $framesDir; Fps = $Fps; Out = (Join-Path $project $Out) }
-if ((Test-Path $bgmPath) -and -not $SkipBgm) { $buildArgs.Audio = $bgmPath }
+if ($hasNarr -and (Test-Path $mixPath)) { $buildArgs.Audio = $mixPath }
+elseif ((Test-Path $bgmPath) -and -not $SkipBgm) { $buildArgs.Audio = $bgmPath }
 & powershell -NoProfile -File "$pipeline\build.ps1" @buildArgs
 if ($LASTEXITCODE -ne 0) { Write-Host "[X]合成失败" -ForegroundColor Red; exit 3 }
 

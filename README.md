@@ -83,11 +83,12 @@ vibe-dsf/
 │   ├── run_all.ps1              一键流水线：渲染→QA 闸→BGM→合成
 │   ├── scene_writer/            ★ 场景规划自动化：PROMPT 任务书 + validate_plan 硬闸 + build_html 组装
 │   ├── blocks/                  ★ 场景积木库（过 QA 才入库）：entropy-burst / data-chart / beat-counter / vs-counters
+│   ├── narrate/                 ★ 旁白层：edge-tts 合成 + 窗口对齐 + BGM 闪避混音（docs/13）
 │   └── requirements.txt
 ├── projects/
 │   ├── demo-26s/               ★ 已出片样片（纸金风，26 秒 1080p30）
 │   ├── demo-hook-entropy/      ★ 熵增 8s 钩子（四层构图验证片，QA 8.5）
-│   ├── demo-hook-compound/     ★ 复利 9.5s 钩子（首条 SCENE-WRITER 全自动片，QA 9.1）
+│   ├── demo-hook-compound/     ★ 复利 11.4s 钩子（SCENE-WRITER 全自动 + 人声旁白，QA 8.8 过闸）
 │   ├── nocturne-demo/          深空理性验证帧（8 秒）
 │   └── ab-test/                A/B 对照实验（同镜头两种写法）
 └── scripts/
