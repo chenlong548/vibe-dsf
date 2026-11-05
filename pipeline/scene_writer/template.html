@@ -75,6 +75,15 @@ const STARS = M.style === 'deep-space'
   ? (() => { const r = mulberry32(777); return Array.from({length: 170}, () => [r()*W, r()*H, r()*0.34+0.18, r()*1.6+0.4]); })()
   : [];
 const DOTS = (() => { const r = mulberry32(4242); return Array.from({length: 420}, () => [r()*W, r()*H, r()*0.05+0.03, r()*1.6+0.8]); })();
+const AMBIENT = (() => {
+  const r = mulberry32(9021);
+  return Array.from({length: 500}, () => {
+    const accent = r() < 0.5;
+    return { x: r()*W, y: r()*H, vx: 8 + r()*14, vy: -(6 + r()*12),
+             s: 3.2 + r()*2.0, ph: r()*Math.PI*2, w: 8 + r()*6,
+             a: 0.22 + r()*0.33, accent };
+  });
+})();
 function drawL0(t){
   const g = ctx.createRadialGradient(W*0.42, H*0.40, 80, W*0.42, H*0.40, 1150);
   g.addColorStop(0, PAL.bg_in); g.addColorStop(1, PAL.bg_out);
@@ -102,6 +111,13 @@ function drawL0(t){
     for (let i = 1; i <= 9; i++){
       ctx.beginPath(); ctx.arc(W*0.42, H*0.40, i*120, 0, Math.PI*2); ctx.stroke();
     }
+  }
+  for (const p of AMBIENT){
+    const x = ((p.x + p.vx*t) % W + W) % W;
+    const y = ((p.y + p.vy*t) % H + H) % H;
+    const a = p.a * (0.55 + 0.45 * Math.sin(t*p.w + p.ph));
+    ctx.fillStyle = p.accent ? `rgba(${ACCENT_DIM},${a.toFixed(3)})` : `rgba(${INK_DIM},${(a*0.85).toFixed(3)})`;
+    ctx.fillRect(x, y, p.s, p.s);
   }
   for (const [x, y, a, s] of STARS){
     const tw = 0.75 + 0.25 * Math.sin(t*1.8 + x);

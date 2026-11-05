@@ -12,6 +12,7 @@ window.BLOCKS['beat-counter'] = {
     const val = (P.to ?? 37.8) * g;
     const txt = (P.prefix ?? '') + val.toFixed(P.decimals ?? 1) + (P.suffix ?? '');
     const glow = T >= tc[0] && T < tc[1] + 0.4;
+    const pulse = T > tc[1] + 0.4 ? 1 + 0.035 * Math.sin((T - tc[1] - 0.4) * 3.7) : 1;
     if (glow) {
       ctx.save();
       ctx.shadowColor = U.ACCENT; ctx.shadowBlur = 30;
@@ -21,7 +22,12 @@ window.BLOCKS['beat-counter'] = {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     const w = ctx.measureText(txt).width;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(pulse, pulse);
+    ctx.translate(-cx, -cy);
     ctx.fillText(txt, cx - w / 2, cy + fs * 0.35);
+    ctx.restore();
     if (glow) ctx.restore();
     const te = P.t_expr || [tc[0] + 0.2, tc[0] + 1.0];
     const ea = U.seg(T, te[0], te[1]);

@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "meta": {
+    "title": "A Mathematical Theory of Communication",
+    "authors": "Claude E. Shannon",
+    "year": 1948,
+    "field": "信息论 / 通信",
+    "one_liner": "香农把'信息'变成了可计算的量——从此万物皆可比特化",
+    "audience": "对计算机技术感兴趣的普通观众（零领域前置知识）",
+    "duration_target": 23.8095,
+    "bpm": 126
+  },
+  "hook_candidates": [
+    { "claim": "今天所有数字通信的数学地基，是一篇诞生时无人叫好、连'信息论'这个名字都不存在的论文",
+      "why_it_works": "反常识：奠基之作当年默默无闻，观众以为里程碑都自带掌声", "strength": 5 },
+    { "claim": "信息可以被'称重'——它有单位、有度量衡，单位叫比特",
+      "why_it_works": "反常识：最抽象的东西（信息）竟有物理度量般的口径", "strength": 4 },
+    { "claim": "越意外的话，信息量越大——'太阳明天升起'的信息量接近零",
+      "why_it_works": "反常识：信息量与'意思重不重要'无关，与'猜到猜不到'有关", "strength": 4 }
+  ],
+  "mechanism": [
+    { "step": 1, "say": "通信就是把一条消息从 A 搬到 B，过程不关心意思",
+      "visual": "两点一线，消息粒子流动（与语义解耦）" },
+    { "step": 2, "say": "信息的量 = 消灭不确定性需要问的最少'是否问题'数",
+      "visual": "抛硬币 / 猜数字的二分分支树" },
+    { "step": 3, "say": "越猜不到的事，说出来信息越多——概率决定重量",
+      "visual": "意外程度 → 信息量上升曲线" },
+    { "step": 4, "say": "只要不超过信道容量，编码能把错误压到任意低",
+      "visual": "管道容量 vs 水流（本片 24s 不展开，留作系列续集）" }
+  ],
+  "numbers": [
+    { "value": 1, "unit": "bit",
+      "claim": "抛一次硬币的答案，恰好 1 比特——信息的最小度量单位",
+      "comparison": "一次'是/否'问答 = 1 bit",
+      "source": "Part 2/6：bit 作为二进制数字（binary digit）的缩写，与 Tukey 建议相关" },
+    { "value": 4.7, "unit": "bit/字母",
+      "claim": "按字符统计（不考虑上下文），一段英文平均约 4.7 比特",
+      "comparison": "抛 4-5 次硬币的信息量",
+      "source": "Part 3：英文统计熵的逐阶估计（Redundancy 一节）" },
+    { "value": 1948, "unit": "年",
+      "claim": "论文发表年份——数字计算机时代的前夜",
+      "comparison": "比第一款商用电子计算机的商业化早几年",
+      "source": "Bell System Technical Journal, Oct. 1948" }
+  ],
+  "metaphors": [
+    { "concept": "熵 = 意外程度", "everyday": "越猜不到的事，说出来信息越多",
+      "breaks": "熵不衡量'有没有用/重不重要'——废话连篇也可能高熵；不衡量真假" },
+    { "concept": "比特 = 是否问题数", "everyday": "猜 1-100 的数，最聪明也要问 7 次",
+      "breaks": "只对二选一结构成立；连续量的比特数取决于精度约定" }
+  ],
+  "quote": {
+    "en": "The fundamental problem of communication is that of reproducing at one point, either exactly or approximately, a message selected at another point.",
+    "zh": "通信的根本问题，是把一点选择的消息，在另一点精确或近似地重现。",
+    "where": "Part 1 引言第一句"
+  },
+  "caveats": [
+    "4.7 bit/字母是香农 1948 年的一阶统计估计；计入上下文冗余后，现代估计约 1.5 bit/字母左右——上片必须带'按字符统计'口径",
+    "香农信息熵 ≠ 语义信息：不衡量内容的价值、真假、重要性——'无聊的话'也可以信息量大",
+    "'信息论'这个名词当时并不存在，是后来学界通行的命名——turn 段可用此反差"
+  ]
+}

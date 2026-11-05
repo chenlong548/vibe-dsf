@@ -16,6 +16,8 @@ window.BLOCKS['vs-counters'] = {
       const val = (cfg.to ?? 1) * g;
       const txt = (cfg.prefix ?? '') + val.toFixed(cfg.decimals ?? 2);
       const color = isAccent ? U.ACCENT : U.GRAY;
+      const isPulse = T > tc[1] + 0.4;
+      const pulse = isPulse ? 1 + 0.035 * Math.sin((T - tc[1] - 0.4) * 3.7) : 1;
       if (isAccent && T >= tc[0] && T < tc[1] + 0.4) {
         ctx.save();
         ctx.shadowColor = U.ACCENT; ctx.shadowBlur = 26;
@@ -25,7 +27,12 @@ window.BLOCKS['vs-counters'] = {
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
       const w = ctx.measureText(txt).width;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(pulse, pulse);
+      ctx.translate(-cx, -cy);
       ctx.fillText(txt, cx - w / 2, cy + fs * 0.35);
+      ctx.restore();
       if (isAccent && T >= tc[0] && T < tc[1] + 0.4) ctx.restore();
       const tl = cfg.t_label ?? tc[0];
       const la = U.seg(T, tl, tl + 0.8);

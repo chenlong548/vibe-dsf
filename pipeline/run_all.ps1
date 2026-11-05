@@ -23,6 +23,7 @@ param(
   [double]$End      = -1,
   [int]$Fps         = 30,
   [double]$Bpm      = 0,              # 0 = 用 synth_bgm 的风格默认值
+  [string]$BgmMarks = "",             # 逗号分隔秒值（场景切换/揭晓拍点），空 = synth_bgm 默认
   [string]$BgmStyle = "ambient",      # ambient（纪录片 77）| vibe（电子 96）
   [string]$Bgm      = "bgm.wav",
   [string]$NarrOut  = "narration.wav",
@@ -137,6 +138,7 @@ if (-not $SkipBgm) {
   try {
     $bgmArgs = @("$pipeline\synth_bgm.py", $Bgm, "--style", $BgmStyle, "--duration", "$seconds")
     if ($Bpm -gt 0) { $bgmArgs += @("--bpm", "$Bpm") }
+    if ($BgmMarks -ne "") { $bgmArgs += @("--marks", $BgmMarks) }
     & $python @bgmArgs
     if ($LASTEXITCODE -ne 0) { Write-Host "[X]BGM 合成失败" -ForegroundColor Red; exit 3 }
   } finally { Pop-Location }

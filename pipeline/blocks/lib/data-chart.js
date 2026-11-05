@@ -50,9 +50,26 @@ window.BLOCKS['data-chart'] = {
         lx = px; ly = py; drawn++;
       }
       ctx.stroke();
+      if (s.color === 'accent'){
+        const nP = 60;
+        const expK = s.k ?? 5;
+        for (let i = 0; i < nP; i++){
+          const q = ((i / nP) + (T * 0.10) % 1) % 1;
+          if (q > g) continue;
+          const px = x0 + w * q;
+          const py = y0 - h * 0.92 * (Math.exp(expK * q) - 1) / (Math.exp(expK) - 1);
+          const pa = 0.75 * (0.45 + 0.55 * Math.sin(T * 6.0 + i * 2.4)) * (0.35 + 0.65 * q);
+          if (pa <= 0.05) continue;
+          ctx.fillStyle = U.rgba(pa);
+          ctx.beginPath(); ctx.arc(px + 6 * Math.sin(T * 1.7 + i), py - 4 - 6 * ((i * 7 + Math.floor(T * 12)) % 5), 1.6 + (i % 3), 0, Math.PI * 2); ctx.fill();
+        }
+      }
       if (g > 0.96 && drawn > 0 && s.label) {
+        const pulseR = s.color === 'accent'
+          ? lw * 1.6 + 2 + 2.2 * Math.sin(T * 4.5)
+          : lw * 1.6 + 2;
         ctx.fillStyle = color;
-        ctx.beginPath(); ctx.arc(lx, ly, lw * 1.6 + 2, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(lx, ly, Math.max(1.5, pulseR), 0, Math.PI * 2); ctx.fill();
         U.drawText(ctx, s.label, lx + 20, ly + 6,
           { font: `${s.label_font ?? 34}px Consolas, monospace`, color, align: 'left' });
       }
