@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>心形曲线 · 8s（2.5D 爱心 · 四层构图）</title>
+<style>
+  html,body{margin:0;padding:0;background:#08030A;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+/* =====================================================================
+ * 心形曲线钩子 · 8s · 1920x1080 @30fps
+ * 设计定调：深玫瑰黑底（#17060F→#08030A）× 全片唯一强调色玫红 #FF5C86。
+ *   主体 = 2.5D 爱心（PSEUDO-3D 四招：斜向挤出 8 层 / 渐变描边 / 接触阴影 /
+ *   周期转身压缩），光从左上，全片一致。
+ * 叙事：0.55s 光点 → 描线一周（心形参数曲线）→ 2.1s 立体化挤出 →
+ *   隐式方程显影 + ECG 心电扫描 → 心跳 + 一次转身 → punch 收尾。
+ * 构图：四层骨架。心中心 x=0.44（偏左 6%），公式框在右侧 0.62–0.78 作第二视觉。
+ * 契约：render(t) 纯时间函数；?t= 抓帧模式；固定种子；无跨帧状态。
+ * ===================================================================== */
+const W = 1920, H = 1080;
+const DUR = 8;
+const ACCENT = '#FF5C86';
+const ACCENT_DIM = '255,92,134';
+const INK = '#F2E8EC', GRAY = '#A08898';
+const cv = document.getElementById('c');
+cv.width = W; cv.height = H;
+const ctx = cv.getContext('2d');
+
+/* ---------- 工具 ---------- */
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const easeOutCubic = p => 1 - Math.pow(1 - p, 3);
+const easeOutBack  = p => { const c = 1.70158 * 0.6; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+function seg(t, a, b){ return clamp01((t - a) / (b - a)); }
+
+function drawText(text, x, y, opt){
+  const o = Object.assign({ font: '28px "Microsoft YaHei"', color: INK, align: 'center', maxW: W, alpha: 1, track: 0 }, opt);
+  ctx.font = o.font; ctx.textBaseline = 'alphabetic'; ctx.globalAlpha = o.alpha;
+  const fs = parseFloat((o.font.match(/([\d.]+)px/) || [0, 28])[1]);
+  const lines = []; let cur = '';
+  const measure = s => ctx.measureText(s).width + s.length * o.track;
+  for (const ch of text){
+    if (measure(cur + ch) > o.maxW * 0.82 && cur){ lines.push(cur); cur = ch; }
+    else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  lines.forEach((ln, i) => {
+    const w = measure(ln);
+    let sx = o.align === 'left' ? x : o.align === 'right' ? x - w : x - w / 2;
+    for (const ch of ln){
+      ctx.fillStyle = o.color; ctx.fillText(ch, sx, y + i * (fs * 1.32));
+      sx += ctx.measureText(ch).width + o.track;
+    }
+  });
+  ctx.globalAlpha = 1;
+  return lines.length;
+}
+
+/* ---------- 心形几何：经典参数曲线 x=16sin³θ, y=13cosθ−5cos2θ−2cos3θ−cos4θ ---------- */
+const CX = W * 0.44, CY = H * 0.40;         // 心中心（偏左 6%，QA 构图偏置带内）
+const SCALE = 16.5;                          // → 心宽约 16*2*16.5=528px，占宽 27%
+function heartPt(th){
+  // 返回屏幕坐标：数学 y 向上，屏幕翻转
+  const x = 16 * Math.pow(Math.sin(th), 3);
+  const y = 13 * Math.cos(th) - 5 * Math.cos(2 * th) - 2 * Math.cos(3 * th) - Math.cos(4 * th);
+  return [CX + x * SCALE, CY - y * SCALE];
+}
+function heartPath(thMax, scale, dx, dy){
+  // 从顶部凹点（θ=0）顺时针描到 thMax；scale/dx/dy 供回声层与挤出层复用
+  ctx.beginPath();
+  const N = 140;
+  for (let i = 0; i <= N; i++){
+    const th = (i / N) * thMax;
+    const [x, y] = heartPt(th);
+    const px = CX + (x - CX) * scale + dx, py = CY + (y - CY) * scale + dy;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+}
+
+/* ---------- L0 氛围层 ---------- */
+const GRAIN = (() => { const r = mulberry32(20261106); return Array.from({length: 900}, () => [r()*W, r()*H, r()*0.028+0.012]); })();
+const DUST  = (() => { const r = mulberry32(99);  return Array.from({length: 180}, () => [r()*W, r()*H, r()*0.30+0.10, r()*1.7+0.5, r()*Math.PI*2]); })();
+function drawL0(t){
+  const g = ctx.createRadialGradient(W*0.44, H*0.38, 90, W*0.44, H*0.38, 1150);
+  g.addColorStop(0, '#2A0E1E'); g.addColorStop(0.55, '#17060F'); g.addColorStop(1, '#08030A');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // 玫瑰尘埃：整层缓慢上浮（8px/8s）+ 独立微闪
+  const drift = (t / DUR) * 8;
+  DUST.forEach(([x, y, a, s, ph], i) => {
+    const tw = 0.72 + 0.28 * Math.sin(t * 1.6 + ph);
+    ctx.fillStyle = `rgba(255,190,205,${a * tw})`;
+    ctx.fillRect(x, (y - drift + H) % H, s, s);
+  });
+  for (const [x, y, a] of GRAIN){ ctx.fillStyle = `rgba(255,255,255,${a})`; ctx.fillRect(x, y, 1.5, 1.5); }
+}
+function vignette(){
+  const v = ctx.createRadialGradient(W/2, H/2, H*0.42, W/2, H/2, H*0.95);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.62)');
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+}
+
+/* ---------- L1 支撑层：心形回声（3 圈等比描线，脉动）+ 生长刻度弧 ---------- */
+function drawL1(t){
+  const g = easeOutCubic(seg(t, 2.45, 3.55));
+  if (g <= 0) return;
+  // 三圈回声：比主体小的心形轮廓（与主体同呼吸，0.98 倍相位）
+  const beat = 1 + 0.018 * Math.sin(t * 2 * Math.PI / 1.1);
+  [0.72, 0.5, 0.3].forEach((sc, i) => {
+    ctx.strokeStyle = `rgba(${ACCENT_DIM},${(0.11 - i * 0.03) * g})`;
+    ctx.lineWidth = 1.2;
+    heartPath(Math.PI * 2, sc * beat, 0, 0);
+    ctx.stroke();
+  });
+  // 生长式刻度弧（心左右两侧各一段，圆心在心中心，半径 360）
+  const rot = t * 0.05;
+  ctx.strokeStyle = `rgba(${ACCENT_DIM},${0.10 * g})`;
+  ctx.lineWidth = 1;
+  for (const [a0, dir] of [[-0.65, 1], [Math.PI + 0.65, -1]]){
+    ctx.beginPath();
+    ctx.arc(CX, CY, 360 * g, a0 + rot, a0 + rot + 0.9 * dir, dir < 0);
+    ctx.stroke();
+  }
+}
+
+/* ---------- 心跳（lub-dub 双峰）与转身压缩 ---------- */
+function heartbeat(t){
+  const u = (t % 1.1) / 1.1;
+  const p1 = Math.exp(-Math.pow((u - 0.10) / 0.06, 2));
+  const p2 = 0.55 * Math.exp(-Math.pow((u - 0.28) / 0.09, 2));
+  return 1 + 0.048 * (p1 + p2) * seg(t, 2.2, 2.9);   // 立体化完成后才开始跳
+}
+function turnSquash(t){
+  // 伪 3D 第 4 招：rotateY 式横向压缩，4.9–6.4s 一次，幅度 12%
+  return 1 - 0.12 * Math.sin(Math.PI * seg(t, 4.9, 6.4));
+}
+
+/* ---------- L2 主体层：2.5D 爱心 ---------- */
+function drawHeart(t){
+  const grow = easeOutCubic(seg(t, 0.55, 2.05));       // 描线进度
+  const pop  = easeOutBack(seg(t, 2.10, 2.95));        // 立体化弹出
+  if (t < 0.55){
+    // 0–0.55s：起笔光点（全帧唯一发光元素）
+    const b = easeOutBack(seg(t, 0.05, 0.50));
+    ctx.save();
+    ctx.shadowColor = ACCENT; ctx.shadowBlur = 40;
+    ctx.fillStyle = ACCENT;
+    ctx.beginPath(); ctx.arc(...heartPt(0), 7 * b, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  if (grow <= 0) return;
+
+  const beat = heartbeat(t);
+  const turn = turnSquash(t);
+
+  // 接触阴影（伪 3D 第 3 招）：主体下方，压扁 0.22、模糊 16、α0.30
+  const shA = 0.30 * pop;
+  if (shA > 0.01){
+    ctx.save();
+    ctx.translate(CX, CY + 292);
+    ctx.scale(beat * turn, 0.22);
+    ctx.filter = 'blur(16px)';
+    ctx.fillStyle = `rgba(210,40,90,${shA})`;
+    heartPath(Math.PI * 2, 1.0, 0, 0);
+    ctx.fill();
+    ctx.filter = 'none';
+    ctx.restore();
+  }
+
+  ctx.save();
+  ctx.translate(CX, CY);
+  ctx.scale(beat * turn, beat);
+  ctx.translate(-CX, -CY);
+
+  // 斜向挤出 8 层（伪 3D 第 1 招）：光左上 → 往右下挤，逐层展开
+  const LAYERS = 8;
+  for (let i = LAYERS; i >= 1; i--){
+    const la = easeOutCubic(clamp01(pop * LAYERS - (LAYERS - i)));   // 第 i 层出现时机
+    if (la <= 0) continue;
+    const dx = 3.2 * i * la, dy = 2.0 * i * la;
+    const depth = i / LAYERS;                                        // 0=最外层
+    ctx.fillStyle = `rgb(${90 - depth * 25}, ${10 + (1 - depth) * 14}, ${38 + (1 - depth) * 10})`;
+    heartPath(Math.PI * 2, 1.0, dx, dy);
+    ctx.fill();
+  }
+
+  if (grow < 1){
+    // 描线阶段：只有主线（渐变描边，伪 3D 第 2 招）
+    const grad = ctx.createLinearGradient(CX, CY - 300, CX, CY + 300);
+    grad.addColorStop(0, '#FFB3C8'); grad.addColorStop(0.45, '#FF5C86'); grad.addColorStop(1, '#C32B54');
+    ctx.strokeStyle = grad; ctx.lineWidth = 4.5;
+    ctx.lineCap = 'round';
+    heartPath(Math.PI * 2 * grow, 1.0, 0, 0);
+    ctx.stroke();
+  } else {
+    // 主面：径向受光（左上亮），盖在挤出层之上
+    const face = ctx.createRadialGradient(CX - 120, CY - 140, 40, CX, CY, 330);
+    face.addColorStop(0, '#FF8FA8'); face.addColorStop(0.5, '#FF5C86'); face.addColorStop(1, '#C9295A');
+    ctx.fillStyle = face;
+    heartPath(Math.PI * 2, 1.0, 0, 0);
+    ctx.fill();
+    // 渐变描边收边
+    const grad = ctx.createLinearGradient(CX, CY - 300, CX, CY + 300);
+    grad.addColorStop(0, '#FFB3C8'); grad.addColorStop(0.45, '#FF5C86'); grad.addColorStop(1, '#C32B54');
+    ctx.strokeStyle = grad; ctx.lineWidth = 4;
+    heartPath(Math.PI * 2, 1.0, 0, 0);
+    ctx.stroke();
+    // 左上高光斑（受光方向的实感，静态形状）
+    ctx.save();
+    ctx.globalAlpha = 0.34;
+    ctx.fillStyle = '#FFD7E0';
+    ctx.beginPath();
+    ctx.ellipse(CX - 120, CY - 130, 66, 40, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+
+  // 心跳衍射微粒：立体化后从心缘持续向上飘的玫瑰微粒（防静止 + 密度）
+  if (pop > 0.5){
+    const r = mulberry32(555);
+    for (let i = 0; i < 46; i++){
+      const th = r() * Math.PI * 2, ph = r() * 6.28;
+      const [hx, hy] = heartPt(th);
+      const cyc = ((t * 0.28 + ph / 6.28) % 1);
+      const px = hx + Math.sin(ph + t * 1.3) * 14;
+      const py = hy - cyc * 190;
+      const a = 0.34 * (1 - cyc) * pop;
+      if (a <= 0.02) continue;
+      ctx.fillStyle = `rgba(255,160,185,${a})`;
+      ctx.beginPath(); ctx.arc(px, py, 1.4 + r() * 1.3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+/* ---------- L2-b：ECG 心电扫描（横贯下方，点题"心"） ---------- */
+function ecgY(u){
+  // 一个心跳周期的简化 P-QRS-T（u∈[0,1]）
+  const g = (c, w, h) => h * Math.exp(-Math.pow((u - c) / w, 2));
+  return g(0.16, 0.030, -12) + g(0.30, 0.010, 52) - g(0.335, 0.014, -16) + g(0.37, 0.012, 20) + g(0.55, 0.045, 16);
+}
+function drawECG(t){
+  const start = seg(t, 2.55, 2.95);
+  if (start <= 0) return;
+  const x0 = W * 0.08, x1 = W * 0.92, y0 = H * 0.72;
+  const sweep = easeOutCubic(seg(t, 2.6, 6.2));          // 扫描头位置
+  // 基线（细，生长式）
+  ctx.strokeStyle = `rgba(${ACCENT_DIM},${0.22 * start})`;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + (x1 - x0) * sweep, y0); ctx.stroke();
+  // 波形（跟随扫描头绘制，3 个周期）
+  ctx.strokeStyle = `rgba(${ACCENT_DIM},${0.62 * start})`;
+  ctx.lineWidth = 2.2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  const N = 260;
+  for (let i = 0; i <= N * sweep; i++){
+    const u = i / N;
+    const x = x0 + (x1 - x0) * u;
+    const y = y0 - ecgY((u * 3) % 1) * seg(t, 2.6, 2.9);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  // 扫描头亮点（实心小点，非发光）
+  if (sweep < 1){
+    const hx = x0 + (x1 - x0) * sweep;
+    const hy = y0 - ecgY((sweep * 3) % 1) * seg(t, 2.6, 2.9);
+    ctx.fillStyle = `rgba(255,179,200,${0.9 * start})`;
+    ctx.beginPath(); ctx.arc(hx, hy, 3.2, 0, Math.PI * 2); ctx.fill();
+  }
+  drawText('ECG · 心电', x0, y0 + 44, { font: '20px Consolas, monospace', color: GRAY, align: 'left', alpha: seg(t, 5.6, 6.4) * 0.9 });
+}
+
+/* ---------- L3 标注层 ---------- */
+function drawL3(t){
+  drawText('HEART CURVE · 心形曲线', CX - 150, CY - 318, { font: '21px "Microsoft YaHei"', color: GRAY, align: 'right', alpha: seg(t, 1.5, 2.3), track: 6 });
+  // 隐式方程框（右侧第二视觉，避开心体）
+  const fa = seg(t, 3.15, 4.05);
+  if (fa > 0){
+    ctx.save();
+    ctx.font = '52px Consolas, monospace';
+    ctx.textBaseline = 'alphabetic';
+    const eq = '(x²+y²−1)³ − x²y³ = 0';
+    const fw = ctx.measureText(eq).width;
+    const fx = W * 0.685 - fw / 2, fy = CY + 6;
+    ctx.globalAlpha = fa;
+    ctx.fillStyle = 'rgba(242,232,236,0.93)';
+    ctx.fillText(eq, fx, fy);
+    ctx.strokeStyle = ACCENT; ctx.lineWidth = 2;
+    ctx.strokeRect(fx - 26, fy - 52, fw + 52, 82);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    drawText('一条曲线，自带心跳', W * 0.685, CY + 62, { font: '22px "Microsoft YaHei"', color: `rgba(160,136,152,${fa})`, align: 'center' });
+  }
+}
+
+/* ---------- 字幕带 ---------- */
+function drawSubtitle(t){
+  const a1 = Math.min(seg(t, 0.90, 1.25), 1 - seg(t, 4.15, 4.45));
+  if (a1 > 0){
+    drawText('数学家是怎么画爱心的？', W / 2, 926, { font: '700 46px "Microsoft YaHei"', color: INK, alpha: a1 });
+    drawText('How does a mathematician draw a heart?', W / 2, 974, { font: 'italic 27px Georgia', color: '#B49CA8', alpha: a1 * 0.9 });
+  }
+  const a2 = seg(t, 6.50, 6.80);
+  if (a2 > 0){
+    const pk = t < 7.16 ? Math.sin(Math.PI * seg(t, 6.80, 7.16)) : 0;
+    const scale = 1 + 0.14 * pk;
+    ctx.save();
+    ctx.translate(W / 2, 910);
+    ctx.scale(scale, scale);
+    drawText('一条曲线，就够了。', 0, 16, { font: '700 46px "Microsoft YaHei"', color: INK, alpha: a2 });
+    drawText('One curve is all it takes.', 0, 64, { font: 'italic 27px Georgia', color: '#B49CA8', alpha: a2 * 0.9 });
+    ctx.restore();
+  }
+}
+
+/* ---------- 顶栏 ---------- */
+function drawTopbar(t){
+  drawText('@VIBE·DSF', 64, 68, { font: '21px "Microsoft YaHei"', color: 'rgba(160,136,152,0.85)', align: 'left', track: 4 });
+  drawText('心形曲线 · HEART CURVE', W / 2, 68, { font: '21px "Microsoft YaHei"', color: `rgba(255,92,134,0.9)`, track: 8 });
+  const mm = String(Math.floor(t / 60)).padStart(2, '0');
+  const ss = String(Math.floor(t % 60)).padStart(2, '0');
+  const ff = String(Math.floor((t % 1) * 30)).padStart(2, '0');
+  drawText(`${mm}:${ss}:${ff}`, W - 64, 68, { font: '21px Consolas, monospace', color: 'rgba(160,136,152,0.7)', align: 'right' });
+}
+
+/* ---------- 合成 ---------- */
+window.render = function(t){
+  ctx.clearRect(0, 0, W, H);
+  drawL0(t);
+  drawL1(t);
+  drawHeart(t);
+  drawECG(t);
+  vignette();
+  drawL3(t);
+  drawSubtitle(t);
+  drawTopbar(t);
+};
+
+/* ---------- 抓帧模式 / 预览 ---------- */
+window.DUR = DUR;
+window.READY = false;
+if (new URLSearchParams(location.search).has('t')){
+  const t = parseFloat(new URLSearchParams(location.search).get('t'));
+  document.fonts.ready.then(() => { window.render(t); window.READY = true; });
+} else {
+  document.fonts.ready.then(() => { window.READY = true; });
+  const t0 = performance.now();
+  (function loop(now){ window.render(((now || performance.now()) - t0) / 1000 % DUR); requestAnimationFrame(loop); })();
+}
+</script>
+</body>
+</html>
