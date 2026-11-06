@@ -1,3 +1,15 @@
+<div align="center">
+
+<img src="docs/demo.gif" width="640" alt="demo-hook-entropy · 8s clip, fully auto-generated"/>
+
+**全自动知识视频流水线 · 单条 ¥3–5 · QA 像素级验收**
+
+[English](README.en.md) | 简体中文
+
+</div>
+
+---
+
 # vibe-dsf · 只服务 flash 的视频生态
 
 > **唯一目标模型：DeepSeek-V4.1-Flash-1017（`deepseek-flash`）**
