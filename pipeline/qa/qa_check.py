@@ -29,6 +29,7 @@ v2 新增（审美维度，每秒采样 1 帧，全部校准自真实成片）�
 """
 import argparse
 import json
+import math
 import os
 import sys
 
@@ -178,16 +179,29 @@ def analyze_visual(paths, fps):
     )
 
 
-def score(r, v):
-    """风格 DNA 打分（1–10）。低于 8 的地方要改，不是"再看看"。"""
+def score(r, v, v2=False):
+    """风格 DNA 打分（1–10）。低于 8 的地方要改，不是"再看看"。
+
+    v3（默认）：断点/硬切预算按时长缩放——180s 长片天然累积更多静止段与切点，
+    固定阈值（≤2/≤4 断点、≤6/≤9 硬切）会冤枉长片。短片预算与 v2 完全等价，
+    历史分数可比；--v2 可回退旧口径做同帧对比。
+    """
     s = {}
+    duration = r['frames'] / r['fps']
+    still_budget = max(2, math.ceil(duration / 20.0))   # 每 20s 允许 1 个断点：8s→2, 50s→3, 180s→9
+    cut_budget = max(6, math.ceil(duration / 15.0))     # 每 15s 允许 1 个硬切：8s→6, 180s→12
     d = r['density']
     s['画面密度'] = 10 if d >= 0.5 else 9 if d >= 0.3 else 7 if d >= 0.15 else 5 if d >= 0.08 else 3
     s['静止控制'] = 10 if r['longest_still'] <= 1.5 else 9 if r['longest_still'] <= 2.5 \
-        else 7 if r['longest_still'] <= 4 else 4
-    s['断点数量'] = 10 if len(r['still_runs']) <= 2 else 8 if len(r['still_runs']) <= 4 else 5
+        else 7 if r['longest_still'] <= 4 else 4   # 最长段与片长无关，保持 v2 口径
+    n_still = len(r['still_runs'])
     c = r['cuts']
-    s['切点节奏'] = 10 if 2 <= c <= 6 else 8 if c <= 9 else 5
+    if v2:
+        s['断点数量'] = 10 if n_still <= 2 else 8 if n_still <= 4 else 5
+        s['切点节奏'] = 10 if 2 <= c <= 6 else 8 if c <= 9 else 5
+    else:
+        s['断点数量'] = 10 if n_still <= still_budget else 8 if n_still <= 2 * still_budget else 5
+        s['切点节奏'] = 10 if 2 <= c <= cut_budget else 8 if c <= 1.5 * cut_budget else 5
     s['首帧抓人'] = 10 if r['head_density'] >= max(0.1, d) else 6
     s['安全区'] = 10 if not r['edge_bleed'] else 5
     s['字幕覆盖'] = 10 if not r['sub_band_empty'] else 4
@@ -216,17 +230,27 @@ def main():
     ap.add_argument('--grace', type=float, default=1.0, help='片头/片尾多少秒内不检查字幕带')
     ap.add_argument('--json', default=None)
     ap.add_argument('--no-gate', action='store_true', help='只出报告，不用退出码卡门禁')
+    ap.add_argument('--v2', action='store_true', help='回退 v2 固定阈值口径（同帧对比用）')
     a = ap.parse_args()
 
     paths = load_frames(a.frames)
     r = analyze(paths, a.fps, a.still, a.cut, a.grace)
     v = analyze_visual(paths, a.fps)
-    s = score(r, v)
+    s = score(r, v, v2=a.v2)
+    duration = r['frames'] / a.fps
+    budgets = {'duration': round(duration, 2),
+               'still_budget': max(2, math.ceil(duration / 20.0)),
+               'cut_budget': max(6, math.ceil(duration / 15.0))}
 
-    print(f"\n帧序列：{r['frames']} 帧 / {r['frames']/a.fps:.2f}s  @ {r['width']}x{r['height']} {a.fps:g}fps")
+    print(f"\n帧序列：{r['frames']} 帧 / {duration:.2f}s  @ {r['width']}x{r['height']} {a.fps:g}fps")
     print(f"画面密度：每帧有 {r['density']}% 的像素在变   （参考：字幕整句淡入 ≈0.5%，粒子爆炸 ≈10%）")
     print(f"亮度差均值：{r['diff_mean']}   前 2 秒密度：{r['head_density']}%")
     print(f"最长静止段：{r['longest_still']}s   断点数：{len(r['still_runs'])}")
+    if a.v2:
+        print("QA 口径：v2（固定阈值 断点≤2/4、硬切≤6/9）")
+    else:
+        print(f"QA 口径：v3 时长预算（{budgets['duration']}s → 断点≤{budgets['still_budget']} / "
+              f"硬切≤{budgets['cut_budget']}）；--v2 可回退旧口径")
     if r['still_runs']:
         print("  → 这些时间段画面几乎不动，去加东西：")
         for a1, b1 in r['still_runs'][:8]:
@@ -255,7 +279,8 @@ def main():
 
     if a.json:
         with open(a.json, 'w', encoding='utf-8') as f:
-            json.dump({'raw': r, 'visual': v, 'score': s, 'avg': round(avg, 2)}, f, ensure_ascii=False, indent=2)
+            json.dump({'raw': r, 'visual': v, 'score': s, 'avg': round(avg, 2),
+                       'qa_version': 'v2' if a.v2 else 'v3', 'budgets': budgets}, f, ensure_ascii=False, indent=2)
         print(f"报告：{a.json}")
 
     # 门禁：流水线靠退出码硬卡（--no-gate 可跳过）

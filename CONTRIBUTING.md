@@ -126,3 +126,22 @@ node ..\..\pipeline\review.mjs --project projects\<slugA> --compare projects\<sl
 
 - 用 `git mv` 移动文件（保历史）；移动后全局搜旧路径（`grep -rn "旧名"`）同步所有引用——本次重构的引用面：`run_all.ps1`、SKILL.md×3、各脚本头注释、docs 命令示例。
 - 渲染参数/QA 分数变化时，同步 `pipeline/blocks/registry.json` 与相关 docs 的分数行。
+
+## 版本纪律（每次推送 GitHub 必做）
+
+版本号在根目录 `VERSION`，语义化（MAJOR.MINOR.PATCH）。**每一次 push 都对应一个新版本**：
+
+1. 按变更性质递增 `VERSION`：功能/工具增强 → MINOR；修 bug / 文档同步 → PATCH；
+   破坏性改动（render 契约、SCENE-PLAN 格式不兼容）→ MAJOR。
+2. `CHANGELOG.md` 顶部加 `## [X.Y.Z] - YYYY-MM-DD` 条目（Added / Changed / Fixed / Notes）。
+3. 提交时**必须包含 `VERSION` 与 `CHANGELOG.md`**（CI 守卫会检查 CHANGELOG 是否含当前版本）。
+4. 打附注 tag 并一起推送：
+
+   ```bash
+   git tag -a vX.Y.Z -m "vX.Y.Z: 一句话说明"
+   git push origin main && git push origin vX.Y.Z
+   ```
+
+5. README 双语的版本行同步（当前版本 + CHANGELOG 链接）。
+
+基线：`v1.0.0` = 企业级结构重组 + P1 清单全部完成；之后每次提交顺延。

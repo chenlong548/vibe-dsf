@@ -6,7 +6,7 @@
 
 One command. No editor, no footage, no voiceover artist. **¥3–5 (~$0.5–0.7) per video.**
 
-简体中文 | [English](README.en.md)
+简体中文 | [English](README.en.md)　·　**v1.1.0** · [Changelog](CHANGELOG.md)
 
 </div>
 

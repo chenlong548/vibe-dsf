@@ -23,6 +23,12 @@ jobs:
       - name: Install Python deps
         run: pip install -r pipeline/requirements.txt
 
+      - name: Version discipline (VERSION ↔ CHANGELOG)
+        run: |
+          v=$(cat VERSION)
+          echo "current version: $v"
+          grep -qF "[$v]" CHANGELOG.md || { echo "::error::CHANGELOG.md 缺少 [$v] 条目——每次提交必须更新版本记录"; exit 1; }
+
       - name: Python syntax check
         run: python -m compileall -q pipeline
 
