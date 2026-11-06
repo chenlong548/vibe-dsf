@@ -9,7 +9,7 @@ vibe-dsf/
 │   ├── requirements.txt       # Python 依赖（numpy / pillow / edge-tts）
 │   ├── render/                # 渲染：render_frames.mjs（CDP fast 模式逐帧截图）
 │   ├── qa/                    # 门禁：qa_check.py（11 项评分，avg<8 硬拦截）
-│   ├── audio/                 # 音频：synth_bgm.py（确定性BGM）/ wave_png.py（波形验收）
+│   ├── audio/                 # 音频：synth_bgm.py（BGM）/ synth_sfx.py（音效）/ wave_png.py（波形验收）
 │   │   └── narrate/           # 旁白：tts_edge.py / build_narration.py / mix_audio.py（闪避混音）
 │   ├── compose/               # 合成：build.ps1（Windows）/ build.sh（macOS/Linux）
 │   ├── blocks/                # 积木组件库：lib/*.js ×10 + registry.json（QA 分数档案）
@@ -74,8 +74,9 @@ powershell -File pipeline\run_all.ps1 -Project projects\<slug> -Duration <秒>
 node ..\..\pipeline\render\render_frames.mjs --fps 30 --duration <秒>
 python ..\..\pipeline\qa\qa_check.py frames --fps 30 --json qa.json
 python ..\..\pipeline\audio\synth_bgm.py bgm.wav --style vibe --duration <秒>
+python ..\..\pipeline\audio\synth_sfx.py sfx.wav --plan SCENE-PLAN.json --duration <秒>
 python ..\..\pipeline\audio\narrate\build_narration.py SCENE-PLAN.json --out narration.wav
-python ..\..\pipeline\audio\narrate\mix_audio.py --narration narration.wav --bgm bgm.wav --duration <秒> --out final_audio.wav
+python ..\..\pipeline\audio\narrate\mix_audio.py --narration narration.wav --bgm bgm.wav --sfx sfx.wav --duration <秒> --out final_audio.wav
 powershell -File ..\..\pipeline\compose\build.ps1 -Audio final_audio.wav
 
 # 波形目检（agent 听不见，看图验收音频）

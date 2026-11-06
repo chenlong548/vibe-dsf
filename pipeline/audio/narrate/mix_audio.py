@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-mix_audio.py — 旁白 + BGM → 成片音轨（旁白侧链自动闪避）
+mix_audio.py — 旁白 + BGM + SFX → 成片音轨（旁白侧链自动闪避）
 原理：对旁白轨求 50ms RMS 包络 → 平滑（attack 0.12s / release 0.45s）→
       BGM 增益在有人声处压低 --duck-db dB，无人声处回到 --bgm-gain。
+      SFX 轨直接叠加、不参与闪避（音效贴动效走，本来就该跟着画面）。
 确定性：纯 numpy 运算，无随机。
 用法：
-  python mix_audio.py --narration narration.wav --bgm bgm.wav \
-      --duration 9.5238 --out final_audio.wav [--bgm-gain 0.32] [--duck-db 9] [--voice-gain 1.0]
-  （narration / bgm 至少给一个；只给 narration 时直接转立体声输出）
+  python mix_audio.py --narration narration.wav --bgm bgm.wav --sfx sfx.wav \
+      --duration 9.5238 --out final_audio.wav [--bgm-gain 0.32] [--duck-db 9] \
+      [--voice-gain 1.0] [--sfx-gain 1.0]
+  （narration / bgm / sfx 至少给一个；sfx 由 synth_sfx.py 按 plan 卡点合成）
 """
 import argparse
 import json
@@ -70,14 +72,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--narration", default=None)
     ap.add_argument("--bgm", default=None)
+    ap.add_argument("--sfx", default=None)
     ap.add_argument("--duration", type=float, required=True)
     ap.add_argument("--out", default="final_audio.wav")
     ap.add_argument("--bgm-gain", type=float, default=0.32)
     ap.add_argument("--duck-db", type=float, default=9.0)
     ap.add_argument("--voice-gain", type=float, default=1.0)
+    ap.add_argument("--sfx-gain", type=float, default=1.0)
     a = ap.parse_args()
-    if not a.narration and not a.bgm:
-        print(json.dumps({"ok": False, "errors": ["--narration / --bgm 至少给一个"]}, ensure_ascii=False))
+    if not a.narration and not a.bgm and not a.sfx:
+        print(json.dumps({"ok": False, "errors": ["--narration / --bgm / --sfx 至少给一个"]}, ensure_ascii=False))
         return 2
 
     total = int(round(a.duration * SR))
@@ -85,15 +89,19 @@ def main():
     if len(narr) < total:
         narr = np.pad(narr, (0, total - len(narr)))
 
+    sfx = load(a.sfx)[:total] if a.sfx else np.zeros(total)
+    if len(sfx) < total:
+        sfx = np.pad(sfx, (0, total - len(sfx)))
+
     if a.bgm:
         bgm = load(a.bgm)
         if len(bgm) < total:
             bgm = np.pad(bgm, (0, total - len(bgm)))
         g = duck_envelope(narr, total, a.duck_db)
-        bus = bgm[:total] * a.bgm_gain * g + narr[:total] * a.voice_gain
+        bus = bgm[:total] * a.bgm_gain * g + narr[:total] * a.voice_gain + sfx[:total] * a.sfx_gain
         ducked_pct = float(np.mean(g < 0.85) * 100)
     else:
-        bus = narr[:total] * a.voice_gain
+        bus = narr[:total] * a.voice_gain + sfx[:total] * a.sfx_gain
         ducked_pct = 0.0
 
     peak = float(np.max(np.abs(bus))) if total else 0.0

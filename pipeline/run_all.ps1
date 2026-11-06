@@ -1,5 +1,5 @@
 ﻿# =====================================================================
-# run_all.ps1 —— 一键流水线：渲染 → QA 闸门 → BGM → 旁白 → 混音 → 合成 → 报告
+# run_all.ps1 —— 一键流水线：渲染 → QA 闸门 → BGM → 音效/旁白 → 混音 → 合成 → 报告
 #
 #   解决的问题：以前 5 条命令人肉跑、闸门靠自觉。
 #   film-love-math 7.14 分（低于 8 分线）照样出了片——这条流水线会让它停在 QA。
@@ -11,7 +11,7 @@
 #   powershell -File ..\..\pipeline\run_all.ps1 -SkipRender                  # 只做 QA+BGM+旁白+合成
 #   powershell -File ..\..\pipeline\run_all.ps1 -NoGate                      # QA 只出报告不拦截
 #
-# 退出码：0 成功 / 1 渲染失败 / 2 QA 闸门拦截 / 3 BGM 或合成失败 / 4 旁白或混音失败
+# 退出码：0 成功 / 1 渲染失败 / 2 QA 闸门拦截 / 3 BGM 或合成失败 / 4 音效/旁白/混音失败
 # =====================================================================
 param(
   [string]$Project  = ".",
@@ -146,34 +146,51 @@ if (-not $SkipBgm) {
   Write-Host "`n[3/5] 跳过 BGM（-SkipBgm）"
 }
 
-# ---------- 4. 旁白（SCENE-PLAN 带 narration 时）+ 闪避混音 ----------
+# ---------- 4. SFX（plan 带 sfx 时）+ 旁白（plan 带 narration 时）+ 闪避混音 ----------
 $narrPath = Join-Path $project $NarrOut
+$sfxPath  = Join-Path $project "sfx.wav"
 $mixPath  = Join-Path $project $MixOut
 $planPath = Join-Path $project $Plan
-$hasNarr = $false
+$hasNarr  = $false
+$hasSfx   = $false
+$needMix  = $false
 if (Test-Path $planPath) {
-  $probe = & $python -c "import json,sys; d=json.load(open(sys.argv[1],encoding='utf-8')); print('yes' if d.get('narration') else 'no')" $planPath 2>$null
-  if ("$probe".Trim() -eq "yes") { $hasNarr = $true }
+  $probe = & $python -c "import json,sys; d=json.load(open(sys.argv[1],encoding='utf-8')); print(('yes' if d.get('narration') else 'no'), ('yes' if any(sc.get('sfx') for sc in d.get('scenes',[])) else 'no'))" $planPath 2>$null
+  $parts = ("$probe".Trim()) -split '\s+'
+  if ($parts.Count -ge 1 -and $parts[0] -eq "yes") { $hasNarr = $true }
+  if ($parts.Count -ge 2 -and $parts[1] -eq "yes") { $hasSfx = $true }
 }
-if ($hasNarr) {
-  Write-Host "`n[4/5] 旁白合成 + 闪避混音…" -ForegroundColor Cyan
+if ($hasNarr -or $hasSfx) {
+  Write-Host "`n[4/5] 音效/旁白 + 闪避混音…" -ForegroundColor Cyan
   Push-Location $project
   try {
-    & $python "$pipeline\audio\narrate\build_narration.py" $Plan --out $NarrOut --rate $VoiceRate
-    if ($LASTEXITCODE -ne 0) { Write-Host "[X]旁白合成失败" -ForegroundColor Red; exit 4 }
-    $mixArgs = @("$pipeline\audio\narrate\mix_audio.py", "--narration", $NarrOut, "--duration", "$seconds", "--out", $MixOut)
-    if ((Test-Path $bgmPath) -and -not $SkipBgm) { $mixArgs += @("--bgm", $Bgm) }
-    & $python @mixArgs
-    if ($LASTEXITCODE -ne 0) { Write-Host "[X]混音失败" -ForegroundColor Red; exit 4 }
+    if ($hasSfx) {
+      & $python "$pipeline\audio\synth_sfx.py" $sfxPath --plan $Plan --duration $seconds
+      if ($LASTEXITCODE -ne 0) { Write-Host "[X]音效合成失败" -ForegroundColor Red; exit 4 }
+      $needMix = $true
+    }
+    if ($hasNarr) {
+      & $python "$pipeline\audio\narrate\build_narration.py" $Plan --out $NarrOut --rate $VoiceRate
+      if ($LASTEXITCODE -ne 0) { Write-Host "[X]旁白合成失败" -ForegroundColor Red; exit 4 }
+      $needMix = $true
+    }
+    if ($needMix) {
+      $mixArgs = @("$pipeline\audio\narrate\mix_audio.py", "--duration", "$seconds", "--out", $MixOut)
+      if ($hasNarr -and (Test-Path $narrPath)) { $mixArgs += @("--narration", $NarrOut) }
+      if ($hasSfx -and (Test-Path $sfxPath))  { $mixArgs += @("--sfx", "sfx.wav") }
+      if ((Test-Path $bgmPath) -and -not $SkipBgm) { $mixArgs += @("--bgm", $Bgm) }
+      & $python @mixArgs
+      if ($LASTEXITCODE -ne 0) { Write-Host "[X]混音失败" -ForegroundColor Red; exit 4 }
+    }
   } finally { Pop-Location }
 } else {
-  Write-Host "`n[4/5] 跳过旁白（无 $Plan 或 plan 不带 narration）"
+  Write-Host "`n[4/5] 跳过音效/旁白（无 $Plan 或 plan 不带 narration/sfx）"
 }
 
 # ---------- 5. 合成 ----------
 Write-Host "`n[5/5] ffmpeg 合成…" -ForegroundColor Cyan
 $buildArgs = @{ Frames = $framesDir; Fps = $Fps; Out = (Join-Path $project $Out) }
-if ($hasNarr -and (Test-Path $mixPath)) { $buildArgs.Audio = $mixPath }
+if ($needMix -and (Test-Path $mixPath)) { $buildArgs.Audio = $mixPath }
 elseif ((Test-Path $bgmPath) -and -not $SkipBgm) { $buildArgs.Audio = $bgmPath }
 & powershell -NoProfile -File "$pipeline\compose\build.ps1" @buildArgs
 if ($LASTEXITCODE -ne 0) { Write-Host "[X]合成失败" -ForegroundColor Red; exit 3 }

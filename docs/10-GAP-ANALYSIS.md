@@ -68,6 +68,8 @@
 `synth_bgm.py` 只有 BGM。比特新语式观感的一半来自 **whoosh / impact / UI 音效贴着动效走**
 （数字砸下配 impact、卡片飞入配 whoosh）。CUE-SHEET 已经有卡点表，正好逐点铺音效。
 **修法 → P1：synth_sfx.py 按卡点表合成音效轨，与 BGM 混音。**
+**✅ 已修（2026-11-06，P1 #6）：`pipeline/audio/synth_sfx.py` 落地，6 音效白名单 +
+riser 向前铺 + SFX 不闪避，见 docs/17-SFX.md；demo-hook-compound 三层音频端到端首验通过。**
 
 ### G7 · 没有品牌资产，流程没有编排
 
