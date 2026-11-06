@@ -4,6 +4,39 @@
 **纪律：每一次推送到 GitHub 都递增版本 + 在本文件记录 + 打同名 tag。**
 版本判定：新功能/工具增强 → MINOR；修 bug/文档同步 → PATCH；破坏性改动（渲染契约、plan 格式不兼容）→ MAJOR。
 
+## [1.5.0] - 2026-11-06
+
+### Added — 可发布级商业包装
+- **品牌层 `brand/`**：`logo.svg` / `favicon.svg` / `BRAND.md`（名称、tagline、配色令牌、
+  字体与动效纪律、禁用示例），色值逐项对齐 `palette.json` 已过闸的 deep-space 皮肤。
+- **展示站点 `site/`**：`index.html` 单文件、零外部依赖、响应式、EN/中文切换
+  （`?lang=zh` 可分享中文链接）、`prefers-reduced-motion` 降级；真实能力数据、五阶段链路、
+  QA 门禁、5 条样片、三档合作方式与 FAQ。配套 `og-card.svg` / `favicon.svg` /
+  `check.py`（零外链 / i18n 成对 / 锚点 / meta / 品牌色 / 版本同步自检）。
+- **商业化文档**：`docs/22-COMMERCIAL.md`（ICP、产品边界、Self-host / Integration /
+  Managed series 三档、每期交付物、质量验收、数据合规、成本模型、FAQ、团队口径）、
+  `docs/23-RELEASE.md`（发布清单）、`SECURITY.md`（密钥纪律 / 无遥测 / 依赖）、
+  `CODE_OF_CONDUCT.md`。`LICENSE` 已存在，现在由门面正式引用。
+
+### Changed — 门面整理
+- `README.md` / `README.en.md` 重写为商业级双语门面：删除过时内容（「只服务 flash」、
+  「TTS 未做」、重构前目录树、个人口径的「7 步停下来确认」、2026-10 的具体价格），
+  换成当前架构、真实实测数据、样片 QA 分数、商业化入口与合规链接。
+- 样片分数按实片 `qa.json` 校准：project-vibe-dsf 8.5 → 9.1、区间 8.8–9.5（站点同步）。
+- 全库同步：CONTRIBUTING 目录地图与验证流程、docs/00 历史档案标注、docs/16 架构图、
+  `setup.ps1` 体检表、CI 加站点自检。
+
+### Verified
+- 审计：46 篇 Markdown **0 断链**、docs 00–21 连续、0 处旧扁平路径、
+  对外口径无个人 / 小程序表述。
+- 站点：无头 Chrome 桌面 / 中文 / 窄屏三轮目检；中文标题无孤字，真实 390px iframe 下
+  正文与控件无裁切（headless 最小窗口宽度 518px 造成的截图假象已排除）。
+- `site/check.py` 全项通过；QA / 报告两个回归夹具共 15 条断言仍全绿。
+
+### Notes
+- 站点与 `docs/22` 的服务包文案互为摘要，改一处必须两处同步（已写入发布清单）。
+- 报价不写统一价目：主要可变成本是客户自己的模型 API 用量。
+
 ## [1.4.0] - 2026-11-06
 
 ### Added

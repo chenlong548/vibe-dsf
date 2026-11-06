@@ -1,234 +1,177 @@
 <div align="center">
 
-<img src="docs/demo.gif" width="800" alt="demo-hook-entropy · 8s clip, fully auto-generated"/>
+<img src="brand/logo.svg" width="420" alt="VIBE·DSF — knowledge video pipeline"/>
 
-**全自动知识视频流水线 · 单条 ¥3–5 · QA 像素级验收**
+**自动化知识视频流水线 · 从一句话到可发布成片**
 
-[English](README.en.md) | 简体中文　·　**v1.4.0** · [更新日志](CHANGELOG.md)
+[展示站点](site/index.html) · [English](README.en.md) · **v1.5.0** · [更新日志](CHANGELOG.md) · [商业化](docs/22-COMMERCIAL.md)
+
+`MIT` · `QA ≥ 8 硬门禁` · `零付费依赖` · `自托管`
 
 </div>
 
 ---
 
-# vibe-dsf · 只服务 flash 的视频生态
+# VIBE·DSF
 
-> **唯一目标模型：DeepSeek-V4.1-Flash-1017（`deepseek-flash`）**
-> 不提供 v4-pro 分支、不做双模型对比、不装为别的模型准备的插件。
-> 每一个设计决策的理由都是"因为 flash 是这样"。
+> 我们把一句话主题、一篇论文或一个代码仓库，变成可发布的 1080p 知识视频。
+> 画面由代码绘制，音频确定性合成，逐帧渲染后由**像素级 QA 门禁**验收——不过线不放行。
+
+这不是剪辑软件，也不依赖 SaaS：一条本地跑完的流水线，产出成片、验收报告和可复现的渲染源。
+模型可以随时换，唯一不变的是「数字说了算」。
+
+## 一、为什么这么做
+
+| 痛点 | 我们的做法 |
+|---|---|
+| 模型自评不可信（「挺好的」，其实字幕被裁了） | 11 项像素级 QA，`avg < 8 → exit 1` 硬卡流水线 |
+| 画面密度靠感觉，成片忽好忽坏 | 把审美翻译成可测指标：纹理能量 / 构图重心 / 强调色 / 字幕占用 |
+| 改一帧要重出整片 | `render(t)` 是纯时间函数，同帧 SHA256 一致，支持按秒局部重渲 |
+| 长片没人知道卡在哪一步 | 每次运行产出 `pipeline_report.json`：阶段耗时、产物清单、失败阶段 |
+
+## 二、能力一览（均为实测能力）
+
+| 能力 | 实现 | 实测 |
+|---|---|---|
+| 逐帧渲染 | `pipeline/render/render_frames.mjs`（CDP fast 模式） | 0.65 → **0.13s/帧**（4.9×），1080p30 |
+| 质量门禁 | `pipeline/qa/qa_check.py`（QA v4） | 11 项评分，画风感知安全区，avg≥8 放行 |
+| 音频 | BGM + 六音效白名单 + edge-tts 旁白 + RMS 侧链闪避 | 三层混音，−14 LUFS 合成 |
+| 内容生成线 | 主题 / 论文 PDF / 仓库 README → `SCENE-PLAN.json` | 三条线共用 100% 后半程 |
+| 组件库 | `pipeline/blocks/` 10 个积木 + `registry.json` 分数档案 | 全部过闸入库 |
+| 品牌契约 | `pipeline/palette.json`（palette_name 引用制） | 只收 QA 过闸配色 |
+| 人工评审 | `pipeline/review.mjs` | 场景网格 / A/B 对比 / QA 病灶叠加 |
+| 执行报告 | `pipeline/report/generate.py` | 成功与失败路径都产出，事件流 append-only |
+| 回归保障 | `test_edge_v4.py` + `test_generate.py` + `_probe` | CI 自动跑，15 条断言 |
+
+## 三、架构
 
 ```
-选题 → facts.md → script.md → storyboard.md → 2 版静帧 → 30 秒样片 → 全片
-                                                              ↓
-                          qa_check.py（像素级验收）← 逐帧渲染 ← index.html
-                                                              ↓
-                                                    synth_bgm.py + ffmpeg → final.mp4
+主题一句话 / 论文 PDF / GitHub 仓库
+   ↓  BRIEF 契约 + 校验闸
+SCENE-PLAN.json ──(validate_plan.py 11 组硬闸)──→ build_html.mjs
+   ↓  10 个积木组装成单文件 HTML
+render_frames.mjs ──(CDP 逐帧)──→ frames/*.png
+   ↓
+qa_check.py ──(11 项 / avg≥8 硬门禁，未过线即停)──→ qa.json
+   ↓
+BGM + SFX + TTS ──(mix_audio.py 闪避混音)──→ build.ps1 (ffmpeg) ──→ final.mp4
+   ↓
+generate.py ──→ pipeline_report.json ／ review.mjs ──→ 人工挑卡点
 ```
 
-## 项目结构
+`pipeline/run_all.ps1` 把上述阶段一键串联（渲染 → QA 闸 → BGM → 音效/旁白 → 混音 → 合成 → 报告），
+退出码 `0 / 1 / 2 / 3 / 4` 分别定位到具体失败段。
+
+## 四、目录结构
 
 ```
+brand/                 主标 / 图标 / 品牌规范（BRAND.md）
+site/                  可发布双语展示页 index.html + og-card.svg + check.py
 pipeline/
-├── run_all.ps1        # 一键流水线：渲染→QA闸→BGM→旁白混音→合成（每次产出 pipeline_report.json）
-├── render/            # render_frames.mjs —— CDP fast 模式逐帧截图
-├── qa/                # qa_check.py —— 11 项评分 + avg≥8 硬门禁；test_edge_v4.py 边缘回归夹具
-├── report/            # generate.py —— 阶段事件流 → pipeline_report.json（docs/21）
-├── audio/             # synth_bgm.py / wave_png.py / narrate/（TTS 旁白 + 闪避混音）
-├── compose/           # build.ps1 / build.sh —— ffmpeg 合成
-├── blocks/            # 10 个积木组件库 + registry.json（QA 分数档案）
-├── scene_writer/      # 主题一句话 → SCENE-PLAN.json → 硬闸 → 单文件 HTML
-├── paper2video/       # 论文 PDF → SCENE-PLAN.json（同一后半程）
-└── project2video/     # GitHub README → SCENE-PLAN.json（同一后半程）
-
-projects/<slug>/       # 每片一目录：plan JSON + index.html + 产物（产物不入库）
-skills/ styles/ docs/ scripts/   # 技能包 · 画风规范 · 方法论文档 · 环境脚本
+├── run_all.ps1        一键流水线（每次产出执行报告）
+├── review.mjs         静帧评审页
+├── palette.json       品牌契约 · requirements.txt
+├── render/            CDP 逐帧渲染
+├── qa/                11 项门禁 + 边缘回归夹具
+├── report/            阶段事件 → pipeline_report.json + 回归夹具
+├── audio/             BGM / 音效 / 波形；narrate/ 为 TTS 与闪避混音
+├── compose/           ffmpeg 合成（build.ps1 / build.sh）
+├── blocks/            10 个积木 + registry.json
+├── scene_writer/      主题 → SCENE-PLAN（任务书 / 硬闸 / 组装器）
+├── paper2video/       论文 → PAPER-BRIEF → SCENE-PLAN
+└── project2video/     仓库 → PROJECT-BRIEF → SCENE-PLAN
+projects/              5 条正式样片 + _probe 回归夹具 + _archive 历史归档
+skills/ styles/ docs/ scripts/ .github/
+docs/                  00–23 编号方法论与工程文档
 ```
 
-完整目录地图 + 开发流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-
----
-
-## 一、这份生态只吃 flash 的四个特性
-
-| flash 的特性 | 这条路怎么用它 | 对应文件 |
-|---|---|---|
-| **384K 输出**（同类里最大） | 2000–3000 行单文件**一次写全**，之后只 patch 那几行 | `03-FLASH-PLAYBOOK.md` 第 1 条 |
-| **1M 上下文 + 缓存 ¥0.02/M** | 风格包 + 10 条禁令**全文常驻**，成本可忽略 | 第 2 条 |
-| **图像理解** | "渲帧 → 看图 → 改码"闭环，一次最多看 3 张 | 第 3 条 |
-| **方差大、成本低** | 静帧出 2 版抽卡；失败原样重跑而不是改提示词 | 第 4、5、12 条 |
-
-**反过来说，这三件事它是短板，所以生态里全是补偿：**
-
-| 短板 | 补偿机制 | 在哪 |
-|---|---|---|
-| 审美偏"安全"（爱居中/对称/等距） | 把审美翻译成 **10 条可 grep 的硬禁令** | `skills/vibe-film-ds/references/ds-failure-modes.md` |
-| 倾向整文件重写（改 1 字吐 2000 行） | 强制最小 diff + 每轮自报改了哪几行 | `SKILL.md` 第 5 步、playbook 第 10 条 |
-| 自我评价失真（"挺好的"，其实字被截了） | **像素级验收器，数字说了算** | `pipeline/qa/qa_check.py` |
-
----
-
-## 二、插件：一个都不装（明确答复）
-
-这是结论，不是"可选"：
-
-| 插件 | 它做什么 | 装不装 | 理由 |
-|---|---|---|---|
-| `dsh-hyperframes` | HyperFrames 五件套（自带渲染器 + GSAP） | **不装** | 会引入**第二条渲染路径**。flash 最典型的失误就是在两套 API 之间横跳（一会儿 `render(t)`、一会儿 HyperFrames 的 `data-start`），结果是渲染出半截片。本生态只有一条渲染链 |
-| `dsh-remotion` | React 组件式视频 + 38 条规则 | **不装** | 需要 React 工具链，且 38 条规则讲的是 Remotion API，与我们的单文件 Canvas **零重叠**。纯增上下文负担 |
-| `dsh-ffmpeg` | 7 类 ffmpeg 工具 | **不装** | `build.ps1` + `render_frames.mjs` 已覆盖抽帧/合成/转码。多一条命令 = 多一个出错面，而且它输出的参数不受我们的响度规范约束 |
-| `modlens` | 给**纯文本模型**补视觉 | **不装** | **flash 自带图像理解**，装它纯属冗余 |
-
-**唯一会让你想装的理由**：想偷懒少写 shell。但代价是——当 agent 有两条路可走时，flash 会走错的那条，而且它不会告诉你。
-
-> 如果哪天你**真的**要做 3D 或 React 视频，再来装 `dsh-remotion`；
-> 但那是另一个项目，不是这套。
-
----
-
-## 三、目录结构
-
-```
-vibe-dsf/
-├── README.md                    ← 你正在看的（定位 + 决策 + 用法）
-├── docs/
-│   ├── 00-INVENTORY.md          配齐清单：6 个能力域 + 零插件决策表
-│   ├── 01-MODEL-PROFILE.md      flash 画像：硬指标、价格、参数
-│   ├── 02-FLASH-EDGE.md         用闪存换迭代：为什么这个组合反而更强
-│   ├── 03-FLASH-PLAYBOOK.md     ★ 12 条 flash 专用调优
-│   └── 04-AB-RESULT.md          ★ 对照实验：禁令把 7.7 拉到 9.1（含局限声明）
-├── skills/
-│   ├── vibe-film-ds/SKILL.md    主技能：7 步 + 回看回路
-│   │   └── references/
-│   │       ├── style-dna.md           数值规范（照抄）
-│   │       └── ds-failure-modes.md    ★ 10 条硬禁令（自建）
-│   ├── qa-gate/SKILL.md         验收技能
-│   └── bgm-synth/SKILL.md       配乐技能
-├── styles/                     画风包（横屏）
-│   ├── paper-gold.md            ✅ 已出片（哲学/社科/诺奖故事）
-│   ├── nocturne.md              ✅ 已出帧（物理/数学/算法）
-│   ├── romance.md               ✅ 已出帧（爱情/亲情/怀念）
-│   └── fable.md                 ⬜ 仅竖屏版，横屏待改（心理/行为）
-├── pipeline/                   模型无关的五件套（已实测）
-│   ├── render_frames.mjs        逐帧抓图（CDP 快模式 0.13s/帧 / 只重渲某段）
-│   ├── qa_check.py              像素级验收 v4（11 指标，avg≥8 硬门禁，画风感知安全区）
-│   ├── synth_bgm.py             确定性 BGM（ambient 纪录片 / vibe 电子两种风格）
-│   ├── wave_png.py              把 wav 画成波形图（agent 听不见，只能看图验）
-│   ├── build.ps1 / build.sh     ffmpeg 合成（−14 LUFS）
-│   ├── run_all.ps1              一键流水线：渲染→QA 闸→BGM→合成
-│   ├── scene_writer/            ★ 场景规划自动化：PROMPT 任务书 + validate_plan 硬闸 + build_html 组装
-│   ├── blocks/                  ★ 场景积木库（过 QA 才入库）：entropy-burst / data-chart / beat-counter / vs-counters
-│   ├── narrate/                 ★ 旁白层：edge-tts 合成 + 窗口对齐 + BGM 闪避混音（docs/13）
-│   ├── paper2video/             ★ 论文→视频翻译层：拆解任务书 + brief 闸 + 规划衔接（docs/14）
-│   └── requirements.txt
-├── projects/
-│   ├── demo-26s/               ★ 已出片样片（纸金风，26 秒 1080p30）
-│   ├── demo-hook-entropy/      ★ 熵增 8s 钩子（四层构图验证片，QA 8.5）
-│   ├── demo-hook-compound/     ★ 复利 11.4s 钩子（SCENE-WRITER 全自动 + 人声旁白，QA 8.8 过闸）
-│   ├── paper-shannon1948/      ★ 香农 1948 论文科普 23.8s（PAPER2VIDEO 全自动，QA 9.5 过闸）
-│   ├── paper-shannon-deep/     ★ 香农 1948 深讲版 180s（PAPER2VIDEO 长视频章节化，QA 9.2 过闸）
-│   ├── project-vibe-dsf/       ★ 项目自举介绍片 50s（PROJECT2VIDEO 全自动，paper 风格，QA 8.5 过闸）
-│   ├── _probe/                 深空回归探针（换肤不伤旧片的 fixture）
-│   ├── nocturne-demo/          深空理性验证帧（8 秒）
-│   └── ab-test/                A/B 对照实验（同镜头两种写法）
-└── scripts/
-    ├── setup.ps1               体检（不动系统）
-    └── env.ps1                 环境变量（全部锁到 flash）
-```
-
----
-
-## 四、配齐状态
-
-| 能力域 | 状态 | 实现 |
-|---|---|---|
-| 画面（代码渲染） | ✅ | `projects/demo-hook-entropy/index.html`（最新样片）；首条 26s 片在 `_archive/demo-26s` |
-| 声音（BGM） | ✅ | `synth_bgm.py`，已生成 `bgm.wav` |
-| 渲染（抓帧+合成） | ✅ | 780 帧 / 并发 8 / 实测推算 7–8 分钟（后台跑过 24 分钟的先例，见 playbook 第 11 条） |
-| 验收（质量门禁） | ✅ | `qa_check.py` 实测 9.4 与 8.3 分 |
-| 风格（画风包） | ✅ 2 套已出片 | 纸金 `paper-gold`（26s 成片）、理性 `nocturne`（验证帧）；`fable` 仅竖屏版（横屏待改） |
-| 事实（选题核实） | ✅ | DeepSeek Search/Fetch（¥5/千次） |
-| **审美对照实验** | ✅ 已做 | A 默认 7.7 / B 按禁令 **9.1**，见 `docs/04-AB-RESULT.md` |
-| 插件 | ⛔ 不装 | 见第二节，这是决策不是缺口 |
-| 配音 TTS | ⬜ 未做 | 无旁白路线已够用；要口播需接第三方 |
-
-体检实测：**16 项通过 / 0 缺失**（`powershell -File scripts\setup.ps1`）。
-
-### 验证状态（哪些是真测过，哪些只是写下来）
-
-| 项 | 状态 | 证据 |
-|---|---|---|
-| 确定性渲染（同 t 同像素） | ✅ 已验证 | 两次抓帧 PNG SHA256 一致 |
-| 780 帧 → MP4 | ✅ 已验证 | 跑通过两次，26.00s / 1080p30 / h264+aac / bt709 |
-| `qa_check.py` | ✅ 已验证并校准 | 首版阈值把我自己的 demo 判成 6.7 分不合格，按实测重定后 9.4 / 8.3 |
-| `synth_bgm.py` | ✅ 已验证 | 26.00s wav，mean −21.3dB / peak −4.4dB |
-| `setup.ps1` / `build.ps1` | ✅ 已验证 | 16/16 通过；`exit 0`、bt709、BOM 都已修 |
-| **并发对速度的影响** | ⚠️ 已验证且**推翻原假设** | 4/8/12 都是 0.54–0.57 s/帧，±5%（详见 playbook 第 11 条） |
-| **竖屏 1080×1920** | ⛔ 放弃（决策） | 2026-10-22 决定**只做横屏**。实测过：传宽高只会得到上下黑边，需重写坐标系统，不值得 |
-| `nocturne` 画风 | ✅ 已出帧 | `projects/_archive/nocturne-demo/`：坐标轴生长 + 收敛曲线 + 标准误参数卡 |
-| `romance` 画风 | ✅ 已出帧 | `projects/_archive/romance-demo/`：落日暖调 + 散景 + 纸条手写（爱情片验证） |
-| `fable` 画风 | ❌ **仅竖屏版，横屏待改** | 原始规范是竖屏的，本项目只做横屏，所以它还没被改成横屏（不是"不支持竖屏"） |
-| **A/B 对照实验** | ✅ 已做（非盲测） | 同一镜头两种写法：7.7 → 9.1；但 B 的密度 0.21% 仍低于 0.3% 线 |
-| 10 条失败模式 | ⚠️ 观察假设 | 来自我自己的输出习惯，没做对照实验 |
-| 12 条调优 | ⚠️ 半验证 | 第 11 条已修正；其余是流程约定，未逐条量化 |
-| 插件 | ⛔ 主动拒绝 | 从未安装，也无计划 |
-
-**一句话：工程链路我全测过，方法论我大部分没测。**
-
----
+完整目录地图、依赖方向与加积木流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 五、跑起来
+
+依赖：Python 3.10+（`numpy` / `pillow` / `edge-tts`）、Node 20+、本机 Chrome、ffmpeg。
+不需要 GPU，也不需要付费连接器。
 
 ```powershell
 # 0) 体检（只读，不动系统）
 powershell -File scripts\setup.ps1
 
-# 1) 看样片
-cd projects\demo-hook-entropy
-start final.mp4
+# 1) 一键全流程（在项目目录已有帧时可 -SkipRender 免重渲）
+powershell -File pipeline\run_all.ps1 -Project projects\demo-hook-compound -SkipRender
+#   全片渲染去掉 -SkipRender 并加 -Duration <秒>；成功后看 pipeline_report.json
 
-# 2) 改一个变量，出自己的帧（出 2 版抽卡）
-node ..\..\pipeline\render\render_frames.mjs --stills 3,45,132
-
-# 3) 全片 + 验收 + 合成
+# 2) 分步跑（在项目目录里）
 node ..\..\pipeline\render\render_frames.mjs --fps 30 --duration 8
 python ..\..\pipeline\qa\qa_check.py frames --fps 30 --json qa.json
 python ..\..\pipeline\audio\synth_bgm.py bgm.wav --bpm 77 --duration 8
 powershell -File ..\..\pipeline\compose\build.ps1 -Audio bgm.wav
 
-# 4) 只重渲某几秒（改文案后最常用）
+# 3) 局部重渲 + 人工评审
 node ..\..\pipeline\render\render_frames.mjs --start 3 --end 5
+node ..\..\pipeline\review.mjs --project projects\demo-hook-compound
 ```
 
----
+站点是单文件静态页，双击 `site/index.html` 即可离线打开；`python site/check.py` 是发布自检。
 
-## 六、成本（只有 flash 一列）
+## 六、质量与可观测性
 
-| | 空闲时段 | 高峰时段 |
+- **QA v4**：安全区按片子自身画风判定（深底查亮内容溢出、浅底查暗内容溢出），
+  取代旧版绝对亮度线的双盲；`--v2` / `--legacy-edge` 可回退做同帧对比（`docs/20`）。
+- **执行报告**：阶段耗时、QA 摘要、8 类产物字节数、`verdict` 与 `failed_stage`；
+  QA 拦截时同样落盘（`docs/21`）。
+- **CI**：语法检查、`_probe` 冒烟、两个回归夹具、站点自检、版本纪律守卫。
+- **诚实边界**：只做 1920×1080 横屏；方法论中的部分禁令来自观察、未全部做 A/B；
+  竖屏是实测后主动放弃，不写成「后续支持」。
+
+## 七、样片
+
+<img src="docs/demo.gif" width="720" alt="demo-hook-entropy · 8s 自动生成的知识视频片段"/>
+
+| 样片 | 内容线 | 片长 | QA |
+|---|---|---|---|
+| demo-hook-entropy | 四层构图基线片 | 8s | 9.1 |
+| demo-hook-compound | SCENE-WRITER 全自动 + 旁白 + 音效 | 11.43s | 8.8 |
+| paper-shannon1948 | PAPER2VIDEO 论文科普 | 23.81s | 9.5 |
+| paper-shannon-deep | PAPER2VIDEO 章节化长片 | 180s | 9.2 |
+| project-vibe-dsf | PROJECT2VIDEO 项目自举片 | 50s | 9.1 |
+
+分数来自各片实际渲染帧的 `qa.json`（短片在 v2/v3/v4 口径下逐项等价）。
+帧、音频与成片都是本地可重建产物，不入库。
+
+## 八、商业化
+
+开源核心 MIT、自托管、无遥测；商业服务分三档：
+
+| 档位 | 适用 | 计价 |
 |---|---|---|
-| 2 分钟片 | **¥3–5** | ¥6–10 |
-| 60 秒片 | ¥1.5–2.5 | ¥3–5 |
-| 30 秒 A/B 样片 | ¥0.8 | ¥1.6 |
+| Self-host | 有工程团队，自己掌控 | 免费（MIT） |
+| Integration | 接入现有内容栈、定制积木与画风 | 按范围报价 |
+| Managed series | 按系列交付成片，团队人工复核 | 按系列报价 |
 
-空闲 = 工作日 9–12 / 14–18 之外**全部时间**（含周末、节假日）。**把"写代码 + 看图"排在晚上，直接省一半。**
+无 SaaS 订阅费，客户只付自己的模型 API 与算力；报价不做 token 转售加价。
+详见 [docs/22-COMMERCIAL.md](docs/22-COMMERCIAL.md) 与[展示站点](site/index.html)。
 
----
+## 九、文档地图
 
-## 七、下一步
+| 编号 | 主题 |
+|---|---|
+| 00–09 | 配齐清单、模型画像、flash 方法论、风格 DNA、失败模式、构图模板 |
+| 10–11 | 差距分析、引擎选型结论（不换 Remotion，引擎不是瓶颈） |
+| 12–15 | SCENE-WRITER / 旁白 / PAPER2VIDEO / PROJECT2VIDEO 三条内容线 |
+| 16 | 全景总结与踩坑知识库 |
+| 17–21 | SFX、品牌契约、QA v3、QA v4、执行报告 |
+| 22–23 | 商业化定位、发布清单 |
 
-**最快出片路径（SCENE-WRITER，2026-10-29 起）**：给一句话主题 + 时长，走
-`docs/12-SCENE-WRITER.md` 的四步链路——规划、校验、组装、渲染全部自动，
-成片不过 QA 门禁不放行。人工只做两件事：给主题、看成片。
+## 十、合规与维护
 
-整片定制（7 步全流程）依旧可用：**领域 / 观众要记住的一句话 / 选哪套画风**
-（纸金 或 深空理性 —— 只做横屏 1920×1080，画幅不用选）。
+- 自建部分 [MIT](LICENSE)，上游风格数值按各自许可（见 LICENSE 尾段）。
+- [SECURITY.md](SECURITY.md)：漏洞披露、密钥纪律、本地运行无遥测、依赖清单。
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)：社区准则。
+- 每次推送 GitHub 递增 `VERSION` + 更新 `CHANGELOG.md` + 打同名 tag，CI 有守卫；
+  完整发布清单见 [docs/23-RELEASE.md](docs/23-RELEASE.md)。
 
-我会按 7 步走，每步停下来给你确认；每条片跑完把 **token 账** 打在最后，让你看清钱花在哪。
-
----
-
-## 八、参考来源
+## 参考来源
 
 - [DeepSeek 官方价目表](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/) · [Claude Code 接入 DeepSeek](https://api-docs.deepseek.com/zh-cn/quick_start/agent_integrations/claude_code)
 - [vibe-knowledge-video](https://github.com/xiazhuo123456789/vibe-knowledge-video)（风格数值来源） · [vibe-knowledge-film](https://github.com/HeyChengC/vibe-knowledge-film)
-- [DSH 插件库](https://dsh.yeyupiaoling.cn/)（14499 个插件，本生态**一个都不用**，理由见第二节）
-
-自建部分 MIT。上游风格数值请遵守其许可。
+- [DSH 插件库](https://dsh.yeyupiaoling.cn/)（本项目主动不采用，理由见 `docs/00-INVENTORY.md`）

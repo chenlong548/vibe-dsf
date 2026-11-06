@@ -40,6 +40,7 @@
 └──────────────────────────────────────────────────────────────────────┘
 run_all.ps1：五阶段一键串联（渲染→QA闸→BGM→音效/旁白→混音合成），exit 0-4 定位失败段
 generate.py：每阶段事件 → pipeline_report.json（耗时/QA 摘要/产物清单/失败阶段，docs/21）
+brand/ + site/：品牌资产与可发布双语展示页（商业化 docs/22 · 发布清单 docs/23）
 ```
 
 > 目录归属（2026-11-06 企业级重构）：render_frames.mjs → `pipeline/render/`、qa_check.py →

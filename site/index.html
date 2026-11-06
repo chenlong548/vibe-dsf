@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#05050F">
+<meta name="description" content="VIBE·DSF — the automated knowledge-video pipeline. One line, a paper, or a repository becomes a release-ready 1080p film, verified by a pixel-level QA gate.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="VIBE·DSF — Rendered. Scored. Shipped.">
+<meta property="og:description" content="An open-source, self-hosted pipeline that turns a topic, paper or repository into a release-ready knowledge video.">
+<meta property="og:image" content="og-card.svg">
+<title>VIBE·DSF — Rendered. Scored. Shipped.</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+  :root{
+    --bg-in:#141026; --bg-out:#05050F; --accent:#E8A87C; --ink:#EAEAF2;
+    --gray:#8A8AA0; --line:rgba(138,138,160,.20); --surface:rgba(234,234,242,.035);
+    --max:1120px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:radial-gradient(120% 90% at 50% -10%,var(--bg-in) 0%,var(--bg-out) 62%) fixed;
+    color:var(--ink); font:16px/1.65 Inter,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.055;
+    background-image:radial-gradient(var(--gray) .6px,transparent .6px); background-size:24px 24px;
+  }
+  .lightband{
+    position:fixed; top:0; left:0; width:360px; height:100%; pointer-events:none; z-index:0;
+    background:linear-gradient(90deg,transparent,rgba(232,168,124,.055),transparent);
+    animation:sweep 18s linear infinite;
+  }
+  @keyframes sweep{from{transform:translateX(-420px)}to{transform:translateX(105vw)}}
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto} .lightband{animation:none;display:none}
+  }
+  .wrap{width:min(var(--max),calc(100% - 48px)); margin:0 auto; position:relative; z-index:1}
+  a{color:inherit;text-decoration:none}
+  a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .num{font-variant-numeric:tabular-nums}
+  .accent{color:var(--accent)}
+  .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gray);margin:0 0 18px}
+  h1,h2,h3{line-height:1.18;letter-spacing:-.02em;margin:0}
+  h1{font-size:clamp(38px,5.2vw,64px);font-weight:700}
+  h1 span{display:block}
+  h2{font-size:clamp(28px,3.4vw,40px);font-weight:700}
+  h3{font-size:19px;font-weight:650}
+  p{color:#c6c6d4;margin:0}
+  .lead{font-size:18px;max-width:560px}
+  section{padding:84px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:0}
+  .sec-head{max-width:720px;margin-bottom:40px}
+  .sec-head p{margin-top:14px;color:var(--gray);font-size:16px}
+
+  /* header */
+  header{position:sticky;top:0;z-index:20;backdrop-filter:blur(14px);
+    background:rgba(5,5,15,.72);border-bottom:1px solid var(--line)}
+  .bar{display:flex;align-items:center;gap:26px;height:70px}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:700;letter-spacing:.06em;font-size:17px;white-space:nowrap}
+  .brand svg{width:30px;height:30px;flex:none}
+  .brand b{color:var(--accent);font-weight:700}
+  nav{display:flex;gap:22px;margin-left:auto;font-size:14px;color:#c6c6d4}
+  nav a:hover{color:var(--accent)}
+  .lang{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;flex:none}
+  .lang button{background:transparent;border:0;color:var(--gray);font:inherit;font-size:12px;
+    padding:6px 12px;cursor:pointer;letter-spacing:.05em}
+  .lang button[aria-pressed="true"]{background:var(--accent);color:#141026;font-weight:700}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:12px 20px;border-radius:9px;
+    font-size:14px;font-weight:650;cursor:pointer;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink);white-space:nowrap;transition:background .18s,border-color .18s;}
+  .btn:hover{background:rgba(232,168,124,.09);border-color:rgba(232,168,124,.55)}
+  .btn.primary{background:var(--accent);color:#141026;border-color:var(--accent)}
+  .btn.primary:hover{background:#f0b892;border-color:#f0b892}
+  .btn.small{padding:8px 14px;font-size:13px}
+
+  /* hero */
+  .hero{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding-top:96px}
+  .hero > div{min-width:0}
+  .hero .actions{display:flex;gap:12px;flex-wrap:wrap;margin:32px 0 20px}
+  .fine{font-size:13px;color:var(--gray)}
+  .frame{
+    position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;
+    background:radial-gradient(80% 70% at 42% 40%,#1c1733 0%,#07060f 78%);
+    border:1px solid rgba(138,138,160,.28);box-shadow:0 28px 80px rgba(0,0,0,.45)
+  }
+  .frame::after{
+    content:"";position:absolute;top:0;left:-35%;width:35%;height:100%;
+    background:linear-gradient(90deg,transparent,rgba(232,168,124,.10),transparent);
+    animation:sweep-frame 11s linear infinite;
+  }
+  @keyframes sweep-frame{from{transform:translateX(0)}to{transform:translateX(390%)}}
+  @media (prefers-reduced-motion:reduce){.frame::after{display:none}}
+  .frame .grid{position:absolute;inset:0;opacity:.24;
+    background-image:linear-gradient(rgba(138,138,160,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(138,138,160,.16) 1px,transparent 1px);
+    background-size:44px 44px}
+  .frame .burst{position:absolute;left:38%;top:36%;width:26%;height:26%;border-radius:50%;
+    background:radial-gradient(circle,rgba(232,168,124,.42),transparent 68%)}
+  .frame .orbit{position:absolute;left:24%;top:24%;width:52%;height:52%;border:1px solid rgba(232,168,124,.30);border-radius:50%}
+  .frame .topic{position:absolute;left:7%;top:15%;font-size:clamp(13px,1.5vw,21px);font-weight:650;letter-spacing:.02em}
+  .frame .rule{position:absolute;left:7%;top:29%;width:19%;height:2px;background:var(--accent)}
+  .frame .subs{position:absolute;left:7%;right:7%;bottom:13%;text-align:center}
+  .frame .subs .zh{font-size:clamp(11px,1.3vw,18px);font-weight:600}
+  .frame .subs .en{font-size:clamp(8px,.9vw,12px);color:var(--gray);margin-top:4px;letter-spacing:.04em}
+  .frame .wm{position:absolute;right:5%;top:6%;font-size:clamp(8px,.85vw,11px);color:rgba(138,138,160,.8);letter-spacing:.1em}
+  .frame .badge{position:absolute;left:5%;bottom:5%;font-size:clamp(8px,.85vw,11px);color:var(--gray);
+    border:1px solid rgba(138,138,160,.3);border-radius:99px;padding:3px 10px}
+
+  /* metrics */
+  .metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .metric{background:#0a0916;padding:22px 18px}
+  .metric b{display:block;font-size:clamp(22px,2.6vw,32px);font-weight:700;letter-spacing:-.03em}
+  .metric span{display:block;font-size:12px;color:var(--gray);margin-top:6px;line-height:1.45}
+
+  /* steps */
+  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .step{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px 18px;position:relative}
+  .step .idx{font-size:12px;color:var(--accent);letter-spacing:.14em;font-weight:700}
+  .step h3{margin:12px 0 8px;font-size:16px}
+  .step p{font-size:13px;color:var(--gray);line-height:1.55}
+  .step code{font-size:11px;color:#c6c6d4;background:rgba(138,138,160,.10);padding:2px 5px;border-radius:4px}
+
+  /* QA split */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:start}
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-top:22px}
+  .checks div{font-size:14px;color:#c6c6d4;display:flex;gap:9px;align-items:baseline}
+  .checks i{color:var(--accent);font-style:normal;font-size:12px}
+  pre{margin:0;background:#080714;border:1px solid var(--line);border-radius:12px;
+    padding:22px;overflow:auto;font:13px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace;color:#d7d7e4}
+  pre .k{color:var(--accent)} pre .s{color:#9ad7c0} pre .n{color:#f0b892}
+  .note{font-size:13px;color:var(--gray);margin-top:14px}
+
+  /* work */
+  .films{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  .film{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    transition:border-color .18s,background .18s}
+  .film:hover{border-color:rgba(232,168,124,.55);background:rgba(232,168,124,.045)}
+  .thumb{aspect-ratio:16/9;position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+  .thumb::before{content:"";position:absolute;inset:0;opacity:.5;
+    background-image:radial-gradient(var(--gray) .6px,transparent .6px);background-size:14px 14px}
+  .t1{background:radial-gradient(70% 90% at 42% 40%,#3a2b4c,#08070f)}
+  .t2{background:radial-gradient(70% 90% at 58% 55%,#2d2b4a,#07060f)}
+  .t3{background:linear-gradient(140deg,#fcfcfa 0%,#eeeae4 100%)}
+  .t4{background:linear-gradient(140deg,#1b2130,#080a10)}
+  .t5{background:linear-gradient(140deg,#f7f6f2,#e9e8e2)}
+  .thumb .shape{position:absolute;left:22%;top:30%;width:56%;height:40%;border:1px solid rgba(232,168,124,.55);border-radius:50%}
+  .thumb .dot{position:absolute;left:60%;top:44%;width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .thumb .line{position:absolute;left:12%;right:12%;top:78%;height:2px;background:rgba(232,168,124,.6)}
+  .t3 .shape,.t5 .shape{border-color:rgba(13,110,99,.45)}
+  .t3 .dot,.t5 .dot{background:#0d6e63}
+  .t3 .line,.t5 .line{background:rgba(13,110,99,.45)}
+  .film .body{padding:16px}
+  .film h3{font-size:15px;margin:0 0 6px}
+  .film .meta{font-size:12px;color:var(--gray);display:flex;justify-content:space-between;gap:8px}
+  .film .score{color:var(--accent);font-weight:700}
+
+  /* engagement */
+  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .tier{border:1px solid var(--line);border-radius:14px;padding:26px;background:var(--surface);display:flex;flex-direction:column}
+  .tier.featured{border-color:rgba(232,168,124,.6);background:rgba(232,168,124,.055)}
+  .tier .tag{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .tier h3{font-size:22px;margin:12px 0 8px}
+  .tier .price{font-size:14px;color:var(--ink);font-weight:600;margin-bottom:18px}
+  .tier ul{list-style:none;padding:0;margin:0 0 24px;flex:1}
+  .tier li{font-size:14px;color:#c6c6d4;padding:7px 0 7px 20px;position:relative;border-bottom:1px solid rgba(138,138,160,.10)}
+  .tier li::before{content:"";position:absolute;left:2px;top:16px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .tier .btn{justify-content:center;width:100%}
+
+  /* faq */
+  details{border-bottom:1px solid var(--line);padding:18px 0}
+  details:first-of-type{border-top:1px solid var(--line)}
+  summary{cursor:pointer;font-size:16px;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:20px}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";color:var(--accent);font-weight:700;flex:none}
+  details[open] summary::after{content:"−"}
+  details p{margin-top:12px;font-size:14px;color:var(--gray);max-width:820px}
+
+  /* closing + footer */
+  .closing{text-align:center;padding:96px 0}
+  .closing h2{max-width:760px;margin:0 auto 16px}
+  .closing p{max-width:620px;margin:0 auto 28px;color:var(--gray)}
+  .closing .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  footer{border-top:1px solid var(--line);padding:34px 0 46px;font-size:13px;color:var(--gray)}
+  .foot{display:flex;gap:22px;flex-wrap:wrap;align-items:center}
+  .foot a:hover{color:var(--accent)}
+  .foot .sp{margin-left:auto}
+  .copy{margin-top:26px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .copy code{font:13px ui-monospace,Consolas,monospace;background:#080714;border:1px solid var(--line);
+    border-radius:8px;padding:10px 14px;color:#d7d7e4}
+
+  @media (max-width:1000px){
+    .metrics{grid-template-columns:repeat(3,1fr)}
+    .steps{grid-template-columns:repeat(2,1fr)}
+    .films{grid-template-columns:repeat(2,1fr)}
+    .tiers{grid-template-columns:1fr}
+  }
+  @media (max-width:820px){
+    .wrap{width:min(var(--max),calc(100% - 32px))}
+    nav{display:none}
+    .hero{grid-template-columns:1fr;gap:30px;padding-top:64px}
+    h1{font-size:clamp(32px,8vw,46px)}
+    .lead{font-size:16px;max-width:100%}
+    .split{grid-template-columns:1fr;gap:26px}
+    section{padding:60px 0}
+    .brand{font-size:15px}
+  }
+  @media (max-width:520px){
+    .metrics{grid-template-columns:repeat(2,1fr)}
+    .steps{grid-template-columns:1fr}
+    .films{grid-template-columns:1fr}
+    .checks{grid-template-columns:1fr}
+    .lang button{padding:6px 9px}
+  }
+</style>
+</head>
+<body>
+<div class="lightband" aria-hidden="true"></div>
+
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="#top" aria-label="VIBE·DSF home">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#141026"/>
+        <rect x="11" y="11" width="42" height="42" rx="6" fill="none" stroke="#EAEAF2" stroke-opacity=".25"/>
+        <path d="M16 26 H48 M16 33 H38 M16 40 H44" stroke="#EAEAF2" stroke-opacity=".6" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="45" cy="33" r="4.5" fill="#E8A87C"/><path d="M16 47 H32" stroke="#E8A87C" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      VIBE<b>·</b>DSF
+    </a>
+    <nav aria-label="Primary">
+      <a href="#how" data-en="How it works" data-zh="工作方式">How it works</a>
+      <a href="#qa" data-en="QA gate" data-zh="质量门禁">QA gate</a>
+      <a href="#work" data-en="Work" data-zh="样片">Work</a>
+      <a href="#engage" data-en="Engagement" data-zh="合作方式">Engagement</a>
+      <a href="#faq" data-en="FAQ" data-zh="常见问题">FAQ</a>
+    </nav>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="zh" aria-pressed="false">中文</button>
+    </div>
+    <a class="btn small" href="https://github.com/chenlong548/vibe-dsf" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</header>
+
+<main>
+  <section id="top" class="hero wrap">
+    <div>
+      <p class="eyebrow" data-en="Open source · MIT · Self-hosted" data-zh="开源 · MIT · 自托管">Open source · MIT · Self-hosted</p>
+      <h1>
+        <span data-en="Knowledge videos," data-zh="知识视频，">Knowledge videos,</span>
+        <span class="accent" data-en="rendered and scored." data-zh="渲染并打分。">rendered and scored.</span>
+      </h1>
+      <p class="lead" style="margin-top:22px" data-en="We turn one line, a paper, or a repository into a release-ready 1080p film. Motion graphics, bilingual subtitles, deterministic audio and a pixel-level QA gate — no editor, no footage, no guesswork." data-zh="我们把一句话主题、一篇论文或一个代码仓库，变成可发布的 1080p 成片。代码绘制动效、双语字幕、确定性音频、像素级 QA 门禁——不用剪辑软件、不用实拍素材、不靠感觉。">We turn one line, a paper, or a repository into a release-ready 1080p film. Motion graphics, bilingual subtitles, deterministic audio and a pixel-level QA gate — no editor, no footage, no guesswork.</p>
+      <div class="actions">
+        <a class="btn primary" href="https://github.com/chenlong548/vibe-dsf" target="_blank" rel="noopener" data-en="Get the code" data-zh="获取源码">Get the code</a>
+        <a class="btn" href="#work" data-en="See the work" data-zh="查看样片">See the work</a>
+      </div>
+      <p class="fine" data-en="No SaaS fee. Your keys, your machine, your footage." data-zh="无 SaaS 订阅费。你的密钥、你的机器、你的素材。">No SaaS fee. Your keys, your machine, your footage.</p>
+    </div>
+    <div class="frame" role="img" aria-label="A rendered knowledge-video frame with bilingual subtitles">
+      <div class="grid"></div><div class="orbit"></div><div class="burst"></div>
+      <div class="topic" data-en="ENTROPY ALWAYS WINS" data-zh="熵，总会增加">ENTROPY ALWAYS WINS</div>
+      <div class="rule"></div>
+      <div class="wm">@VIBE·DSF</div>
+      <div class="subs">
+        <div class="zh" data-en="Order is a temporary loan." data-zh="秩序，只是一笔暂时的借款">Order is a temporary loan.</div>
+        <div class="en" data-en="Order is a temporary loan from entropy" data-zh="Order is a temporary loan from entropy">Order is a temporary loan from entropy</div>
+      </div>
+      <div class="badge num">QA 9.1 / 10</div>
+    </div>
+  </section>
+
+  <section class="wrap" style="padding-top:0;border-bottom:0">
+    <div class="metrics">
+      <div class="metric"><b class="num">5</b><span data-en="Reference films, QA 8.8–9.5" data-zh="正式样片，QA 8.8–9.5">Reference films, QA 8.8–9.5</span></div>
+      <div class="metric"><b class="num">10</b><span data-en="Motion blocks, all QA-gated" data-zh="运动积木，全部过闸入库">Motion blocks, all QA-gated</span></div>
+      <div class="metric"><b class="num">11</b><span data-en="Pixel-level QA metrics" data-zh="像素级 QA 指标">Pixel-level QA metrics</span></div>
+      <div class="metric"><b class="num">0.13s</b><span data-en="Per frame, CDP fast mode" data-zh="每帧耗时，CDP fast 模式">Per frame, CDP fast mode</span></div>
+      <div class="metric"><b class="num">180s</b><span data-en="Longest verified film" data-zh="已验证最长成片">Longest verified film</span></div>
+      <div class="metric"><b class="num">0</b><span data-en="Paid connectors or plugins" data-zh="付费连接器或插件">Paid connectors or plugins</span></div>
+    </div>
+  </section>
+
+  <section id="how" class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow" data-en="One pipeline, three entry points" data-zh="一条流水线，三种入口">One pipeline, three entry points</p>
+      <h2 data-en="From an idea to a signed-off film" data-zh="从一个想法，到验收通过的成片">From an idea to a signed-off film</h2>
+      <p data-en="Three content lines share the same back half. Adding a new source type means writing a brief contract and a planning prompt — rendering, QA, audio and assembly stay untouched." data-zh="三条内容生成线共用同一后半程。新增内容类型只需写 brief 契约与规划任务书，渲染、QA、音频、合成零改动。">Three content lines share the same back half. Adding a new source type means writing a brief contract and a planning prompt — rendering, QA, audio and assembly stay untouched.</p>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="idx num">01</div><h3 data-en="Input" data-zh="输入">Input</h3>
+        <p data-en="A topic line, a paper PDF, or a repository README. Brief validators reject missing evidence." data-zh="一句话主题、论文 PDF 或仓库 README。brief 校验器会拦下缺证据的内容。">A topic line, a paper PDF, or a repository README. Brief validators reject missing evidence.</p>
+        <p style="margin-top:8px"><code>SCENE-WRITER</code> <code>PAPER2VIDEO</code> <code>PROJECT2VIDEO</code></p></div>
+      <div class="step"><div class="idx num">02</div><h3 data-en="Plan" data-zh="规划">Plan</h3>
+        <p data-en="SCENE-PLAN.json passes 11 hard checks: beat grid, density budget, off-centre composition, subtitle bounds." data-zh="SCENE-PLAN.json 过 11 组硬闸：拍点网格、密度预算、构图禁居中、字幕边界。">SCENE-PLAN.json passes 11 hard checks: beat grid, density budget, off-centre composition, subtitle bounds.</p></div>
+      <div class="step"><div class="idx num">03</div><h3 data-en="Render" data-zh="渲染">Render</h3>
+        <p data-en="Reusable motion blocks assemble into one HTML file; headless Chrome captures deterministic frames." data-zh="积木组装成单文件 HTML，无头 Chrome 逐帧抓取确定性画面。">Reusable motion blocks assemble into one HTML file; headless Chrome captures deterministic frames.</p></div>
+      <div class="step"><div class="idx num">04</div><h3 data-en="Gate" data-zh="门禁">Gate</h3>
+        <p data-en="11 metrics scored 1–10. Anything under 8 stops the line with exit 1 — the model never grades its own work." data-zh="11 项按 1–10 打分。低于 8 分直接 exit 1 停线——模型不许给自己的作品打分。">11 metrics scored 1–10. Anything under 8 stops the line with exit 1 — the model never grades its own work.</p></div>
+      <div class="step"><div class="idx num">05</div><h3 data-en="Ship" data-zh="交付">Ship</h3>
+        <p data-en="BGM + SFX + TTS with side-chain ducking, ffmpeg assembly, and a machine-readable run report." data-zh="BGM + 音效 + TTS 侧链闪避，ffmpeg 合成，并留下机器可读的执行报告。">BGM + SFX + TTS with side-chain ducking, ffmpeg assembly, and a machine-readable run report.</p></div>
+    </div>
+  </section>
+
+  <section id="qa" class="wrap">
+    <div class="split">
+      <div>
+        <p class="eyebrow" data-en="Quality is a number, not an opinion" data-zh="质量是数字，不是感觉">Quality is a number, not an opinion</p>
+        <h2 data-en="The gate that refuses to ship" data-zh="会拒绝交付的门禁">The gate that refuses to ship</h2>
+        <p style="margin-top:16px" data-en="A language model will say a frame looks fine while a caption is cut off. Our checker measures the pixels instead, and the pipeline treats its verdict as law." data-zh="模型会一边说「挺好的」，一边让字幕被裁掉。我们用像素说话，并让流水线把判定当成硬规则。">A language model will say a frame looks fine while a caption is cut off. Our checker measures the pixels instead, and the pipeline treats its verdict as law.</p>
+        <div class="checks">
+          <div><i>✓</i><span data-en="Motion density &amp; still runs" data-zh="画面密度与静止段">Motion density &amp; still runs</span></div>
+          <div><i>✓</i><span data-en="Hard-cut rhythm" data-zh="硬切节奏">Hard-cut rhythm</span></div>
+          <div><i>✓</i><span data-en="Style-aware safe area (v4)" data-zh="画风感知安全区（v4）">Style-aware safe area (v4)</span></div>
+          <div><i>✓</i><span data-en="Subtitle band coverage" data-zh="字幕带覆盖">Subtitle band coverage</span></div>
+          <div><i>✓</i><span data-en="Texture energy &amp; composition" data-zh="纹理能量与构图重心">Texture energy &amp; composition</span></div>
+          <div><i>✓</i><span data-en="Accent focus &amp; occupancy" data-zh="强调焦点与字幕占用">Accent focus &amp; occupancy</span></div>
+          <div><i>✓</i><span data-en="Deterministic render (same t, same pixels)" data-zh="确定性渲染（同 t 同像素）">Deterministic render (same t, same pixels)</span></div>
+          <div><i>✓</i><span data-en="CI regression fixtures" data-zh="CI 回归夹具">CI regression fixtures</span></div>
+        </div>
+        <p class="note" data-en="QA v4 detects content bleeding into the safe area relative to the film's own background — dark films catch bright spill, light films catch dark spill. An absolute brightness line was blind to both." data-zh="QA v4 按片子自身的背景判定安全区溢出：深底抓亮内容，浅底抓暗内容。旧的绝对亮度线两头都看不见。">QA v4 detects content bleeding into the safe area relative to the film's own background — dark films catch bright spill, light films catch dark spill. An absolute brightness line was blind to both.</p>
+      </div>
+      <div>
+        <p class="eyebrow" data-en="Every run leaves an audit trail" data-zh="每次运行都留下审计轨迹">Every run leaves an audit trail</p>
+        <pre><span class="k">pipeline_report.json</span>
+
+{
+  <span class="k">"verdict"</span>: <span class="s">"success"</span>,
+  <span class="k">"exit_code"</span>: <span class="n">0</span>,
+  <span class="k">"elapsed"</span>: <span class="n">57.85</span>,
+  <span class="k">"summary"</span>: {
+    <span class="k">"stages_total"</span>: <span class="n">5</span>,
+    <span class="k">"stages_failed"</span>: <span class="n">0</span>
+  },
+  <span class="k">"qa"</span>: {
+    <span class="k">"avg"</span>: <span class="n">8.82</span>,
+    <span class="k">"version"</span>: <span class="s">"v4"</span>,
+    <span class="k">"passed"</span>: <span class="n">true</span>
+  },
+  <span class="k">"failed_stage"</span>: <span class="n">null</span>
+}</pre>
+        <p class="note" data-en="Failures produce a report too: a QA rejection returns exit 2 with verdict qa_blocked and failed_stage qa." data-zh="失败也会产出报告：QA 拦截返回 exit 2、verdict=qa_blocked、failed_stage=qa。">Failures produce a report too: a QA rejection returns exit 2 with verdict qa_blocked and failed_stage qa.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="work" class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow" data-en="Reference films" data-zh="正式样片">Reference films</p>
+      <h2 data-en="Five films, all through the gate" data-zh="五条样片，全部过闸">Five films, all through the gate</h2>
+      <p data-en="Scores come from the checker on the actual rendered frames, not from a human impression. Frames and videos are regenerated locally and are not committed to the repository." data-zh="分数来自对实际渲染帧的检测，不是主观印象。帧与成片在本地重新生成，不入库。">Scores come from the checker on the actual rendered frames, not from a human impression. Frames and videos are regenerated locally and are not committed to the repository.</p>
+    </div>
+    <div class="films">
+      <article class="film"><div class="thumb t1"><div class="shape"></div><div class="dot"></div><div class="line"></div></div>
+        <div class="body"><h3 data-en="Entropy hook" data-zh="熵增钩子">Entropy hook</h3>
+          <div class="meta"><span data-en="8s · scene writer" data-zh="8s · 场景线">8s · scene writer</span><span class="score num">9.1</span></div></div></article>
+      <article class="film"><div class="thumb t2"><div class="shape"></div><div class="dot"></div><div class="line"></div></div>
+        <div class="body"><h3 data-en="Compound hook" data-zh="复利钩子">Compound hook</h3>
+          <div class="meta"><span data-en="11.4s · narrated" data-zh="11.4s · 带旁白">11.4s · narrated</span><span class="score num">8.8</span></div></div></article>
+      <article class="film"><div class="thumb t3"><div class="shape"></div><div class="dot"></div><div class="line"></div></div>
+        <div class="body"><h3 data-en="Shannon 1948" data-zh="香农 1948">Shannon 1948</h3>
+          <div class="meta"><span data-en="23.8s · paper line" data-zh="23.8s · 论文线">23.8s · paper line</span><span class="score num">9.5</span></div></div></article>
+      <article class="film"><div class="thumb t4"><div class="shape"></div><div class="dot"></div><div class="line"></div></div>
+        <div class="body"><h3 data-en="Shannon deep dive" data-zh="香农深讲">Shannon deep dive</h3>
+          <div class="meta"><span data-en="180s · long form" data-zh="180s · 长片">180s · long form</span><span class="score num">9.2</span></div></div></article>
+      <article class="film"><div class="thumb t5"><div class="shape"></div><div class="dot"></div><div class="line"></div></div>
+        <div class="body"><h3 data-en="Project showcase" data-zh="项目介绍片">Project showcase</h3>
+          <div class="meta"><span data-en="50s · repo line" data-zh="50s · 项目线">50s · repo line</span><span class="score num">9.1</span></div></div></article>
+    </div>
+  </section>
+
+  <section id="engage" class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow" data-en="How we work together" data-zh="合作方式">How we work together</p>
+      <h2 data-en="Run it yourself, or have us run it with you" data-zh="自己跑，或者我们一起跑">Run it yourself, or have us run it with you</h2>
+      <p data-en="The core is MIT and self-hosted. Commercial work is scoped around integration depth and production volume — never around a token markup." data-zh="核心开源、MIT、自托管。商业合作按接入深度与产量计价，不按 token 转售加价。">The core is MIT and self-hosted. Commercial work is scoped around integration depth and production volume — never around a token markup.</p>
+    </div>
+    <div class="tiers">
+      <div class="tier"><span class="tag" data-en="Open source" data-zh="开源">Open source</span>
+        <h3 data-en="Self-host" data-zh="自托管">Self-host</h3>
+        <div class="price" data-en="Free · MIT" data-zh="免费 · MIT">Free · MIT</div>
+        <ul>
+          <li data-en="Full pipeline, 10 blocks, three content lines" data-zh="完整流水线、10 积木、三条内容线">Full pipeline, 10 blocks, three content lines</li>
+          <li data-en="23 numbered playbook documents" data-zh="23 篇编号方法论文档">23 numbered playbook documents</li>
+          <li data-en="QA gate, review page, run reports, CI fixtures" data-zh="QA 门禁、评审页、执行报告、CI 夹具">QA gate, review page, run reports, CI fixtures</li>
+          <li data-en="Your keys, your machine, no telemetry" data-zh="你的密钥、你的机器、无遥测">Your keys, your machine, no telemetry</li>
+        </ul>
+        <a class="btn" href="https://github.com/chenlong548/vibe-dsf" target="_blank" rel="noopener" data-en="Clone the repo" data-zh="克隆仓库">Clone the repo</a></div>
+      <div class="tier featured"><span class="tag" data-en="Most requested" data-zh="最常选择">Most requested</span>
+        <h3 data-en="Integration" data-zh="接入定制">Integration</h3>
+        <div class="price" data-en="Scoped quote" data-zh="按范围报价">Scoped quote</div>
+        <ul>
+          <li data-en="Private deployment into your content stack" data-zh="私有化部署，接入现有内容栈">Private deployment into your content stack</li>
+          <li data-en="Custom blocks, palettes and brand contract" data-zh="定制积木、配色与品牌契约">Custom blocks, palettes and brand contract</li>
+          <li data-en="SCENE-PLAN mapping for your sources" data-zh="把你的素材映射成 SCENE-PLAN">SCENE-PLAN mapping for your sources</li>
+          <li data-en="Acceptance report and team workshops" data-zh="验收报告与团队工作坊">Acceptance report and team workshops</li>
+        </ul>
+        <a class="btn primary" href="https://github.com/chenlong548/vibe-dsf/issues" target="_blank" rel="noopener" data-en="Start a conversation" data-zh="发起沟通">Start a conversation</a></div>
+      <div class="tier"><span class="tag" data-en="Done with you" data-zh="联合生产">Done with you</span>
+        <h3 data-en="Managed series" data-zh="系列化生产">Managed series</h3>
+        <div class="price" data-en="Per-series quote" data-zh="按系列报价">Per-series quote</div>
+        <ul>
+          <li data-en="Release-ready 1080p30 film per episode" data-zh="每期交付可发布 1080p30 成片">Release-ready 1080p30 film per episode</li>
+          <li data-en="QA report, run report and reproducible sources" data-zh="QA 报告、执行报告与可复现源文件">QA report, run report and reproducible sources</li>
+          <li data-en="Separate BGM / SFX / narration stems" data-zh="BGM / 音效 / 旁白分轨">Separate BGM / SFX / narration stems</li>
+          <li data-en="Human review by our team before delivery" data-zh="交付前由团队人工复核">Human review by our team before delivery</li>
+        </ul>
+        <a class="btn" href="https://github.com/chenlong548/vibe-dsf/discussions" target="_blank" rel="noopener" data-en="Plan a series" data-zh="规划一个系列">Plan a series</a></div>
+    </div>
+    <p class="note" style="margin-top:22px" data-en="We scope a quote after a short discovery call covering volume, runtime, visual language and cadence. No fixed price list — the main variable cost is your own model API usage." data-zh="发现会确认产量、片长、画风与节奏后给范围报价。没有统一价目表——主要可变成本是你自己的模型 API 用量。">We scope a quote after a short discovery call covering volume, runtime, visual language and cadence. No fixed price list — the main variable cost is your own model API usage.</p>
+  </section>
+
+  <section id="faq" class="wrap">
+    <div class="sec-head"><p class="eyebrow" data-en="Straight answers" data-zh="直接回答">Straight answers</p>
+      <h2 data-en="Questions we usually get" data-zh="常被问到的问题">Questions we usually get</h2></div>
+    <details><summary data-en="Why not Remotion, Motion Canvas, or an editor?" data-zh="为什么不用 Remotion、Motion Canvas 或剪辑软件？">Why not Remotion, Motion Canvas, or an editor?</summary>
+      <p data-en="The engine was never the bottleneck. The gap is frame density, gate enforcement and iteration speed. A single canvas render path plus a pixel-level scorer makes aesthetics measurable and mistakes predictable." data-zh="引擎从来不是瓶颈，差距在画面密度、门禁执行与迭代速度。单一 Canvas 渲染路径加像素级评分器，才能把审美变成可测数字，并让错误可预测。">The engine was never the bottleneck. The gap is frame density, gate enforcement and iteration speed. A single canvas render path plus a pixel-level scorer makes aesthetics measurable and mistakes predictable.</p></details>
+    <details><summary data-en="Do you support vertical / short-form formats?" data-zh="支持竖屏 / 短视频画幅吗？">Do you support vertical / short-form formats?</summary>
+      <p data-en="No. We tested it and deliberately dropped it: 1920×1080 landscape only. We state this as a boundary, not as a roadmap promise." data-zh="不支持。我们实测过并主动放弃：只做 1920×1080 横屏。这是明确边界，不是「后续会支持」的承诺。">No. We tested it and deliberately dropped it: 1920×1080 landscape only. We state this as a boundary, not as a roadmap promise.</p></details>
+    <details><summary data-en="Is the pipeline locked to one model?" data-zh="流水线绑定某个模型吗？">Is the pipeline locked to one model?</summary>
+      <p data-en="No. Rendering, QA, audio and assembly are model-independent. Planning defaults to a low-cost model; creative frames can use a stronger one. SCENE-PLAN.json is a plain JSON contract." data-zh="不绑定。渲染、QA、音频、合成都与模型无关；规划默认用低成本模型，创意帧可换强模型。SCENE-PLAN.json 是纯 JSON 契约。">No. Rendering, QA, audio and assembly are model-independent. Planning defaults to a low-cost model; creative frames can use a stronger one. SCENE-PLAN.json is a plain JSON contract.</p></details>
+    <details><summary data-en="Does it need a GPU?" data-zh="需要独立显卡吗？">Does it need a GPU?</summary>
+      <p data-en="No. Our own development machine has no discrete GPU: narration uses edge-tts, frames are captured by headless Chrome over CDP, and audio is synthesised deterministically with NumPy." data-zh="不需要。我们自己的开发机没有独显：旁白走 edge-tts，画面靠无头 Chrome CDP 抓帧，音频用 NumPy 确定性合成。">No. Our own development machine has no discrete GPU: narration uses edge-tts, frames are captured by headless Chrome over CDP, and audio is synthesised deterministically with NumPy.</p></details>
+    <details><summary data-en="What is actually verified, and what is not?" data-zh="哪些真的验证过，哪些没有？">What is actually verified, and what is not?</summary>
+      <p data-en="The engineering chain is tested end to end: deterministic frames, QA gate, three audio layers, assembly, run reports and CI fixtures. Some methodology rules come from observation rather than controlled A/B tests — we say so in the docs instead of overclaiming." data-zh="工程链路端到端测过：确定性帧、QA 门禁、三层音频、合成、执行报告、CI 夹具。部分方法论规则来自观察而非严格 A/B，文档里如实标注，不夸大。">The engineering chain is tested end to end: deterministic frames, QA gate, three audio layers, assembly, run reports and CI fixtures. Some methodology rules come from observation rather than controlled A/B tests — we say so in the docs instead of overclaiming.</p></details>
+  </section>
+
+  <section class="closing wrap">
+    <h2 data-en="Bring your topic. Leave with a film." data-zh="带来一个主题，带走一条成片。">Bring your topic. Leave with a film.</h2>
+    <p data-en="Start from the open-source core, or talk to us about a series. Either way, the quality gate is the same." data-zh="从开源核心开始，或者和我们聊一个系列。无论哪种方式，质量门禁都一样。">Start from the open-source core, or talk to us about a series. Either way, the quality gate is the same.</p>
+    <div class="actions">
+      <a class="btn primary" href="https://github.com/chenlong548/vibe-dsf" target="_blank" rel="noopener" data-en="Get the code" data-zh="获取源码">Get the code</a>
+      <a class="btn" href="https://github.com/chenlong548/vibe-dsf/issues" target="_blank" rel="noopener" data-en="Talk to us" data-zh="联系我们">Talk to us</a>
+    </div>
+    <div class="copy"><code>git clone https://github.com/chenlong548/vibe-dsf.git</code>
+      <button class="btn small" id="copyBtn" type="button" data-en="Copy" data-zh="复制">Copy</button></div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span class="num">VIBE·DSF · v1.5.0</span>
+    <a href="https://github.com/chenlong548/vibe-dsf/blob/main/LICENSE" target="_blank" rel="noopener" data-en="MIT License" data-zh="MIT 许可">MIT License</a>
+    <a href="https://github.com/chenlong548/vibe-dsf/blob/main/SECURITY.md" target="_blank" rel="noopener" data-en="Security" data-zh="安全政策">Security</a>
+    <a href="https://github.com/chenlong548/vibe-dsf/blob/main/docs/22-COMMERCIAL.md" target="_blank" rel="noopener" data-en="Commercial" data-zh="商业化">Commercial</a>
+    <a href="https://github.com/chenlong548/vibe-dsf/blob/main/CHANGELOG.md" target="_blank" rel="noopener" data-en="Changelog" data-zh="更新日志">Changelog</a>
+    <span class="sp" data-en="Built and maintained by our team." data-zh="由我们团队构建与维护。">Built and maintained by our team.</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var STORAGE = 'vibe-dsf-lang';
+  var meta = {
+    en: { title: 'VIBE·DSF — Rendered. Scored. Shipped.',
+          desc: 'An open-source, self-hosted pipeline that turns a topic, paper or repository into a release-ready knowledge video.' },
+    zh: { title: 'VIBE·DSF — 自动化知识视频流水线',
+          desc: '开源自托管的知识视频流水线：一句话、一篇论文或一个仓库，变成可发布的 1080p 成片，由像素级 QA 门禁验收。' }
+  };
+  function setLang(lang) {
+    var zh = lang === 'zh';
+    document.documentElement.lang = zh ? 'zh-CN' : 'en';
+    document.querySelectorAll('[data-en]').forEach(function (el) {
+      var v = zh ? el.getAttribute('data-zh') : el.getAttribute('data-en');
+      if (v !== null) el.textContent = v;
+    });
+    document.querySelectorAll('[data-lang]').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-lang') === lang ? 'true' : 'false');
+    });
+    document.title = meta[lang].title;
+    var d = document.querySelector('meta[name="description"]');
+    if (d) d.setAttribute('content', meta[lang].desc);
+    try { localStorage.setItem(STORAGE, lang); } catch (e) {}
+    // 让当前语言可分享：?lang=zh 直接打开中文版（file:// 下 replaceState 可能不可用，忽略）
+    try {
+      var u = new URL(location.href);
+      if (zh) u.searchParams.set('lang', 'zh'); else u.searchParams.delete('lang');
+      history.replaceState(null, '', u.href);
+    } catch (e) {}
+  }
+  document.querySelectorAll('[data-lang]').forEach(function (b) {
+    b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); });
+  });
+  var saved = null;
+  try { saved = localStorage.getItem(STORAGE); } catch (e) {}
+  var query = null;
+  try { query = new URLSearchParams(location.search).get('lang'); } catch (e) {}
+  var initial = (query === 'zh' || query === 'en') ? query : (saved === 'zh' ? 'zh' : 'en');
+  setLang(initial);
+
+  var btn = document.getElementById('copyBtn');
+  if (btn) btn.addEventListener('click', function () {
+    var cmd = 'git clone https://github.com/chenlong548/vibe-dsf.git';
+    var done = function () {
+      var old = btn.textContent;
+      btn.textContent = document.documentElement.lang === 'zh-CN' ? '已复制' : 'Copied';
+      setTimeout(function () { setLang(document.documentElement.lang === 'zh-CN' ? 'zh' : 'en'); }, 1400);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(cmd).then(done, function () { btn.textContent = cmd; });
+    } else { btn.textContent = cmd; }
+  });
+})();
+</script>
+</body>
+</html>

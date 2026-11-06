@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="VIBE·DSF — rendered, scored, shipped">
+  <title>VIBE·DSF — automated knowledge video pipeline</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141026"/>
+      <stop offset="1" stop-color="#05050F"/>
+    </linearGradient>
+    <linearGradient id="band" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E8A87C" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#E8A87C" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#E8A87C" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="0" y="470" width="1200" height="110" fill="url(#band)"/>
+
+  <!-- frame mark -->
+  <rect x="88" y="86" width="108" height="108" rx="18" fill="#141026" stroke="#8A8AA0" stroke-opacity="0.45" stroke-width="2"/>
+  <rect x="104" y="102" width="76" height="76" rx="8" fill="none" stroke="#EAEAF2" stroke-opacity="0.22" stroke-width="1.5"/>
+  <path d="M112 128 H172 M112 142 H156 M112 156 H166" stroke="#EAEAF2" stroke-opacity="0.55" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="168" cy="142" r="7" fill="#E8A87C"/>
+  <path d="M112 168 H140" stroke="#E8A87C" stroke-width="3" stroke-linecap="round"/>
+
+  <text x="88" y="300" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="86" font-weight="700" letter-spacing="3">VIBE<tspan fill="#E8A87C">·</tspan>DSF</text>
+  <text x="92" y="350" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" letter-spacing="5">KNOWLEDGE VIDEO PIPELINE</text>
+  <text x="88" y="440" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="34" font-weight="500">Rendered. Scored. Shipped.</text>
+  <text x="88" y="486" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20">One line in · release-ready film out · pixel-level QA gate</text>
+
+  <path d="M88 560 H1112" stroke="#8A8AA0" stroke-opacity="0.25" stroke-width="1"/>
+  <text x="88" y="596" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="17" letter-spacing="1.5">10 MOTION BLOCKS   ·   11 QA METRICS   ·   5 REFERENCE FILMS   ·   MIT</text>
+</svg>

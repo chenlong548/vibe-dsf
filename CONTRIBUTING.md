@@ -24,17 +24,19 @@ vibe-dsf/
 │   ├── demo-hook-compound/    # 正式样片（QA 8.8）
 │   ├── paper-shannon1948/     # 论文线样片（QA 9.5）
 │   ├── paper-shannon-deep/    # 论文深讲长片（QA 9.2）
-│   ├── project-vibe-dsf/      # 项目线样片（QA 8.5）
+│   ├── project-vibe-dsf/      # 项目线样片（QA 9.1）
 │   ├── _probe/                # 回归夹具（CI 冒烟测试用，勿动）
 │   └── _archive/              # 实验归档（保留回退，不再维护）
+├── brand/                     # 品牌资产：logo.svg / favicon.svg / BRAND.md（对外单一真相）
+├── site/                      # 可发布双语展示页：index.html / og-card.svg / favicon.svg / check.py
 ├── skills/                    # agent 技能包（SKILL.md frontmatter，MIT）
 │   ├── vibe-film-ds/          # 主技能：风格 DNA / 四层构图 / 失败模式
 │   ├── bgm-synth/             # BGM 合成技能
 │   └── qa-gate/               # QA 门禁技能
 ├── styles/                    # 画风规范（fable / nocturne / paper-gold / romance）
 ├── scripts/                   # env.ps1（flash锁定）/ env-creative.ps1（Opus创意模式，云雾）/ setup.ps1（体检）
-├── docs/                      # 00-21 编号文档（见 docs/16 全景总结）
-└── .github/workflows/ci.yml   # CI：语法检查 + 场景规划冒烟 + 两个回归夹具
+├── docs/                      # 00-23 编号文档（22 商业化 / 23 发布清单；见 docs/16 全景总结）
+└── .github/workflows/ci.yml   # CI：语法检查 + 冒烟 + 两个回归夹具 + 站点自检 + 版本守卫
 ```
 
 **依赖方向**（保持单向，不加反向引用）：
@@ -125,7 +127,8 @@ node ..\..\pipeline\review.mjs --project projects\<slug> --qa path\to\qa.json   
 改了 `blocks/`、`scene_writer/`、`run_all.ps1` 或任何被引用路径后：
 
 1. CI 会自动跑语法检查 + `_probe` 夹具冒烟（规划闸 + 组装）+ 两个回归夹具
-   （`qa/test_edge_v4.py` 边缘检测、`report/test_generate.py` 执行报告）；
+   （`qa/test_edge_v4.py` 边缘检测、`report/test_generate.py` 执行报告）+
+   `site/check.py`（站点零外链 / 双语成对 / 版本同步）；
 2. 本地跑一次最小端到端：
 
    ```powershell

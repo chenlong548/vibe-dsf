@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 120" width="560" height="120" role="img" aria-label="VIBE·DSF — automated knowledge video pipeline">
+  <title>VIBE·DSF</title>
+  <defs>
+    <linearGradient id="frame" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141026"/>
+      <stop offset="1" stop-color="#05050F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- mark: a film frame with a timeline and one accent hit -->
+  <rect x="6" y="6" width="108" height="108" rx="18" fill="url(#frame)" stroke="#8A8AA0" stroke-opacity="0.45" stroke-width="2"/>
+  <rect x="22" y="22" width="76" height="76" rx="8" fill="none" stroke="#EAEAF2" stroke-opacity="0.22" stroke-width="1.5"/>
+  <path d="M30 48 H90 M30 62 H74 M30 76 H84" stroke="#EAEAF2" stroke-opacity="0.55" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="86" cy="62" r="7" fill="#E8A87C"/>
+  <path d="M30 88 H58" stroke="#E8A87C" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- wordmark -->
+  <text x="140" y="62" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="42" font-weight="700" letter-spacing="2.5">VIBE<tspan fill="#E8A87C">·</tspan>DSF</text>
+  <text x="142" y="90" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="12.5" font-weight="500" letter-spacing="3.4">KNOWLEDGE VIDEO PIPELINE</text>
+</svg>

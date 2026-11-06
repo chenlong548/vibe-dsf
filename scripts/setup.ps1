@@ -66,6 +66,8 @@ $files = @(
   "skills\vibe-film-ds\SKILL.md",
   "skills\vibe-film-ds\references\ds-failure-modes.md",
   "docs\03-FLASH-PLAYBOOK.md", "docs\18-BRAND.md", "docs\20-QA-V4.md", "docs\21-PIPELINE-REPORT.md",
+  "docs\22-COMMERCIAL.md", "docs\23-RELEASE.md", "SECURITY.md", "CODE_OF_CONDUCT.md",
+  "brand\logo.svg", "brand\BRAND.md", "site\index.html", "site\check.py",
   "styles\paper-gold.md", "styles\nocturne.md", "styles\fable.md", "styles\romance.md",
   "projects\demo-hook-entropy\index.html"
 )

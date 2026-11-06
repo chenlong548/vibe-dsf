@@ -57,6 +57,9 @@ jobs:
       - name: Pipeline report regression (synthetic project)
         run: python pipeline/report/test_generate.py
 
+      - name: Publishable site self-check
+        run: python site/check.py
+
       # 渲染/QA/合成需要 Chrome + ffmpeg + 音频轨，在本地跑：
       #   powershell -File pipeline/run_all.ps1 -Project projects/<slug> -Duration <秒>
       # （见 CONTRIBUTING.md「验证流程」）

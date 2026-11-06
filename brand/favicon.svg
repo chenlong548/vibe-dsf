@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="VIBE·DSF mark">
+  <title>VIBE·DSF</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141026"/>
+      <stop offset="1" stop-color="#05050F"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <rect x="11" y="11" width="42" height="42" rx="6" fill="none" stroke="#EAEAF2" stroke-opacity="0.22" stroke-width="1.5"/>
+  <path d="M16 26 H48 M16 33 H38 M16 40 H44" stroke="#EAEAF2" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="45" cy="33" r="4.5" fill="#E8A87C"/>
+  <path d="M16 47 H32" stroke="#E8A87C" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
