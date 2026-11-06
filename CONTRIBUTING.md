@@ -6,6 +6,7 @@
 vibe-dsf/
 ├── pipeline/                  # 核心管线（一键入口：run_all.ps1）
 │   ├── run_all.ps1            # 五阶段一键流水线：渲染→QA闸→BGM→旁白混音→合成（exit 0-4 定位失败段）
+│   ├── review.mjs             # 静帧评审页生成器：场景网格 + A/B 对比（人工挑卡点，docs/10 #9）
 │   ├── requirements.txt       # Python 依赖（numpy / pillow / edge-tts）
 │   ├── palette.json           # 品牌契约：账号水印 + 已验证配色库（plan 用 palette_name 引用，docs/18）
 │   ├── render/                # 渲染：render_frames.mjs（CDP fast 模式逐帧截图）
@@ -82,6 +83,10 @@ powershell -File ..\..\pipeline\compose\build.ps1 -Audio final_audio.wav
 
 # 波形目检（agent 听不见，看图验收音频）
 python ..\..\pipeline\audio\wave_png.py bgm.wav wave.png --bpm 96 --marks 24,48,60
+
+# 静帧评审页（场景网格 + A/B 对比，人工挑卡点/比风格；产物 review.html 浏览器打开）
+node ..\..\pipeline\review.mjs --project projects\<slug>
+node ..\..\pipeline\review.mjs --project projects\<slugA> --compare projects\<slugB>
 ```
 
 ## 加一块积木
@@ -96,6 +101,7 @@ python ..\..\pipeline\audio\wave_png.py bgm.wav wave.png --bpm 96 --marks 24,48,
 ## 设计纪律（QA 实测沉淀，改积木前先读）
 
 - **强调语言**：数字/圆点/标记落定后绝对静止——禁呼吸/伸缩/脉冲/alpha 闪烁；强调 = 落定瞬间 accent 下划线一次性扫出后静态保持；运动感交给巡游光带/粒子流。
+- **缓动纪律（P1 #10）**：GSAP 级 19 缓动全集在 `blocks/lib/_easings.js`（`EASE` 命名空间，build_html 恒定注入）；easeOutBack 是阻尼版定稿值（历史像素一致），只准一次性入场用；**禁 Elastic/Spring 振荡缓动**（库里故意不提供）。
 - **运动源铁律**：每帧变化像素 ≥0.35%（≈7.2k px @1080p30）才算"在动"；3px 细线/微脉冲没有面积，怎么动都不够——长场景配巡游光带或粒子流。
 - **入场淡入 ≤0.2s**：更长的面板淡入会被 QA 计成连续硬切。
 - **长场景**：最长静止段 ≤1.5s 满分 / ≤2.5s 9 分 / ≤4s 7 分，超出直接不及格。

@@ -29,7 +29,7 @@ jobs:
       - name: Node syntax check
         run: |
           fail=0
-          for f in pipeline/render/*.mjs pipeline/scene_writer/*.mjs pipeline/blocks/lib/*.js; do
+          for f in pipeline/*.mjs pipeline/render/*.mjs pipeline/scene_writer/*.mjs pipeline/blocks/lib/*.js; do
             node --check "$f" || fail=1
           done
           exit $fail

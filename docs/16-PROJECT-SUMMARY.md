@@ -136,6 +136,10 @@ run_all.ps1：五阶段一键串联（渲染→QA闸→BGM→音效/旁白→混
       三层优先级 内联>引用>默认）
    8. ~~强模型分工~~ ✅ 2026-11-06 落地（docs/01 §7：创意帧→Opus 5.5 走云雾 env-creative.ps1，
       批量/修补→flash 不变；云雾已迁移 v2.cloudmist.cloud，端点实测 401 鉴权通）
+   9. ~~静帧并排评审页~~ ✅ 2026-11-06 落地（pipeline/review.mjs：场景网格+采样三帧+
+      A/B 按 segment 对齐，人工挑卡点/比风格）
+   10. ~~easings.js GSAP 级缓动预设~~ ✅ 2026-11-06 落地（blocks/lib/_easings.js：EASE 19 缓动
+      恒定注入，easeOutBack 阻尼定稿值像素一致（SHA256 实测），禁 Elastic/Spring 已成文）
 8. 强模型出创意帧 + flash 批量　9. 静帧并排评审页　10. easings.js GSAP 级缓动
 - QA v3 想法：长片断点阈值按时长缩放（180s 片天然累积更多静止段）
 - 音色 A/B（Yunxi/Yunyang/Xiaoxiao 盲选）；系列化三连发（hook + 深讲 + 项目片，brief 互通）

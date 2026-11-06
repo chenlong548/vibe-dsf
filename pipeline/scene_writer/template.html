@@ -17,6 +17,7 @@
  * 场景内容 100% 来自 SCENE-PLAN.json + blocks 积木——本模板不含任何剧情。
  * ===================================================================== */
 const PLAN = {{PLAN_JSON}};
+{{EASE_JS}}
 const M = PLAN.meta, PAL = M.palette;
 const W = 1920, H = 1080;
 const LIGHT = M.style === 'paper';                 /* 浅底项目风：独立站 ai-design 语言 */
@@ -39,8 +40,8 @@ function mulberry32(seed){
   };
 }
 const clamp01 = v => Math.max(0, Math.min(1, v));
-const easeOutCubic = p => 1 - Math.pow(1 - p, 3);
-const easeOutBack  = p => { const c = 1.70158 * 0.6; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+const easeOutCubic = EASE.easeOutCubic;   /* GSAP 级全集在 EASE（_easings.js 注入），此处保持历史别名 */
+const easeOutBack  = EASE.easeOutBack;    /* 阻尼版定稿值同历史实现——渲染像素一致 */
 function seg(t, a, b){ return clamp01((t - a) / (b - a)); }
 function drawText(c, text, x, y, opt){
   const o = Object.assign({ font: '28px "Microsoft YaHei"', color: INK, align: 'center', maxW: W, alpha: 1, track: 0 }, opt);
