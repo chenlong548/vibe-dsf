@@ -74,5 +74,18 @@ window.BLOCKS['data-chart'] = {
           { font: `${s.label_font ?? 34}px Consolas, monospace`, color, align: 'left' });
       }
     }
+    /* 巡游光带：accent 微光带横扫图区（每 4.2s 一轮，两端 12% 行程内淡入淡出）。
+     * QA 教训（paper-shannon-deep 86-90s 实测 3.93s 静止）：曲线长完后回流粒子
+     * 面积不够，需要大面积匀速平移的光带当持续运动源。 */
+    {
+      const tA = (P.t_axes ? P.t_axes[0] : 0.4);
+      const swp = ((T - tA) % 4.2) / 4.2;
+      const bA = 0.085 * Math.min(1, Math.min(swp, 1 - swp) / 0.12);
+      if (bA > 0.004) {
+        const sx = x0 - 50 + swp * (w + 100);
+        ctx.fillStyle = U.rgba(bA);
+        ctx.fillRect(sx, y0 - h - 16, 110, h + 30);
+      }
+    }
   }
 };

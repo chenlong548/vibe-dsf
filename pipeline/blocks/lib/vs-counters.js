@@ -14,7 +14,7 @@ window.BLOCKS['vs-counters'] = {
       const cx = (cfg.cx ?? (side === 'left' ? 0.31 : 0.69)) * U.W;
       const cy = (cfg.cy ?? (P.cy ?? 0.40)) * U.H;
       const val = (cfg.to ?? 1) * g;
-      const txt = (cfg.prefix ?? '') + val.toFixed(cfg.decimals ?? 2);
+      const txt = (cfg.prefix ?? '') + val.toFixed(cfg.decimals ?? 2) + (cfg.suffix ?? '');
       const color = isAccent ? U.ACCENT : U.GRAY;
       const isPulse = T > tc[1] + 0.4;
       const pulse = isPulse ? 1 + 0.035 * Math.sin((T - tc[1] - 0.4) * 3.7) : 1;

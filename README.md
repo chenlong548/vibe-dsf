@@ -103,6 +103,9 @@ vibe-dsf/
 │   ├── demo-hook-entropy/      ★ 熵增 8s 钩子（四层构图验证片，QA 8.5）
 │   ├── demo-hook-compound/     ★ 复利 11.4s 钩子（SCENE-WRITER 全自动 + 人声旁白，QA 8.8 过闸）
 │   ├── paper-shannon1948/      ★ 香农 1948 论文科普 23.8s（PAPER2VIDEO 全自动，QA 9.5 过闸）
+│   ├── paper-shannon-deep/     ★ 香农 1948 深讲版 180s（PAPER2VIDEO 长视频章节化，QA 9.2 过闸）
+│   ├── project-vibe-dsf/       ★ 项目自举介绍片 50s（PROJECT2VIDEO 全自动，paper 风格，QA 8.5 过闸）
+│   ├── _probe/                 深空回归探针（换肤不伤旧片的 fixture）
 │   ├── nocturne-demo/          深空理性验证帧（8 秒）
 │   └── ab-test/                A/B 对照实验（同镜头两种写法）
 └── scripts/

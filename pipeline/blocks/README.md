@@ -27,9 +27,20 @@
 | block | 用途 | 适用段位 | QA 记录 |
 |---|---|---|---|
 | `entropy-burst` | 粒子爆发/能量释放 | hook, turn | 8.5/10 @ demo-hook-entropy |
-| `data-chart` | 双曲线分叉（自带轴） | hook, anchor, reason | 9.1/10 @ demo-hook-compound |
-| `beat-counter` | 大数字滚动 + 公式框 | anchor, reason | 9.1/10 @ demo-hook-compound |
-| `vs-counters` | 双数字对撞（右侧胜出） | turn, land | 9.1/10 @ demo-hook-compound |
+| `data-chart` | 双曲线分叉（自带轴+巡游光带） | hook, anchor, reason | 9.5/10 @ paper-shannon1948 |
+| `beat-counter` | 大数字滚动 + 公式框 | anchor, reason | 9.5/10 @ paper-shannon1948 |
+| `vs-counters` | 双数字对撞（右侧胜出） | turn, land | 9.5/10 @ paper-shannon1948 |
+| `flow-pipe` | 节点链管道（通信模型/流程） | anchor, reason | 9.2/10 @ paper-shannon-deep |
+| `text-points` | 要点逐条点亮（下划线+巡游光带） | reason, anchor | 9.2/10 @ paper-shannon-deep |
+| `timeline` | 年份轴（扫掠游标+呼吸环） | anchor, turn, land | 9.2/10 @ paper-shannon-deep |
+| `feature-cards` | 编辑部式特性卡（白卡+teal 顶条+巡游光带） | anchor, reason | 8.5/10 @ project-vibe-dsf |
+| `terminal-window` | 终端证据窗（暗面板+逐字敲入+扫描带+进度条） | reason, turn | 8.5/10 @ project-vibe-dsf |
+| `repo-card` | 收尾卡（owner/name+星数+安装命令呼吸描边） | land | 8.5/10 @ project-vibe-dsf |
+
+> **运动源铁律（2026-11-06 QA 实测沉淀）**：1080p30 下静止判定线 = 每帧变化像素 ≥0.35%
+> （~7.2k px，|亮度差|>8）。3px 细线/微脉冲**没有面积**，怎么动都凑不够；长场景必须配
+> **大面积匀速平移的光带**（110px 宽、两缘 ~10px/帧 ≈ 9.7k px/帧）或粒子流。
+> 另：入场淡入 >0.4s 时，一次淡入会被计成连续多次"硬切"（面板 ≈25% 画幅）——入场统一 ≤0.2s。
 
 params 语义详见 `registry.json`。QA 结果过闸后由人工/02 更新本表与 registry（把 pending 换成分数）。
 

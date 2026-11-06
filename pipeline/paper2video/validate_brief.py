@@ -45,8 +45,8 @@ def main():
             err(f"hook_candidates[{i}] 缺 claim 或 why_it_works")
 
     mech = b.get("mechanism", [])
-    if not (3 <= len(mech) <= 5):
-        err(f"mechanism {len(mech)} 步（要求 3-5 步人话因果链）")
+    if not (3 <= len(mech) <= 8):
+        err(f"mechanism {len(mech)} 步（要求 3-8 步人话因果链；长视频深讲片可到 7-8 步）")
     for i, m in enumerate(mech):
         if not (m.get("say") or "").strip():
             err(f"mechanism[{i}] 缺 say")

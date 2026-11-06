@@ -33,10 +33,12 @@ if (missing.length) {
 const src = needed.map(n => fs.readFileSync(path.join(blocksRoot, 'lib', n + '.js'), 'utf8')).join('\n\n');
 
 let html = fs.readFileSync(path.join(here, 'template.html'), 'utf8');
+/* 替换值一律用函数形式：字符串形式的 replacement 会把 $'/$&/$` 当特殊序列，
+ * 积木里的终端提示符 '$' 曾把模板后半段整个插进代码（repo-card 截断事故） */
 html = html
-  .replace('{{TITLE}}', String(plan.meta.topic))
-  .replace('{{BLOCKS_JS}}', src)
-  .replace('{{PLAN_JSON}}', JSON.stringify(plan).replace(/</g, '\\u003c'));
+  .replace('{{TITLE}}', () => String(plan.meta.topic))
+  .replace('{{BLOCKS_JS}}', () => src)
+  .replace('{{PLAN_JSON}}', () => JSON.stringify(plan).replace(/</g, '\\u003c'));
 
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, html, 'utf8');

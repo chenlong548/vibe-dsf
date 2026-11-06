@@ -63,10 +63,101 @@
         "cy": "0.34-0.50",
         "area_pct": "0.15-0.18",
         "t_count": "[a,b] 计数窗口",
-        "left": "{cx, cy, to, decimals, label, expr, t_label}",
+        "left": "{cx, cy, to, decimals, label, expr, t_label, prefix, suffix}",
         "right": "同 left（cx 默认 0.69，染强调色）"
       },
-      "qa": "9.1/10 @ demo-hook-compound（2026-10-29）"
+      "qa": "9.1/10 @ demo-hook-compound（2026-10-29）；9.5/10 @ paper-shannon1948（2026-11-05）"
+    },
+    {
+      "name": "flow-pipe",
+      "use": "节点链管道（论文 Figure 1 式模型：源→发射机→信道→接收机→目的地）",
+      "segments": ["anchor", "reason"],
+      "params": {
+        "cx": "0.40-0.46 或 0.54-0.60",
+        "cy": "0.38-0.50",
+        "w": "链总宽 px，默认 1500",
+        "h": "链高 px，默认 360",
+        "area_pct": "0.14-0.18",
+        "nodes": "[{label, sub}] 2-5 个节点，第 3 个染强调色",
+        "t_nodes": "[a,b] 节点逐个生长窗口",
+        "t_flow": "[a,b] 粒子流动窗口（默认到场景尾）"
+      },
+      "qa": "9.2/10 @ paper-shannon-deep（2026-11-06）"
+    },
+    {
+      "name": "text-points",
+      "use": "要点逐条点亮（机制步骤/要点展开），编号点持续脉冲",
+      "segments": ["reason", "anchor"],
+      "params": {
+        "cx": "0.40-0.46 或 0.54-0.60",
+        "cy": "0.38-0.52",
+        "w": "要点区宽 px，默认 1100",
+        "area_pct": "0.13-0.16",
+        "row_h": "行高 px，默认 150",
+        "items": "[{text, sub, t_in}] 2-4 条，t_in 为该条点亮时刻（绝对秒）"
+      },
+      "qa": "9.2/10 @ paper-shannon-deep（2026-11-06）"
+    },
+    {
+      "name": "timeline",
+      "use": "年份轴（历史脉络/演化），轴上粒子持续流动",
+      "segments": ["anchor", "turn", "land"],
+      "params": {
+        "cx": "0.40-0.46 或 0.54-0.60",
+        "cy": "0.42-0.52",
+        "w": "轴长 px，默认 1400",
+        "area_pct": "0.13-0.16",
+        "t_axis": "[a,b] 轴生长窗口",
+        "marks": "[{year, label, t_in}] 3-5 个刻度，最后一个染强调色"
+      },
+      "qa": "9.2/10 @ paper-shannon-deep（2026-11-06）"
+    },
+    {
+      "name": "feature-cards",
+      "use": "编辑部式特性卡（项目介绍：白卡+发丝线框+teal 顶条命中点亮）",
+      "segments": ["anchor", "reason"],
+      "params": {
+        "cx": "0.40-0.46 或 0.54-0.60",
+        "cy": "0.36-0.48",
+        "card_w": "卡宽 px，默认 380",
+        "card_h": "卡高 px，默认 300",
+        "gap": "卡间距 px，默认 40",
+        "cards": "[{tag, title, sub, t_in}] 3-4 张，t_in 为命中时刻（绝对秒）"
+      },
+      "qa": "8.5/10 @ project-vibe-dsf（2026-11-06）"
+    },
+    {
+      "name": "terminal-window",
+      "use": "终端证据窗（安装/运行/闸门输出：暗面板嵌浅底，命令逐字敲入）",
+      "segments": ["reason", "turn"],
+      "params": {
+        "cx": "0.40-0.46 或 0.54-0.60",
+        "cy": "0.38-0.50",
+        "w": "面板宽 px，默认 1000",
+        "h": "面板高 px，默认 520",
+        "title": "标题栏文字",
+        "lines": "[{kind:'cmd'|'out'|'ok'|'warn', text, t_in, cps}] cmd 逐字敲入，cps 字/秒",
+        "cursor": "false 关闭末行空闲光标呼吸",
+        "progress_to": "底部执行进度条终点（默认场景尾）"
+      },
+      "qa": "8.5/10 @ project-vibe-dsf（2026-11-06）"
+    },
+    {
+      "name": "repo-card",
+      "use": "收尾卡（land：owner/name 等宽大字+星数滚动+语言 chips+一行安装命令）",
+      "segments": ["land"],
+      "params": {
+        "cx": "0.40-0.46 或 0.54-0.60",
+        "cy": "0.40-0.50",
+        "w": "内容宽 px，默认 1200",
+        "repo": "'owner/name'",
+        "stars": "星数（滚动终点）",
+        "lang": "主语言",
+        "chips": "[标签] 2-4 个胶囊",
+        "install": "一行安装命令",
+        "t_star": "星数滚动起点时刻"
+      },
+      "qa": "8.5/10 @ project-vibe-dsf（2026-11-06）"
     }
   ]
 }

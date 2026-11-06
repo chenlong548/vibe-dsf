@@ -19,12 +19,15 @@
 const PLAN = {{PLAN_JSON}};
 const M = PLAN.meta, PAL = M.palette;
 const W = 1920, H = 1080;
+const LIGHT = M.style === 'paper';                 /* 浅底项目风：独立站 ai-design 语言 */
+const DIM = PAL.dim || '138,138,160';              /* 顶栏/水印杂色的 rgb 基色 */
 const hexRGB = h => { const s = String(h).replace('#',''); return [0,2,4].map(i => parseInt(s.slice(i, i+2), 16)).join(','); };
 const ACCENT = PAL.accent, INK = PAL.ink, GRAY = PAL.gray;
 const ACCENT_DIM = hexRGB(ACCENT), INK_DIM = hexRGB(INK);
 const cv = document.getElementById('c');
 cv.width = W; cv.height = H;
 const ctx = cv.getContext('2d');
+document.body.style.background = PAL.bg_out;
 
 /* ---------- 工具 ---------- */
 function mulberry32(seed){
@@ -61,7 +64,7 @@ function drawText(c, text, x, y, opt){
   c.globalAlpha = 1;
   return lines.length;
 }
-const U = { W, H, ACCENT, INK, GRAY,
+const U = { W, H, ACCENT, INK, GRAY, PAL,
   rgba: a => `rgba(${ACCENT_DIM},${a})`, rgbaInk: a => `rgba(${INK_DIM},${a})`,
   seg, clamp01, easeOutCubic, easeOutBack, drawText };
 
@@ -106,6 +109,16 @@ function drawL0(t){
       const o = j*sp - (drift*0.5) % sp;
       ctx.beginPath(); ctx.moveTo(0, o); ctx.lineTo(W, o); ctx.stroke();
     }
+  } else if (M.pattern === 'hairline'){
+    /* paper 模式：正交发丝线网格（图纸感），近静止，运动由萤火层承担 */
+    ctx.strokeStyle = `rgba(${ACCENT_DIM},${LIGHT ? 0.055 : 0.05})`; ctx.lineWidth = 1;
+    const sp = 96, dx = (drift * 0.3) % sp;
+    for (let i = 0; i * sp < W + sp; i++){
+      ctx.beginPath(); ctx.moveTo(i * sp - dx, 0); ctx.lineTo(i * sp - dx, H); ctx.stroke();
+    }
+    for (let j = 0; j * sp < H + sp; j++){
+      ctx.beginPath(); ctx.moveTo(0, j * sp); ctx.lineTo(W, j * sp); ctx.stroke();
+    }
   } else {
     ctx.strokeStyle = `rgba(${ACCENT_DIM},0.05)`; ctx.lineWidth = 1.4;
     for (let i = 1; i <= 9; i++){
@@ -125,10 +138,19 @@ function drawL0(t){
     ctx.fillRect(x, (y - drift + H) % H, s, s);
   }
   for (const [x, y, a] of GRAIN){
-    ctx.fillStyle = `rgba(255,255,255,${a})`; ctx.fillRect(x, y, 1.5, 1.5);
+    ctx.fillStyle = LIGHT ? `rgba(22,24,28,${(a * 0.45).toFixed(3)})` : `rgba(255,255,255,${a})`;
+    ctx.fillRect(x, y, 1.5, 1.5);
   }
 }
 function vignette(){
+  if (LIGHT){
+    /* 浅底：纸面边缘墨影。边中点 alpha≈0.086（亮度 252→232，压住 QA 的 235 亮边检测线），
+     * 四角≈0.18（像被拍摄的纸面）。只影响 LIGHT 分支，深空片零变化。 */
+    const v = ctx.createRadialGradient(W/2, H/2, H*0.30, W/2, H/2, H*0.72);
+    v.addColorStop(0, 'rgba(22,24,28,0)'); v.addColorStop(1, 'rgba(22,24,28,0.18)');
+    ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+    return;
+  }
   const v = ctx.createRadialGradient(W/2, H/2, H*0.42, W/2, H/2, H*0.95);
   v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.62)');
   ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
@@ -198,21 +220,21 @@ function drawSubtitles(t){
       ctx.translate(W/2, 910);
       ctx.scale(scale, scale);
       drawText(ctx, sb.zh, 0, 16, { font: '700 46px "Microsoft YaHei"', color: INK, alpha: a });
-      drawText(ctx, sb.en ?? '', 0, 64, { font: 'italic 27px Georgia', color: '#9C9CB4', alpha: a*0.9 });
+      drawText(ctx, sb.en ?? '', 0, 64, { font: 'italic 27px Georgia', color: PAL.sub_en ?? '#9C9CB4', alpha: a*0.9 });
       ctx.restore();
     } else {
       drawText(ctx, sb.zh, W/2, 926, { font: '700 46px "Microsoft YaHei"', color: INK, alpha: a });
-      drawText(ctx, sb.en ?? '', W/2, 974, { font: 'italic 27px Georgia', color: '#9C9CB4', alpha: a*0.9 });
+      drawText(ctx, sb.en ?? '', W/2, 974, { font: 'italic 27px Georgia', color: PAL.sub_en ?? '#9C9CB4', alpha: a*0.9 });
     }
   }
 }
 function drawTopbar(t){
-  drawText(ctx, M.watermark ?? '', 64, 68, { font: '21px "Microsoft YaHei"', color: 'rgba(138,138,160,0.85)', align: 'left', track: 4 });
+  drawText(ctx, M.watermark ?? '', 64, 68, { font: '21px "Microsoft YaHei"', color: `rgba(${DIM},0.85)`, align: 'left', track: 4 });
   drawText(ctx, M.hook_title ?? M.topic, W/2, 68, { font: '21px "Microsoft YaHei"', color: `rgba(${ACCENT_DIM},0.9)`, track: 8 });
   const mm = String(Math.floor(t/60)).padStart(2, '0');
   const ss = String(Math.floor(t%60)).padStart(2, '0');
   const ff = String(Math.floor((t%1)*30)).padStart(2, '0');
-  drawText(ctx, `${mm}:${ss}:${ff}`, W-64, 68, { font: '21px Consolas, monospace', color: 'rgba(138,138,160,0.7)', align: 'right' });
+  drawText(ctx, `${mm}:${ss}:${ff}`, W-64, 68, { font: '21px Consolas, monospace', color: `rgba(${DIM},0.7)`, align: 'right' });
 }
 
 /* ---------- blocks 积木（build_html.mjs 注入） ---------- */

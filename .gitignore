@@ -22,3 +22,4 @@ preview/
 # ===== QA 报告（每次渲染重新生成）=====
 qa.json
 qa_v2.json
+qa_report.json

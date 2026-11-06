@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>vibe-dsf · 项目介绍</title>
+<style>
+  html,body{margin:0;padding:0;background:#05050F;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+/* =====================================================================
+ * SCENE-WRITER 通用渲染器 v1
+ * 契约：render(t) 纯时间函数；?t= 抓帧；READY 握手；固定种子；无跨帧状态。
+ * 场景内容 100% 来自 SCENE-PLAN.json + blocks 积木——本模板不含任何剧情。
+ * ===================================================================== */
+const PLAN = {"version":"1.0","meta":{"topic":"vibe-dsf · 项目介绍","hook_title":"VIBE·DSF · PIPELINE","duration":50,"fps":30,"bpm":126,"style":"paper","pattern":"hairline","drift_period":8,"palette":{"bg_in":"#fcfcfa","bg_out":"#f2f1ec","accent":"#0d6e63","ink":"#16181c","gray":"#666c74","surface":"#ffffff","line":"#e6e5e1","sunken":"#f4f4f1","dim":"102,108,116","sub_en":"#7c828b","term_bg":"#0e1214","term_line":"#242c30","term_ink":"#d6dde1","term_dim":"#7c878e","term_accent":"#5ed3b8","term_amber":"#e3b341"},"watermark":"@VIBE·DSF"},"scenes":[{"id":"S1","segment":"hook","t_in":0,"t_out":7.619,"l2":{"block":"vs-counters","params":{"font_px":140,"cy":0.4,"area_pct":0.16,"t_count":[1.4286,4.2857],"left":{"cx":0.315,"to":3,"decimals":0,"suffix":" 天","label":"人肉磨一条片","expr":"分镜 · 画面 · 剪辑 · 配乐","t_label":1},"right":{"cx":0.575,"to":30,"decimals":0,"suffix":" 分钟","label":"流水线跑一条片","expr":"主题进 · 成片出","t_label":1.8}},"glow_window":[1.4286,4.8]},"l3":[{"text":"成本对撞 · COST","x":0.42,"y":0.155,"font":21,"align":"center","t_in":4.5},{"text":"github.com/chenlong548/vibe-dsf","x":0.58,"y":0.66,"font":20,"align":"center","mono":true,"t_in":5.6}],"beats":[1.9048,4.2857,6.1905],"sfx":[{"t":0,"name":"impact-low"},{"t":4.2857,"name":"riser"}]},{"id":"S2","segment":"anchor","t_in":7.619,"t_out":16.1905,"l2":{"block":"text-points","params":{"cx":0.42,"cy":0.44,"w":1150,"area_pct":0.15,"row_h":170,"items":[{"text":"一句话主题，进流水线","sub":"SCENE-PLAN · 11 组机器约束校验","t_in":8.4},{"text":"画面只用过闸积木拼装","sub":"registry.json · 10 个积木，禁手写场景","t_in":10.6},{"text":"均分不到 8 分，不许出片","sub":"qa_check.py · 五维审美硬门禁","t_in":12.8}]}},"l3":[{"text":"它是什么 · WHAT","x":0.3,"y":0.155,"font":21,"align":"center","t_in":8},{"text":"vibe-dsf · 自动化知识视频流水线","x":0.42,"y":0.7,"font":20,"align":"center","t_in":13.4}],"beats":[9.5238,12.381],"sfx":[{"t":7.619,"name":"impact-low"}]},{"id":"S3","segment":"reason","t_in":16.1905,"t_out":28.5714,"l2":{"block":"terminal-window","params":{"cx":0.54,"cy":0.46,"w":1050,"h":560,"area_pct":0.17,"title":"run_all · 实况","t_in":16.7,"line_h":46,"lines":[{"kind":"cmd","text":"pwsh pipeline/run_all.ps1","t_in":17.4,"cps":15},{"kind":"out","text":"[plan] 11 组检查 → PASS","t_in":20.4},{"kind":"out","text":"[render] 720 帧 · 0.13 秒/帧","t_in":22},{"kind":"ok","text":"[qa] avg 9.5/10 ≥ 8 → PASS","t_in":23.8095},{"kind":"out","text":"[mux] final.mp4 · 1080p30","t_in":25.2},{"kind":"warn","text":"[gate] 不过闸的片不存在","t_in":26.6}]}},"l3":[{"text":"证据 · RUN LOG","x":0.54,"y":0.14,"font":20,"align":"center","mono":true,"t_in":16.9},{"text":"命令与输出 · README 原文","x":0.54,"y":0.76,"font":20,"align":"center","t_in":18.2}],"beats":[17.1429,23.8095],"sfx":[{"t":16.1905,"name":"impact-low"},{"t":23.8095,"name":"tick"}]},{"id":"S4","segment":"reason","t_in":28.5714,"t_out":40.4762,"l2":{"block":"feature-cards","params":{"cx":0.54,"cy":0.42,"card_w":370,"card_h":290,"gap":36,"area_pct":0.16,"cards":[{"tag":"STEP 01","title":"机器分镜","sub":"任务书 + 硬闸校验","t_in":29.5238},{"tag":"STEP 02","title":"积木组装","sub":"10 个过闸积木","t_in":31.1905},{"tag":"STEP 03","title":"QA 门禁","sub":"均分 \u003c8 不出片","t_in":32.8571},{"tag":"STEP 04","title":"人声旁白","sub":"TTS 卡点 + 闪避混音","t_in":34.2857}]}},"l3":[{"text":"四道工序 · PIPELINE","x":0.54,"y":0.14,"font":20,"align":"center","mono":true,"t_in":29.2},{"text":"每道工序都有闸 · GATED","x":0.54,"y":0.68,"font":20,"align":"center","t_in":33.4}],"beats":[29.5238,32.8571,34.2857],"sfx":[{"t":28.5714,"name":"impact-low"},{"t":34.2857,"name":"tick"}]},{"id":"S5","segment":"turn","t_in":40.4762,"t_out":45.7143,"l2":{"block":"beat-counter","params":{"cx":0.42,"cy":0.42,"font_px":210,"area_pct":0.15,"to":9.5,"decimals":1,"suffix":"/10","expr":"QA avg ≥ 8 才许出片","t_count":[41.4,43.4],"t_expr":[41.6,42.6]},"glow_window":[41.4,44]},"l3":[{"text":"质量闸 · QUALITY GATE","x":0.3,"y":0.155,"font":21,"align":"center","t_in":41},{"text":"pass 不了的片，打回重来","x":0.42,"y":0.72,"font":20,"align":"center","t_in":43.2}],"beats":[41.4286,43.8095],"sfx":[{"t":40.4762,"name":"impact-low"},{"t":43.8095,"name":"riser"}]},{"id":"S6","segment":"land","t_in":45.7143,"t_out":50,"l2":{"block":"repo-card","params":{"cx":0.58,"cy":0.46,"w":1200,"area_pct":0.14,"repo":"chenlong548/vibe-dsf","lang":"JavaScript · Python","chips":["流水线","积木库","QA 门禁"],"install":"git clone github.com/chenlong548/vibe-dsf","t_in":45.9,"t_star":46.6}},"l3":[{"text":"AUTO-GENERATED · 自举","x":0.58,"y":0.18,"font":20,"align":"center","mono":true,"t_in":46.4},{"text":"50 秒 · 6 场景 · 全自动组装","x":0.58,"y":0.7,"font":20,"align":"center","t_in":47.6}],"beats":[46.6667,48.5714],"sfx":[{"t":45.7143,"name":"impact-low"},{"t":48.5714,"name":"tick"}]}],"subtitles":[{"zh":"人肉磨三天，流水线三十分钟。","en":"Three days by hand. Thirty minutes here.","t_in":0.6,"t_out":7.3,"punch":false},{"zh":"它把纪律变成了机器约束。","en":"Discipline, compiled into constraints.","t_in":8.1,"t_out":15.9,"punch":false},{"zh":"每一步都有闸，不过就打回。","en":"Every step gated. Fail means redo.","t_in":16.7,"t_out":28.2,"punch":false},{"zh":"分镜、积木、门禁、旁白，四道工序。","en":"Four stages, one pipeline.","t_in":29,"t_out":40.1,"punch":false},{"zh":"九点五分出厂，八分是底线。","en":"Nine point five to ship. Eight is the floor.","t_in":41,"t_out":45.4,"punch":false},{"zh":"这条介绍片，也是它自己做的。","en":"This intro was made by itself.","t_in":46.2,"t_out":49.7,"punch":true}],"narration":[{"text":"人肉磨三天，流水线三十分钟。","t_in":0.6,"t_out":3.4},{"text":"它是怎么做到的？","t_in":5.2,"t_out":7.3},{"text":"第一道，机器写分镜。","t_in":8.3,"t_out":10.6},{"text":"画面全是过闸积木拼的。","t_in":10.8,"t_out":13.2},{"text":"跑一遍给你看。","t_in":16.6,"t_out":18.2},{"text":"十一组检查，全过。","t_in":20.4,"t_out":22.7},{"text":"九点五分，出厂。","t_in":23.6,"t_out":25.4},{"text":"分镜、积木、门禁、旁白。","t_in":29.2,"t_out":32.2},{"text":"每一环都有人盯着机器干活。","t_in":33.6,"t_out":36.4},{"text":"不到八分的片，不许出厂。","t_in":41.2,"t_out":43.8},{"text":"地址在下面，这条片也是它做的。","t_in":46,"t_out":49.4}]};
+const M = PLAN.meta, PAL = M.palette;
+const W = 1920, H = 1080;
+const LIGHT = M.style === 'paper';                 /* 浅底项目风：独立站 ai-design 语言 */
+const DIM = PAL.dim || '138,138,160';              /* 顶栏/水印杂色的 rgb 基色 */
+const hexRGB = h => { const s = String(h).replace('#',''); return [0,2,4].map(i => parseInt(s.slice(i, i+2), 16)).join(','); };
+const ACCENT = PAL.accent, INK = PAL.ink, GRAY = PAL.gray;
+const ACCENT_DIM = hexRGB(ACCENT), INK_DIM = hexRGB(INK);
+const cv = document.getElementById('c');
+cv.width = W; cv.height = H;
+const ctx = cv.getContext('2d');
+document.body.style.background = PAL.bg_out;
+
+/* ---------- 工具 ---------- */
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const easeOutCubic = p => 1 - Math.pow(1 - p, 3);
+const easeOutBack  = p => { const c = 1.70158 * 0.6; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+function seg(t, a, b){ return clamp01((t - a) / (b - a)); }
+function drawText(c, text, x, y, opt){
+  const o = Object.assign({ font: '28px "Microsoft YaHei"', color: INK, align: 'center', maxW: W, alpha: 1, track: 0 }, opt);
+  c.font = o.font; c.textBaseline = 'alphabetic'; c.globalAlpha = o.alpha;
+  const fs = parseFloat((o.font.match(/([\d.]+)px/) || [0, 28])[1]);
+  const lines = []; let cur = '';
+  const measure = s => c.measureText(s).width + s.length * o.track;
+  for (const ch of text){
+    if (measure(cur + ch) > o.maxW * 0.82 && cur){ lines.push(cur); cur = ch; }
+    else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  lines.forEach((ln, i) => {
+    const w = measure(ln);
+    let sx = o.align === 'left' ? x : o.align === 'right' ? x - w : x - w / 2;
+    for (const ch of ln){
+      c.fillStyle = o.color; c.fillText(ch, sx, y + i * (fs * 1.32));
+      sx += c.measureText(ch).width + o.track;
+    }
+  });
+  c.globalAlpha = 1;
+  return lines.length;
+}
+const U = { W, H, ACCENT, INK, GRAY, PAL,
+  rgba: a => `rgba(${ACCENT_DIM},${a})`, rgbaInk: a => `rgba(${INK_DIM},${a})`,
+  seg, clamp01, easeOutCubic, easeOutBack, drawText };
+
+/* ---------- L0 氛围层（全片连续，参数来自 meta） ---------- */
+const GRAIN = (() => {
+  let s = 0; for (const ch of String(M.topic)) s = (s * 31 + ch.codePointAt(0)) | 0;
+  const r = mulberry32((s >>> 0) || 1);
+  return Array.from({length: 900}, () => [r()*W, r()*H, r()*0.028+0.012]);
+})();
+const STARS = M.style === 'deep-space'
+  ? (() => { const r = mulberry32(777); return Array.from({length: 170}, () => [r()*W, r()*H, r()*0.34+0.18, r()*1.6+0.4]); })()
+  : [];
+const DOTS = (() => { const r = mulberry32(4242); return Array.from({length: 420}, () => [r()*W, r()*H, r()*0.05+0.03, r()*1.6+0.8]); })();
+const AMBIENT = (() => {
+  const r = mulberry32(9021);
+  return Array.from({length: 500}, () => {
+    const accent = r() < 0.5;
+    return { x: r()*W, y: r()*H, vx: 8 + r()*14, vy: -(6 + r()*12),
+             s: 3.2 + r()*2.0, ph: r()*Math.PI*2, w: 8 + r()*6,
+             a: 0.22 + r()*0.33, accent };
+  });
+})();
+function drawL0(t){
+  const g = ctx.createRadialGradient(W*0.42, H*0.40, 80, W*0.42, H*0.40, 1150);
+  g.addColorStop(0, PAL.bg_in); g.addColorStop(1, PAL.bg_out);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const drift = (t / (M.drift_period ?? 8)) * 6;
+  if (M.pattern === 'dots'){
+    for (const [x, y, a, s] of DOTS){
+      const tw = 0.7 + 0.3 * Math.sin(t*1.4 + x*0.013);
+      ctx.fillStyle = `rgba(${ACCENT_DIM},${(a * tw * 0.35).toFixed(3)})`;
+      ctx.fillRect((x + drift) % W, (y - drift*0.6 + H) % H, s, s);
+    }
+  } else if (M.pattern === 'grid'){
+    ctx.strokeStyle = `rgba(${ACCENT_DIM},0.05)`; ctx.lineWidth = 1;
+    const sp = 90;
+    for (let i = -1; i < W/sp + 2; i++){
+      const o = ((i*sp + drift) % (W + sp) + W + sp) % (W + sp) - sp/2;
+      ctx.beginPath(); ctx.moveTo(o, 0); ctx.lineTo(o - H, H); ctx.stroke();
+    }
+    for (let j = -1; j < H/sp + 2; j++){
+      const o = j*sp - (drift*0.5) % sp;
+      ctx.beginPath(); ctx.moveTo(0, o); ctx.lineTo(W, o); ctx.stroke();
+    }
+  } else if (M.pattern === 'hairline'){
+    /* paper 模式：正交发丝线网格（图纸感），近静止，运动由萤火层承担 */
+    ctx.strokeStyle = `rgba(${ACCENT_DIM},${LIGHT ? 0.055 : 0.05})`; ctx.lineWidth = 1;
+    const sp = 96, dx = (drift * 0.3) % sp;
+    for (let i = 0; i * sp < W + sp; i++){
+      ctx.beginPath(); ctx.moveTo(i * sp - dx, 0); ctx.lineTo(i * sp - dx, H); ctx.stroke();
+    }
+    for (let j = 0; j * sp < H + sp; j++){
+      ctx.beginPath(); ctx.moveTo(0, j * sp); ctx.lineTo(W, j * sp); ctx.stroke();
+    }
+  } else {
+    ctx.strokeStyle = `rgba(${ACCENT_DIM},0.05)`; ctx.lineWidth = 1.4;
+    for (let i = 1; i <= 9; i++){
+      ctx.beginPath(); ctx.arc(W*0.42, H*0.40, i*120, 0, Math.PI*2); ctx.stroke();
+    }
+  }
+  for (const p of AMBIENT){
+    const x = ((p.x + p.vx*t) % W + W) % W;
+    const y = ((p.y + p.vy*t) % H + H) % H;
+    const a = p.a * (0.55 + 0.45 * Math.sin(t*p.w + p.ph));
+    ctx.fillStyle = p.accent ? `rgba(${ACCENT_DIM},${a.toFixed(3)})` : `rgba(${INK_DIM},${(a*0.85).toFixed(3)})`;
+    ctx.fillRect(x, y, p.s, p.s);
+  }
+  for (const [x, y, a, s] of STARS){
+    const tw = 0.75 + 0.25 * Math.sin(t*1.8 + x);
+    ctx.fillStyle = `rgba(${INK_DIM},${(a * tw).toFixed(3)})`;
+    ctx.fillRect(x, (y - drift + H) % H, s, s);
+  }
+  for (const [x, y, a] of GRAIN){
+    ctx.fillStyle = LIGHT ? `rgba(22,24,28,${(a * 0.45).toFixed(3)})` : `rgba(255,255,255,${a})`;
+    ctx.fillRect(x, y, 1.5, 1.5);
+  }
+}
+function vignette(){
+  if (LIGHT){
+    /* 浅底：纸面边缘墨影。边中点 alpha≈0.086（亮度 252→232，压住 QA 的 235 亮边检测线），
+     * 四角≈0.18（像被拍摄的纸面）。只影响 LIGHT 分支，深空片零变化。 */
+    const v = ctx.createRadialGradient(W/2, H/2, H*0.30, W/2, H/2, H*0.72);
+    v.addColorStop(0, 'rgba(22,24,28,0)'); v.addColorStop(1, 'rgba(22,24,28,0.18)');
+    ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+    return;
+  }
+  const v = ctx.createRadialGradient(W/2, H/2, H*0.42, W/2, H/2, H*0.95);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.62)');
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+}
+
+/* ---------- 内置 L1（rings / grid） ---------- */
+function drawBuiltinL1(l1, sc, t){
+  const at = l1.at || [(sc.l2 && sc.l2.params && sc.l2.params.cx) ?? 0.42,
+                       (sc.l2 && sc.l2.params && sc.l2.params.cy) ?? 0.42];
+  const cx = at[0]*W, cy = at[1]*H;
+  const g = easeOutCubic(seg(t, l1.grow[0], l1.grow[1]));
+  if (g <= 0) return;
+  const lw = Math.max(2, l1.stroke || 2);
+  if (l1.kind === 'rings'){
+    const rot = t * 0.05;
+    for (let i = 1; i <= 5; i++){
+      const rr = i * 118 * g;
+      if (rr < 4) continue;
+      ctx.strokeStyle = `rgba(${ACCENT_DIM},${0.06 + i*0.014})`;
+      ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI*2); ctx.stroke();
+      for (let k = 0; k < 4; k++){
+        const ang = k*Math.PI/2 + i*0.35 - rot*1.6;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(ang)*(rr-5), cy + Math.sin(ang)*(rr-5));
+        ctx.lineTo(cx + Math.cos(ang)*(rr+5), cy + Math.sin(ang)*(rr+5));
+        ctx.stroke();
+      }
+    }
+  } else if (l1.kind === 'grid'){
+    ctx.strokeStyle = `rgba(${INK_DIM},0.10)`;
+    ctx.lineWidth = lw;
+    const sp = 150;
+    const cols = Math.ceil(W*0.84/sp * g);
+    for (let i = 0; i <= cols; i++){
+      const x = W*0.08 + i*sp;
+      if (x > W*0.92) break;
+      ctx.beginPath(); ctx.moveTo(x, H*0.14); ctx.lineTo(x, H*0.80); ctx.stroke();
+    }
+    const rows = Math.ceil(H*0.66/sp * g);
+    for (let j = 0; j <= rows; j++){
+      const y = H*0.80 - j*sp;
+      if (y < H*0.14) break;
+      ctx.beginPath(); ctx.moveTo(W*0.08, y); ctx.lineTo(W*0.92, y); ctx.stroke();
+    }
+  }
+}
+
+/* ---------- L3 标注 / 字幕 / 顶栏 ---------- */
+function drawNotes(sc, t){
+  for (const n of (sc.l3 || [])){
+    const a = seg(t, n.t_in ?? sc.t_in, n.t_out ?? sc.t_out);
+    if (a <= 0) continue;
+    const color = n.color === 'accent' ? ACCENT : n.color === 'ink' ? INK : GRAY;
+    const fam = n.mono ? 'Consolas, monospace' : '"Microsoft YaHei"';
+    drawText(ctx, n.text, n.x*W, n.y*H, { font: `${n.font ?? 21}px ${fam}`, color, align: n.align ?? 'center', alpha: a, track: n.track ?? 0 });
+  }
+}
+function drawSubtitles(t){
+  for (const sb of (PLAN.subtitles || [])){
+    const a = Math.min(seg(t, sb.t_in, sb.t_in + 0.3), 1 - seg(t, sb.t_out - 0.25, sb.t_out));
+    if (a <= 0) continue;
+    if (sb.punch){
+      const pk = Math.sin(Math.PI * seg(t, sb.t_in + 0.25, sb.t_in + 0.61));
+      const scale = 1 + 0.14 * pk;
+      ctx.save();
+      ctx.translate(W/2, 910);
+      ctx.scale(scale, scale);
+      drawText(ctx, sb.zh, 0, 16, { font: '700 46px "Microsoft YaHei"', color: INK, alpha: a });
+      drawText(ctx, sb.en ?? '', 0, 64, { font: 'italic 27px Georgia', color: PAL.sub_en ?? '#9C9CB4', alpha: a*0.9 });
+      ctx.restore();
+    } else {
+      drawText(ctx, sb.zh, W/2, 926, { font: '700 46px "Microsoft YaHei"', color: INK, alpha: a });
+      drawText(ctx, sb.en ?? '', W/2, 974, { font: 'italic 27px Georgia', color: PAL.sub_en ?? '#9C9CB4', alpha: a*0.9 });
+    }
+  }
+}
+function drawTopbar(t){
+  drawText(ctx, M.watermark ?? '', 64, 68, { font: '21px "Microsoft YaHei"', color: `rgba(${DIM},0.85)`, align: 'left', track: 4 });
+  drawText(ctx, M.hook_title ?? M.topic, W/2, 68, { font: '21px "Microsoft YaHei"', color: `rgba(${ACCENT_DIM},0.9)`, track: 8 });
+  const mm = String(Math.floor(t/60)).padStart(2, '0');
+  const ss = String(Math.floor(t%60)).padStart(2, '0');
+  const ff = String(Math.floor((t%1)*30)).padStart(2, '0');
+  drawText(ctx, `${mm}:${ss}:${ff}`, W-64, 68, { font: '21px Consolas, monospace', color: `rgba(${DIM},0.7)`, align: 'right' });
+}
+
+/* ---------- blocks 积木（build_html.mjs 注入） ---------- */
+/* vs-counters — 左右双数字对撞积木（双结局/反转落点）
+ * params: {font_px, cy, t_count:[a,b], left:{cx,to,decimals,label,expr,t_label},
+ *          right:{...同 left}}
+ * 约定：右侧 = 强调色 + 发光（赢家），左侧 = 辅助灰。中缝竖线脉冲一次。 */
+window.BLOCKS = window.BLOCKS || {};
+window.BLOCKS['vs-counters'] = {
+  l2: function (ctx, T, sc, P, U) {
+    const fs = P.font_px ?? 150;
+    const tc = P.t_count || [0.3, 1.6];
+    const g = U.easeOutCubic(U.seg(T, tc[0], tc[1]));
+    const items = [['left', P.left, false], ['right', P.right, true]];
+    for (const [side, cfg, isAccent] of items) {
+      if (!cfg) continue;
+      const cx = (cfg.cx ?? (side === 'left' ? 0.31 : 0.69)) * U.W;
+      const cy = (cfg.cy ?? (P.cy ?? 0.40)) * U.H;
+      const val = (cfg.to ?? 1) * g;
+      const txt = (cfg.prefix ?? '') + val.toFixed(cfg.decimals ?? 2) + (cfg.suffix ?? '');
+      const color = isAccent ? U.ACCENT : U.GRAY;
+      const isPulse = T > tc[1] + 0.4;
+      const pulse = isPulse ? 1 + 0.035 * Math.sin((T - tc[1] - 0.4) * 3.7) : 1;
+      if (isAccent && T >= tc[0] && T < tc[1] + 0.4) {
+        ctx.save();
+        ctx.shadowColor = U.ACCENT; ctx.shadowBlur = 26;
+      }
+      ctx.fillStyle = color;
+      ctx.font = `700 ${fs}px Consolas, monospace`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+      const w = ctx.measureText(txt).width;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(pulse, pulse);
+      ctx.translate(-cx, -cy);
+      ctx.fillText(txt, cx - w / 2, cy + fs * 0.35);
+      ctx.restore();
+      if (isAccent && T >= tc[0] && T < tc[1] + 0.4) ctx.restore();
+      const tl = cfg.t_label ?? tc[0];
+      const la = U.seg(T, tl, tl + 0.8);
+      if (la > 0) {
+        if (cfg.label) U.drawText(ctx, cfg.label, cx, cy - fs * 0.62,
+          { font: '25px "Microsoft YaHei"', color: U.GRAY, alpha: la });
+        if (cfg.expr) U.drawText(ctx, cfg.expr, cx, cy + fs * 0.35 + 64,
+          { font: '36px Consolas, monospace', color: isAccent ? U.ACCENT : U.GRAY, alpha: la });
+      }
+    }
+    if (P.divider === true) {
+      const va = U.seg(T, tc[0] - 0.1, tc[0] + 0.5);
+      if (va > 0 && va < 1) {
+        ctx.strokeStyle = U.rgbaInk(0.3 * (1 - Math.abs(2 * va - 1)));
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(U.W * 0.5, U.H * 0.26);
+        ctx.lineTo(U.W * 0.5, U.H * 0.58);
+        ctx.stroke();
+      }
+    }
+  }
+};
+
+
+/* text-points — 要点逐条点亮积木（机制步骤/三要点展开）
+ * params: {cx, cy, w, area_pct, items:[{text, sub, t_in}], row_h, t_hold}
+ * 视觉：每条 = accent 编号点（命中时亮起并持续脉冲）+ 主文 ink + 副行 gray；
+ * 进场 = 点亮 + 文本上移淡入；未进场条不可见。编号点持续脉冲 = 持续运动源。 */
+window.BLOCKS = window.BLOCKS || {};
+window.BLOCKS['text-points'] = {
+  l2: function (ctx, T, sc, P, U) {
+    const w = P.w ?? 1100;
+    const cx = (P.cx ?? 0.42) * U.W, cy = (P.cy ?? 0.44) * U.H;
+    const items = P.items || [];
+    const rowH = P.row_h ?? 150;
+    const x0 = cx - w / 2;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      const tIn = it.t_in ?? (i * 1.2);
+      const g = U.easeOutCubic(U.seg(T, tIn, tIn + 0.7));
+      if (g <= 0) continue;
+      const iy = cy - ((items.length - 1) * rowH) / 2 + i * rowH;
+      const isActive = (it.t_out === undefined) || (T < it.t_out);
+      const ph = T * 5.0 + i * 1.3;
+      const dotR = 8 + 3.2 * Math.sin(ph);
+      const dotA = 0.62 + 0.38 * Math.sin(ph + 0.9);
+      const col = isActive ? U.ACCENT : U.GRAY;
+      ctx.fillStyle = col;
+      ctx.globalAlpha = g * Math.max(0.25, dotA);
+      ctx.beginPath(); ctx.arc(x0 + 16, iy, Math.max(3, dotR * g), 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+      /* 进度下划线：从点亮到 t_out（默认场景尾）持续填充 = 整场景运动源 */
+      const iEnd = it.t_out ?? sc.t_out;
+      const pg = U.clamp01((T - tIn) / Math.max(0.1, iEnd - tIn));
+      if (pg > 0) {
+        ctx.fillStyle = U.rgba(0.5 * g);
+        ctx.fillRect(x0 + 44, iy + 54, (w - 70) * pg, 3);
+      }
+      ctx.save();
+      ctx.translate(x0 + 44, iy + 8 * (1 - g));
+      U.drawText(ctx, it.text, 0, 0, { font: '30px "Microsoft YaHei"', color: isActive ? U.INK : U.GRAY, align: 'left', alpha: g });
+      if (it.sub) U.drawText(ctx, it.sub, 0, 40, { font: '21px "Microsoft YaHei"', color: U.GRAY, align: 'left', alpha: g * 0.9 });
+      ctx.restore();
+    }
+  }
+};
+
+
+/* terminal-window — 终端证据窗（项目介绍线 · paper 风格的点睛件）
+ * 独立站设计语言：暗色面板只装"技术证据"（命令/输出/闸门结果）。
+ * params: {cx, cy, w, h, title, lines:[{kind:'cmd'|'out'|'ok'|'warn', text, t_in, cps}], cursor, progress_to}
+ * cmd 行 = '$ ' teal + 逐字敲入（cps 字/秒）+ 敲入中闪块光标；
+ * out = 墨白 / ok = '✓' teal / warn = '!' 琥珀。
+ * 持续运动源（QA 教训：打完字后整块面板静止 = 10.8s 静止段，7.4 分不过闸）：
+ *   ① 入场 0.18s 快速弹现（0.5s 慢淡入曾把一次淡入计成 8 连"硬切"）；
+ *   ② CRT 扫描光带每 4.5s 扫过面板（两缘 ~3.9px/帧）；
+ *   ③ 底部执行进度条持续填充 + 条内 barber-pole 斜纹 90px/s 流动。 */
+window.BLOCKS = window.BLOCKS || {};
+window.BLOCKS['terminal-window'] = {
+  l2: function (ctx, T, sc, P, U) {
+    const PAL = U.PAL || {};
+    const TBG = PAL.term_bg || '#0e1214';
+    const TLINE = PAL.term_line || '#242c30';
+    const TINK = PAL.term_ink || '#d6dde1';
+    const TDIM = PAL.term_dim || '#7c878e';
+    const TACC = PAL.term_accent || '#5ed3b8';
+    const TAMBER = PAL.term_amber || '#e3b341';
+    const w = P.w ?? 1000, h = P.h ?? 520;
+    const cx = (P.cx ?? 0.5) * U.W, cy = (P.cy ?? 0.42) * U.H;
+    const x0 = cx - w / 2, y0 = cy - h / 2;
+    const g = U.easeOutCubic(U.seg(T, P.t_in ?? sc.t_in, (P.t_in ?? sc.t_in) + 0.18));
+    if (g <= 0) return;
+    const BAR = 44;
+    ctx.save();
+    ctx.globalAlpha = g;
+    /* 面板：暗底 + 墨影 + 发丝描边 */
+    ctx.shadowColor = 'rgba(22,24,28,0.18)';
+    ctx.shadowBlur = 22; ctx.shadowOffsetY = 8;
+    ctx.fillStyle = TBG;
+    ctx.fillRect(x0, y0 + 16 * (1 - g), w, h);
+    ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    ctx.strokeStyle = TLINE; ctx.lineWidth = 1.5;
+    ctx.strokeRect(x0 + 0.5, y0 + 0.5 + 16 * (1 - g), w - 1, h - 1);
+    /* 标题栏：三圆点 + 标题 */
+    const dots = ['#ff5f56', '#ffbd2e', '#27c93f'];
+    for (let i = 0; i < 3; i++){
+      ctx.fillStyle = dots[i];
+      ctx.globalAlpha = g * 0.9;
+      ctx.beginPath(); ctx.arc(x0 + 26 + i * 24, y0 + BAR / 2 + 16 * (1 - g), 6, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = g;
+    U.drawText(ctx, P.title ?? 'terminal', cx, y0 + BAR / 2 + 8 + 16 * (1 - g), { font: '18px Consolas, monospace', color: TDIM, alpha: g, track: 2 });
+    ctx.strokeStyle = TLINE; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0, y0 + BAR + 16 * (1 - g)); ctx.lineTo(x0 + w, y0 + BAR + 16 * (1 - g)); ctx.stroke();
+    /* 内容行 */
+    const lines = P.lines || [];
+    const lineH = P.line_h ?? 40;
+    let y = y0 + BAR + 34;
+    for (let i = 0; i < lines.length; i++){
+      const ln = lines[i];
+      const tIn = ln.t_in ?? (i * 1.2);
+      if (T < tIn) break;
+      const kind = ln.kind || 'out';
+      const cps = ln.cps ?? 16;
+      const text = ln.text ?? '';
+      const nChars = kind === 'cmd' ? Math.floor(U.seg(T, tIn, tIn + text.length / cps) * text.length + 0.001) : text.length;
+      const shown = text.slice(0, nChars);
+      const typing = kind === 'cmd' && nChars < text.length;
+      let color = TINK, prefix = '', pcolor = TINK;
+      if (kind === 'cmd'){ prefix = '$ '; pcolor = TACC; }
+      if (kind === 'ok'){ prefix = '✓ '; pcolor = TACC; color = TACC; }
+      if (kind === 'warn'){ prefix = '! '; pcolor = TAMBER; color = TAMBER; }
+      const tx = x0 + 36;
+      if (prefix){
+        U.drawText(ctx, prefix, tx, y, { font: '22px Consolas, monospace', color: pcolor, align: 'left', alpha: g });
+      }
+      U.drawText(ctx, shown, tx + 34, y, { font: '22px Consolas, monospace', color, align: 'left', alpha: g });
+      /* 敲入中的块光标（呼吸）+ 末行空闲光标 */
+      const idleCursor = P.cursor !== false && kind === 'cmd' && i === lines.length - 1 && !typing;
+      if (typing || idleCursor){
+        const on = typing || Math.sin(T * 5.5) > -0.15;
+        if (on){
+          ctx.font = '22px Consolas, monospace';
+          const wpx = ctx.measureText(prefix + shown).width;
+          ctx.fillStyle = TINK;
+          ctx.globalAlpha = g * 0.85;
+          ctx.fillRect(tx + wpx, y - 18, 12, 22);
+        }
+      }
+      y += lineH;
+    }
+    /* ---------- 持续运动源 ---------- */
+    const accRGB = (function (h){
+      const m = /^#?([0-9a-f]{6})$/i.exec(h || '');
+      return m ? [parseInt(m[1].slice(0, 2), 16), parseInt(m[1].slice(2, 4), 16), parseInt(m[1].slice(4, 6), 16)].join(',') : '94,211,184';
+    })(TACC);
+    /* ② CRT 扫描光带：teal 微光带自上而下每 4.5s 扫一遍 */
+    const tEnter = P.t_in ?? sc.t_in;
+    const sw2 = ((T - tEnter) % 4.5) / 4.5;
+    const bandA = 0.10 * Math.sin(Math.PI * sw2);
+    if (bandA > 0.004){
+      const bh = 80;
+      const by2 = y0 + BAR + sw2 * (h - BAR - bh - 24);
+      ctx.fillStyle = `rgba(${accRGB},${bandA.toFixed(3)})`;
+      ctx.fillRect(x0 + 2, by2, w - 4, bh);
+    }
+    /* ③ 执行进度条：轨道自首个 cmd 起填充到场景尾，条内斜纹 90px/s 流动 */
+    const t0 = lines.length ? (lines[0].t_in ?? tEnter) : tEnter;
+    const tEnd = P.progress_to ?? sc.t_out ?? (t0 + 10);
+    const pf = U.clamp01((T - t0) / Math.max(0.1, tEnd - t0));
+    const bw = w - 72, bxx = x0 + 36, byy = y0 + h - 42;
+    ctx.globalAlpha = g * 0.9;
+    ctx.fillStyle = TLINE;
+    ctx.fillRect(bxx, byy, bw, 7);
+    if (pf > 0.003){
+      ctx.save();
+      ctx.beginPath(); ctx.rect(bxx, byy, bw * pf, 7); ctx.clip();
+      ctx.fillStyle = `rgba(${accRGB},0.16)`;
+      ctx.fillRect(bxx, byy, bw * pf, 7);
+      ctx.strokeStyle = TACC; ctx.lineWidth = 4.5;
+      ctx.globalAlpha = g * 0.9;
+      const off = (T * 90) % 16;
+      ctx.beginPath();
+      for (let sx = -18 + off; sx < bw * pf + 18; sx += 16){
+        ctx.moveTo(bxx + sx, byy + 9);
+        ctx.lineTo(bxx + sx + 10, byy - 2);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+};
+
+
+/* feature-cards — 编辑部式特性卡（项目介绍线 · paper 风格）
+ * params: {cx, cy, card_w, card_h, gap, cards:[{tag, title, sub, t_in}]}
+ * 视觉：白面卡片 + 发丝线框 + 墨影（独立站 surface/line 语言）；
+ * 命中 = teal 顶条从 0 拉满（easeOutCubic）+ 卡片上浮淡入（easeOutBack）；
+ * 命中后 tag 前的 accent 点持续脉冲。
+ * 持续运动源（QA 教训：四卡弹入完毕后仅剩微脉冲 → 4.86s 静止段）：
+ *   ① teal 微光带沿卡行横向巡游（每 4.2s 一轮，两缘 ~19px/帧）；
+ *   ② 各卡底部进度线自命中起持续填充到场景尾。 */
+window.BLOCKS = window.BLOCKS || {};
+window.BLOCKS['feature-cards'] = {
+  l2: function (ctx, T, sc, P, U) {
+    const PAL = U.PAL || {};
+    const SFC = PAL.surface || '#ffffff';
+    const LINE = PAL.line || '#e6e5e1';
+    const INK_SHADOW = '22,24,28';
+    const cw = P.card_w ?? 380, ch = P.card_h ?? 300, gap = P.gap ?? 40;
+    const cards = P.cards || [];
+    const cx = (P.cx ?? 0.5) * U.W, cy = (P.cy ?? 0.42) * U.H;
+    const total = cards.length * cw + (cards.length - 1) * gap;
+    const x0 = cx - total / 2, y0 = cy - ch / 2;
+    for (let i = 0; i < cards.length; i++) {
+      const it = cards[i];
+      const tIn = it.t_in ?? (i * 0.9);
+      const g = U.seg(T, tIn, tIn + 0.7);
+      if (g <= 0) continue;
+      const pop = U.easeOutBack(g);
+      const x = x0 + i * (cw + gap), y = y0;
+      ctx.save();
+      ctx.globalAlpha = g;
+      /* 卡面 + 墨影 */
+      ctx.shadowColor = `rgba(${INK_SHADOW},0.08)`;
+      ctx.shadowBlur = 14; ctx.shadowOffsetY = 6;
+      ctx.fillStyle = SFC;
+      ctx.fillRect(x, y + 24 * (1 - pop), cw, ch);
+      ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+      /* 发丝线框 */
+      ctx.strokeStyle = LINE; ctx.lineWidth = 1.5;
+      ctx.strokeRect(x + 0.5, y + 0.5 + 24 * (1 - pop), cw - 1, ch - 1);
+      /* teal 顶条：命中即从 0 拉满 */
+      const bar = U.easeOutCubic(U.seg(T, tIn + 0.05, tIn + 0.75));
+      ctx.fillStyle = U.ACCENT;
+      ctx.fillRect(x, y + 24 * (1 - pop), cw * bar, 4);
+      /* tag：accent 点脉冲 + 灰色小标 */
+      const oy = y + 24 * (1 - pop);
+      const dotR = 5 + 1.6 * Math.sin(T * 5.0 + i * 1.7);
+      ctx.fillStyle = U.ACCENT;
+      ctx.beginPath(); ctx.arc(x + 34, oy + 62, Math.max(2.5, dotR * g), 0, Math.PI * 2); ctx.fill();
+      U.drawText(ctx, it.tag ?? '', x + 52, oy + 68, { font: '20px Consolas, monospace', color: U.GRAY, align: 'left', alpha: g, track: 2 });
+      /* 标题 + 副行 */
+      U.drawText(ctx, it.title ?? '', x + 34, oy + 138, { font: '600 34px "Microsoft YaHei"', color: U.INK, align: 'left', alpha: g });
+      if (it.sub) U.drawText(ctx, it.sub, x + 34, oy + 190, { font: '21px "Microsoft YaHei"', color: U.GRAY, align: 'left', alpha: g * 0.95, maxW: cw - 68 });
+      /* ② 底部进度线：自命中起填充到场景尾 */
+      const pf = U.clamp01((T - tIn) / Math.max(0.1, (sc.t_out ?? tIn + 8) - tIn));
+      const py = oy + ch - 30;
+      ctx.globalAlpha = g * 0.9;
+      ctx.fillStyle = LINE;
+      ctx.fillRect(x + 34, py, cw - 68, 3);
+      if (pf > 0.003){
+        ctx.fillStyle = U.ACCENT;
+        ctx.globalAlpha = g;
+        ctx.fillRect(x + 34, py, (cw - 68) * pf, 3);
+      }
+      ctx.restore();
+    }
+    /* ① 巡游光带：120px 宽 teal 微光带沿卡行横向扫过（两缘 ~19px/帧） */
+    const accRGB = (function (h){
+      const m = /^#?([0-9a-f]{6})$/i.exec(h || '');
+      return m ? [parseInt(m[1].slice(0, 2), 16), parseInt(m[1].slice(2, 4), 16), parseInt(m[1].slice(4, 6), 16)].join(',') : '13,110,99';
+    })(U.ACCENT);
+    const tFirst = cards.length ? (cards[0].t_in ?? 0) : 0;
+    const swp = ((T - tFirst) % 4.2) / 4.2;
+    const bA = 0.10 * Math.min(1, Math.min(swp, 1 - swp) / 0.12);
+    if (bA > 0.004){
+      const span = total + 2 * cw;
+      const sx = x0 - cw + swp * span;
+      ctx.fillStyle = `rgba(${accRGB},${bA.toFixed(3)})`;
+      ctx.fillRect(sx, y0 - 10, 120, ch + 20);
+    }
+  }
+};
+
+
+/* beat-counter — 大数字滚动 + 公式框积木（数字锚点/机制推演）
+ * params: {cx, cy, font_px, to, decimals, prefix, suffix, expr,
+ *          t_count:[a,b], t_expr:[a,b]}
+ * 数字 = 唯一发光元素（计数期间），公式框描边用强调色。 */
+window.BLOCKS = window.BLOCKS || {};
+window.BLOCKS['beat-counter'] = {
+  l2: function (ctx, T, sc, P, U) {
+    const cx = (P.cx ?? 0.42) * U.W, cy = (P.cy ?? 0.42) * U.H;
+    const fs = P.font_px ?? 200;
+    const tc = P.t_count || [0.5, 3.0];
+    const g = U.easeOutCubic(U.seg(T, tc[0], tc[1]));
+    const val = (P.to ?? 37.8) * g;
+    const txt = (P.prefix ?? '') + val.toFixed(P.decimals ?? 1) + (P.suffix ?? '');
+    const glow = T >= tc[0] && T < tc[1] + 0.4;
+    const pulse = T > tc[1] + 0.4 ? 1 + 0.035 * Math.sin((T - tc[1] - 0.4) * 3.7) : 1;
+    if (glow) {
+      ctx.save();
+      ctx.shadowColor = U.ACCENT; ctx.shadowBlur = 30;
+    }
+    ctx.fillStyle = U.ACCENT;
+    ctx.font = `700 ${fs}px Consolas, monospace`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    const w = ctx.measureText(txt).width;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(pulse, pulse);
+    ctx.translate(-cx, -cy);
+    ctx.fillText(txt, cx - w / 2, cy + fs * 0.35);
+    ctx.restore();
+    if (glow) ctx.restore();
+    const te = P.t_expr || [tc[0] + 0.2, tc[0] + 1.0];
+    const ea = U.seg(T, te[0], te[1]);
+    if (ea > 0 && P.expr) {
+      ctx.font = '44px Consolas, monospace';
+      ctx.textAlign = 'left';
+      const ew = ctx.measureText(P.expr).width;
+      const ex = cx - ew / 2, ey = cy + fs * 0.35 + 96;
+      ctx.globalAlpha = ea;
+      ctx.fillStyle = 'rgba(234,234,242,0.92)';
+      ctx.fillText(P.expr, ex, ey);
+      ctx.strokeStyle = U.ACCENT;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(ex - 24, ey - 44, ew + 48, 64);
+      ctx.globalAlpha = 1;
+    }
+  }
+};
+
+
+/* repo-card — 收尾卡（项目介绍线 · land 段）
+ * params: {cx, cy, w, repo:'owner/name', stars, lang, chips:[..], install, t_star, area?}
+ * 视觉：owner/name 等宽大字（owner 灰、name 墨）+ teal 星标脉冲 + 星数滚动；
+ * 语言 chips（发丝线圆角胶囊 + accent 点）逐个弹入（easeOutBack）；
+ * 底部一行 $ 安装命令（sunken 胶囊 + 呼吸光标）= 可行动的收口。 */
+window.BLOCKS = window.BLOCKS || {};
+window.BLOCKS['repo-card'] = {
+  l2: function (ctx, T, sc, P, U) {
+    const PAL = U.PAL || {};
+    const SUNKEN = PAL.sunken || '#f4f4f1';
+    const LINE = PAL.line || '#e6e5e1';
+    const w = P.w ?? 1200;
+    const cx = (P.cx ?? 0.5) * U.W, cy = (P.cy ?? 0.45) * U.H;
+    const tIn = P.t_in ?? sc.t_in;
+    const g0 = U.seg(T, tIn, tIn + 0.4);
+    if (g0 <= 0) return;
+    const mono = 'Consolas, monospace';
+    /* --- repo 名：owner/ 灰 + name 墨 --- */
+    const repo = P.repo ?? '';
+    const slash = repo.lastIndexOf('/');
+    const owner = slash > 0 ? repo.slice(0, slash + 1) : '';
+    const name = slash > 0 ? repo.slice(slash + 1) : repo;
+    ctx.font = '600 52px ' + mono;
+    const ownerW = ctx.measureText(owner).width;
+    const nameW = ctx.measureText(name).width;
+    const rx = cx - (ownerW + nameW) / 2;
+    const ry = cy - 90;
+    const rise = 18 * (1 - U.easeOutBack(g0));
+    U.drawText(ctx, owner, rx, ry + rise, { font: '600 52px ' + mono, color: U.GRAY, align: 'left', alpha: g0 });
+    U.drawText(ctx, name, rx + ownerW, ry + rise, { font: '600 52px ' + mono, color: U.INK, align: 'left', alpha: g0 });
+    /* --- 星标 + 星数滚动（stars 未提供则显示语言，不编数字） --- */
+    const tStar = P.t_star ?? (tIn + 0.8);
+    const gs = U.seg(T, tStar, tStar + 0.9);
+    if (gs > 0){
+      const rowY = ry + 64;
+      const starX = cx - 110;
+      ctx.globalAlpha = gs;
+      if ((P.stars ?? 0) > 0){
+        U.drawText(ctx, '★', starX, rowY, { font: '34px sans-serif', color: U.ACCENT, align: 'left', alpha: gs * (0.72 + 0.28 * (0.5 + 0.5 * Math.sin(T * 3.6))) });
+        ctx.globalAlpha = 1;
+        const stars = Math.round((P.stars ?? 0) * U.easeOutCubic(gs));
+        U.drawText(ctx, String(stars), starX + 30, rowY, { font: '600 32px ' + mono, color: U.INK, align: 'left', alpha: gs });
+        U.drawText(ctx, P.lang ? P.lang : '', starX + 170, rowY, { font: '22px ' + mono, color: U.GRAY, align: 'left', alpha: gs * 0.9 });
+      } else {
+        U.drawText(ctx, '●', starX, rowY, { font: '30px sans-serif', color: U.ACCENT, align: 'left', alpha: gs * (0.72 + 0.28 * (0.5 + 0.5 * Math.sin(T * 3.6))) });
+        ctx.globalAlpha = 1;
+        U.drawText(ctx, P.lang ? P.lang : '', starX + 30, rowY, { font: '22px ' + mono, color: U.GRAY, align: 'left', alpha: gs * 0.9 });
+      }
+    }
+    /* --- chips：发丝线胶囊 + accent 点，逐个弹入 --- */
+    const chips = P.chips || [];
+    const chipY = ry + 130;
+    let chipX = cx - (function est(){
+      ctx.font = '20px ' + mono;
+      let s = 0;
+      for (const c of chips) s += ctx.measureText(c).width + 74;
+      return (s - 40) / 2;
+    })();
+    for (let i = 0; i < chips.length; i++){
+      const tci = tIn + 0.5 + i * 0.18;
+      const gc = U.easeOutBack(U.seg(T, tci, tci + 0.5));
+      if (gc <= 0) break;
+      ctx.font = '20px ' + mono;
+      const cw = ctx.measureText(chips[i]).width + 52;
+      const chH = 44;
+      const shy = chipY + 10 * (1 - gc);
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, gc);
+      ctx.fillStyle = SUNKEN;
+      ctx.strokeStyle = LINE; ctx.lineWidth = 1.5;
+      const rr = 10;
+      const bx = chipX, by = shy;
+      ctx.beginPath();
+      ctx.moveTo(bx + rr, by); ctx.arcTo(bx + cw, by, bx + cw, by + chH, rr);
+      ctx.arcTo(bx + cw, by + chH, bx, by + chH, rr);
+      ctx.arcTo(bx, by + chH, bx, by, rr);
+      ctx.arcTo(bx, by, bx + cw, by, rr);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = U.ACCENT;
+      ctx.beginPath(); ctx.arc(bx + 22, by + chH / 2, 5 + 1.2 * Math.sin(T * 4.0 + i), 0, Math.PI * 2); ctx.fill();
+      U.drawText(ctx, chips[i], bx + 36, by + chH / 2 + 7, { font: '20px ' + mono, color: U.INK, align: 'left', alpha: 1 });
+      ctx.restore();
+      chipX += cw + 22;
+    }
+    /* --- 安装命令：sunken 胶囊 + $ teal + 呼吸光标 --- */
+    if (P.install){
+      const tci = tIn + 1.2;
+      const gi = U.seg(T, tci, tci + 0.5);
+      if (gi > 0){
+        ctx.font = '22px ' + mono;
+        const iw = ctx.measureText(P.install).width + 96;
+        const ih = 52;
+        const ix = cx - iw / 2, iy = ry + 196 + 8 * (1 - U.easeOutBack(gi));
+        ctx.save();
+        ctx.globalAlpha = gi;
+        ctx.fillStyle = SUNKEN;
+        ctx.strokeStyle = LINE; ctx.lineWidth = 1.5;
+        const rr = 12;
+        ctx.beginPath();
+        ctx.moveTo(ix + rr, iy); ctx.arcTo(ix + iw, iy, ix + iw, iy + ih, rr);
+        ctx.arcTo(ix + iw, iy + ih, ix, iy + ih, rr);
+        ctx.arcTo(ix, iy + ih, ix, iy, rr);
+        ctx.arcTo(ix, iy, ix + iw, iy, rr);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        U.drawText(ctx, '$', ix + 28, iy + ih / 2 + 8, { font: '22px ' + mono, color: U.ACCENT, align: 'left' });
+        U.drawText(ctx, P.install, ix + 56, iy + ih / 2 + 8, { font: '22px ' + mono, color: U.INK, align: 'left' });
+        /* 呼吸 teal 描边（胶囊外圈）：收尾段不能只剩光标——QA 静止段教训 */
+        const pul = 0.10 + 0.10 * (0.5 + 0.5 * Math.sin(T * 3.2));
+        ctx.strokeStyle = U.ACCENT; ctx.lineWidth = 2.5;
+        ctx.globalAlpha = gi * pul;
+        ctx.beginPath();
+        ctx.moveTo(ix + rr, iy); ctx.arcTo(ix + iw, iy, ix + iw, iy + ih, rr);
+        ctx.arcTo(ix + iw, iy + ih, ix, iy + ih, rr);
+        ctx.arcTo(ix, iy + ih, ix, iy, rr);
+        ctx.arcTo(ix, iy, ix + iw, iy, rr);
+        ctx.closePath();
+        ctx.stroke();
+        const curOn = Math.sin(T * 5.5) > -0.15;
+        if (curOn){
+          ctx.fillStyle = U.INK; ctx.globalAlpha = gi * 0.8;
+          ctx.fillRect(ix + 62 + ctx.measureText(P.install).width, iy + ih / 2 - 9, 11, 20);
+        }
+        ctx.restore();
+      }
+    }
+  }
+};
+
+
+/* ---------- 合成 ---------- */
+function sceneAt(t){
+  for (const sc of PLAN.scenes){
+    if (t >= sc.t_in - 1e-6 && t < sc.t_out + 1e-6) return sc;
+  }
+  return t >= M.duration ? PLAN.scenes[PLAN.scenes.length-1] : PLAN.scenes[0];
+}
+window.render = function(t){
+  ctx.clearRect(0, 0, W, H);
+  drawL0(t);
+  const sc = sceneAt(t) || PLAN.scenes[0];
+  const P = (sc.l2 && sc.l2.params) || {};
+  const B = (sc.l2 && window.BLOCKS) ? window.BLOCKS[sc.l2.block] : null;
+  if (sc.l1 && sc.l1.grow) drawBuiltinL1(sc.l1, sc, t);
+  if (B && B.l1) B.l1(ctx, t, sc, P, U);
+  if (B && B.l2) B.l2(ctx, t, sc, P, U);
+  vignette();
+  drawNotes(sc, t);
+  drawSubtitles(t);
+  drawTopbar(t);
+};
+
+/* ---------- 抓帧模式 / 预览 ---------- */
+window.DUR = M.duration;
+window.READY = false;
+if (new URLSearchParams(location.search).has('t')){
+  const t = parseFloat(new URLSearchParams(location.search).get('t'));
+  document.fonts.ready.then(() => { window.render(t); window.READY = true; });
+} else {
+  document.fonts.ready.then(() => { window.READY = true; });
+  const t0 = performance.now();
+  (function loop(now){ window.render(((now || performance.now()) - t0) / 1000 % window.DUR); requestAnimationFrame(loop); })();
+}
+</script>
+</body>
+</html>

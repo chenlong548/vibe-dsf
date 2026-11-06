@@ -1,0 +1,436 @@
+{
+  "version": "1.0",
+  "meta": {
+    "topic": "vibe-dsf · 项目介绍",
+    "hook_title": "VIBE·DSF · PIPELINE",
+    "duration": 50.0,
+    "fps": 30,
+    "bpm": 126,
+    "style": "paper",
+    "pattern": "hairline",
+    "drift_period": 8,
+    "palette": {
+      "bg_in": "#fcfcfa",
+      "bg_out": "#f2f1ec",
+      "accent": "#0d6e63",
+      "ink": "#16181c",
+      "gray": "#666c74",
+      "surface": "#ffffff",
+      "line": "#e6e5e1",
+      "sunken": "#f4f4f1",
+      "dim": "102,108,116",
+      "sub_en": "#7c828b",
+      "term_bg": "#0e1214",
+      "term_line": "#242c30",
+      "term_ink": "#d6dde1",
+      "term_dim": "#7c878e",
+      "term_accent": "#5ed3b8",
+      "term_amber": "#e3b341"
+    },
+    "watermark": "@VIBE·DSF"
+  },
+  "scenes": [
+    {
+      "id": "S1",
+      "segment": "hook",
+      "t_in": 0.0,
+      "t_out": 7.619,
+      "l2": {
+        "block": "vs-counters",
+        "params": {
+          "font_px": 140,
+          "cy": 0.4,
+          "area_pct": 0.16,
+          "t_count": [1.4286, 4.2857],
+          "left": {
+            "cx": 0.315,
+            "to": 3,
+            "decimals": 0,
+            "suffix": " 天",
+            "label": "人肉磨一条片",
+            "expr": "分镜 · 画面 · 剪辑 · 配乐",
+            "t_label": 1.0
+          },
+          "right": {
+            "cx": 0.575,
+            "to": 30,
+            "decimals": 0,
+            "suffix": " 分钟",
+            "label": "流水线跑一条片",
+            "expr": "主题进 · 成片出",
+            "t_label": 1.8
+          }
+        },
+        "glow_window": [1.4286, 4.8]
+      },
+      "l3": [
+        {
+          "text": "成本对撞 · COST",
+          "x": 0.42,
+          "y": 0.155,
+          "font": 21,
+          "align": "center",
+          "t_in": 4.5
+        },
+        {
+          "text": "github.com/chenlong548/vibe-dsf",
+          "x": 0.58,
+          "y": 0.66,
+          "font": 20,
+          "align": "center",
+          "mono": true,
+          "t_in": 5.6
+        }
+      ],
+      "beats": [1.9048, 4.2857, 6.1905],
+      "sfx": [
+        { "t": 0.0, "name": "impact-low" },
+        { "t": 4.2857, "name": "riser" }
+      ]
+    },
+    {
+      "id": "S2",
+      "segment": "anchor",
+      "t_in": 7.619,
+      "t_out": 16.1905,
+      "l2": {
+        "block": "text-points",
+        "params": {
+          "cx": 0.42,
+          "cy": 0.44,
+          "w": 1150,
+          "area_pct": 0.15,
+          "row_h": 170,
+          "items": [
+            {
+              "text": "一句话主题，进流水线",
+              "sub": "SCENE-PLAN · 11 组机器约束校验",
+              "t_in": 8.4
+            },
+            {
+              "text": "画面只用过闸积木拼装",
+              "sub": "registry.json · 10 个积木，禁手写场景",
+              "t_in": 10.6
+            },
+            {
+              "text": "均分不到 8 分，不许出片",
+              "sub": "qa_check.py · 五维审美硬门禁",
+              "t_in": 12.8
+            }
+          ]
+        }
+      },
+      "l3": [
+        {
+          "text": "它是什么 · WHAT",
+          "x": 0.3,
+          "y": 0.155,
+          "font": 21,
+          "align": "center",
+          "t_in": 8.0
+        },
+        {
+          "text": "vibe-dsf · 自动化知识视频流水线",
+          "x": 0.42,
+          "y": 0.70,
+          "font": 20,
+          "align": "center",
+          "t_in": 13.4
+        }
+      ],
+      "beats": [9.5238, 12.381],
+      "sfx": [
+        { "t": 7.619, "name": "impact-low" }
+      ]
+    },
+    {
+      "id": "S3",
+      "segment": "reason",
+      "t_in": 16.1905,
+      "t_out": 28.5714,
+      "l2": {
+        "block": "terminal-window",
+        "params": {
+          "cx": 0.54,
+          "cy": 0.46,
+          "w": 1050,
+          "h": 560,
+          "area_pct": 0.17,
+          "title": "run_all · 实况",
+          "t_in": 16.7,
+          "line_h": 46,
+          "lines": [
+            { "kind": "cmd", "text": "pwsh pipeline/run_all.ps1", "t_in": 17.4, "cps": 15 },
+            { "kind": "out", "text": "[plan] 11 组检查 → PASS", "t_in": 20.4 },
+            { "kind": "out", "text": "[render] 720 帧 · 0.13 秒/帧", "t_in": 22.0 },
+            { "kind": "ok", "text": "[qa] avg 9.5/10 ≥ 8 → PASS", "t_in": 23.8095 },
+            { "kind": "out", "text": "[mux] final.mp4 · 1080p30", "t_in": 25.2 },
+            { "kind": "warn", "text": "[gate] 不过闸的片不存在", "t_in": 26.6 }
+          ]
+        }
+      },
+      "l3": [
+        {
+          "text": "证据 · RUN LOG",
+          "x": 0.54,
+          "y": 0.14,
+          "font": 20,
+          "align": "center",
+          "mono": true,
+          "t_in": 16.9
+        },
+        {
+          "text": "命令与输出 · README 原文",
+          "x": 0.54,
+          "y": 0.76,
+          "font": 20,
+          "align": "center",
+          "t_in": 18.2
+        }
+      ],
+      "beats": [17.1429, 23.8095],
+      "sfx": [
+        { "t": 16.1905, "name": "impact-low" },
+        { "t": 23.8095, "name": "tick" }
+      ]
+    },
+    {
+      "id": "S4",
+      "segment": "reason",
+      "t_in": 28.5714,
+      "t_out": 40.4762,
+      "l2": {
+        "block": "feature-cards",
+        "params": {
+          "cx": 0.54,
+          "cy": 0.42,
+          "card_w": 370,
+          "card_h": 290,
+          "gap": 36,
+          "area_pct": 0.16,
+          "cards": [
+            { "tag": "STEP 01", "title": "机器分镜", "sub": "任务书 + 硬闸校验", "t_in": 29.5238 },
+            { "tag": "STEP 02", "title": "积木组装", "sub": "10 个过闸积木", "t_in": 31.1905 },
+            { "tag": "STEP 03", "title": "QA 门禁", "sub": "均分 <8 不出片", "t_in": 32.8571 },
+            { "tag": "STEP 04", "title": "人声旁白", "sub": "TTS 卡点 + 闪避混音", "t_in": 34.2857 }
+          ]
+        }
+      },
+      "l3": [
+        {
+          "text": "四道工序 · PIPELINE",
+          "x": 0.54,
+          "y": 0.14,
+          "font": 20,
+          "align": "center",
+          "mono": true,
+          "t_in": 29.2
+        },
+        {
+          "text": "每道工序都有闸 · GATED",
+          "x": 0.54,
+          "y": 0.68,
+          "font": 20,
+          "align": "center",
+          "t_in": 33.4
+        }
+      ],
+      "beats": [29.5238, 32.8571, 34.2857],
+      "sfx": [
+        { "t": 28.5714, "name": "impact-low" },
+        { "t": 34.2857, "name": "tick" }
+      ]
+    },
+    {
+      "id": "S5",
+      "segment": "turn",
+      "t_in": 40.4762,
+      "t_out": 45.7143,
+      "l2": {
+        "block": "beat-counter",
+        "params": {
+          "cx": 0.42,
+          "cy": 0.42,
+          "font_px": 210,
+          "area_pct": 0.15,
+          "to": 9.5,
+          "decimals": 1,
+          "suffix": "/10",
+          "expr": "QA avg ≥ 8 才许出片",
+          "t_count": [41.4, 43.4],
+          "t_expr": [41.6, 42.6]
+        },
+        "glow_window": [41.4, 44.0]
+      },
+      "l3": [
+        {
+          "text": "质量闸 · QUALITY GATE",
+          "x": 0.3,
+          "y": 0.155,
+          "font": 21,
+          "align": "center",
+          "t_in": 41.0
+        },
+        {
+          "text": "pass 不了的片，打回重来",
+          "x": 0.42,
+          "y": 0.72,
+          "font": 20,
+          "align": "center",
+          "t_in": 43.2
+        }
+      ],
+      "beats": [41.4286, 43.8095],
+      "sfx": [
+        { "t": 40.4762, "name": "impact-low" },
+        { "t": 43.8095, "name": "riser" }
+      ]
+    },
+    {
+      "id": "S6",
+      "segment": "land",
+      "t_in": 45.7143,
+      "t_out": 50.0,
+      "l2": {
+        "block": "repo-card",
+        "params": {
+          "cx": 0.58,
+          "cy": 0.46,
+          "w": 1200,
+          "area_pct": 0.14,
+          "repo": "chenlong548/vibe-dsf",
+          "lang": "JavaScript · Python",
+          "chips": ["流水线", "积木库", "QA 门禁"],
+          "install": "git clone github.com/chenlong548/vibe-dsf",
+          "t_in": 45.9,
+          "t_star": 46.6
+        }
+      },
+      "l3": [
+        {
+          "text": "AUTO-GENERATED · 自举",
+          "x": 0.58,
+          "y": 0.18,
+          "font": 20,
+          "align": "center",
+          "mono": true,
+          "t_in": 46.4
+        },
+        {
+          "text": "50 秒 · 6 场景 · 全自动组装",
+          "x": 0.58,
+          "y": 0.70,
+          "font": 20,
+          "align": "center",
+          "t_in": 47.6
+        }
+      ],
+      "beats": [46.6667, 48.5714],
+      "sfx": [
+        { "t": 45.7143, "name": "impact-low" },
+        { "t": 48.5714, "name": "tick" }
+      ]
+    }
+  ],
+  "subtitles": [
+    {
+      "zh": "人肉磨三天，流水线三十分钟。",
+      "en": "Three days by hand. Thirty minutes here.",
+      "t_in": 0.6,
+      "t_out": 7.3,
+      "punch": false
+    },
+    {
+      "zh": "它把纪律变成了机器约束。",
+      "en": "Discipline, compiled into constraints.",
+      "t_in": 8.1,
+      "t_out": 15.9,
+      "punch": false
+    },
+    {
+      "zh": "每一步都有闸，不过就打回。",
+      "en": "Every step gated. Fail means redo.",
+      "t_in": 16.7,
+      "t_out": 28.2,
+      "punch": false
+    },
+    {
+      "zh": "分镜、积木、门禁、旁白，四道工序。",
+      "en": "Four stages, one pipeline.",
+      "t_in": 29.0,
+      "t_out": 40.1,
+      "punch": false
+    },
+    {
+      "zh": "九点五分出厂，八分是底线。",
+      "en": "Nine point five to ship. Eight is the floor.",
+      "t_in": 41.0,
+      "t_out": 45.4,
+      "punch": false
+    },
+    {
+      "zh": "这条介绍片，也是它自己做的。",
+      "en": "This intro was made by itself.",
+      "t_in": 46.2,
+      "t_out": 49.7,
+      "punch": true
+    }
+  ],
+  "narration": [
+    {
+      "text": "人肉磨三天，流水线三十分钟。",
+      "t_in": 0.6,
+      "t_out": 3.4
+    },
+    {
+      "text": "它是怎么做到的？",
+      "t_in": 5.2,
+      "t_out": 7.3
+    },
+    {
+      "text": "第一道，机器写分镜。",
+      "t_in": 8.3,
+      "t_out": 10.6
+    },
+    {
+      "text": "画面全是过闸积木拼的。",
+      "t_in": 10.8,
+      "t_out": 13.2
+    },
+    {
+      "text": "跑一遍给你看。",
+      "t_in": 16.6,
+      "t_out": 18.2
+    },
+    {
+      "text": "十一组检查，全过。",
+      "t_in": 20.4,
+      "t_out": 22.7
+    },
+    {
+      "text": "九点五分，出厂。",
+      "t_in": 23.6,
+      "t_out": 25.4
+    },
+    {
+      "text": "分镜、积木、门禁、旁白。",
+      "t_in": 29.2,
+      "t_out": 32.2
+    },
+    {
+      "text": "每一环都有人盯着机器干活。",
+      "t_in": 33.6,
+      "t_out": 36.4
+    },
+    {
+      "text": "不到八分的片，不许出厂。",
+      "t_in": 41.2,
+      "t_out": 43.8
+    },
+    {
+      "text": "地址在下面，这条片也是它做的。",
+      "t_in": 46.0,
+      "t_out": 49.4
+    }
+  ]
+}

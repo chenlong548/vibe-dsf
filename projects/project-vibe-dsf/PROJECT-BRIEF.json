@@ -1,0 +1,81 @@
+{
+  "meta": {
+    "repo": "chenlong548/vibe-dsf",
+    "title": "vibe-dsf · 自动化知识视频流水线",
+    "one_liner": "自动化知识视频流水线：一句话主题到过闸成片",
+    "audience": "想日更知识区视频的创作者与团队",
+    "language": "JavaScript · Python · PowerShell",
+    "duration_target": 50,
+    "bpm": 126,
+    "style": "paper"
+  },
+  "pain": {
+    "who": "想日更知识区视频的创作者",
+    "problem": "分镜、画面、剪辑、配乐全靠人肉，一条片要磨三天",
+    "old_way_cost": "3 天"
+  },
+  "hook_candidates": [
+    {
+      "claim": "人肉磨一条片要 3 天，这条流水线 30 分钟。",
+      "why_it_works": "成本对撞，两个数字都具体可信"
+    },
+    {
+      "claim": "AI 视频总带廉价感？缺的不是模型，是纪律。",
+      "why_it_works": "反常识，把质量问题归因到工程纪律"
+    }
+  ],
+  "features": [
+    {
+      "name": "机器分镜",
+      "what": "一句话主题进，机器约束的 SCENE-PLAN 出",
+      "proof": "pipeline/scene_writer/validate_plan.py · 11 组硬闸校验"
+    },
+    {
+      "name": "积木组装",
+      "what": "画面只用过闸积木拼装，禁手写场景",
+      "proof": "pipeline/blocks/registry.json · 10 个积木入库"
+    },
+    {
+      "name": "QA 门禁",
+      "what": "五个审美维度打分，均分不到 8 不许出片",
+      "proof": "pipeline/qa_check.py · avg<8 exit 1"
+    },
+    {
+      "name": "人声旁白",
+      "what": "TTS 旁白自动卡点，闪避混音让位人声",
+      "proof": "pipeline/narrate/mix_audio.py · RMS 侧链"
+    }
+  ],
+  "quickstart": {
+    "install": [
+      "git clone https://github.com/chenlong548/vibe-dsf",
+      "pwsh pipeline/run_all.ps1 -Topic \"一句话主题\""
+    ],
+    "first_output": "[plan] 11 组检查 → PASS / [render] 0.13 秒/帧 / [qa] avg 9.5/10 → PASS / [mux] final.mp4",
+    "time_to_demo": "半小时"
+  },
+  "metrics": [
+    {
+      "value": "0.13",
+      "unit": "秒/帧",
+      "claim": "CDP 快渲的单帧成本",
+      "comparison": "初版 0.65 秒/帧，快 4.9 倍",
+      "source": "docs/12-SCENE-WRITER.md 渲染器实测"
+    },
+    {
+      "value": "9.5",
+      "unit": "/10",
+      "claim": "QA 均分硬门禁下的成片分数",
+      "comparison": "出厂阈值 8.0",
+      "source": "projects/paper-shannon1948 QA 报告（2026-11-05）"
+    }
+  ],
+  "limits": [
+    "目前只跑通中文知识科普一种片型",
+    "BGM 是程序合成的氛围电子，不是编曲"
+  ],
+  "cta": {
+    "repo_url": "https://github.com/chenlong548/vibe-dsf",
+    "install_short": "git clone github.com/chenlong548/vibe-dsf"
+  }
+}
