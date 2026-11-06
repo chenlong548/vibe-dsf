@@ -6,7 +6,7 @@
 
 One command. No editor, no footage, no voiceover artist. **¥3–5 (~$0.5–0.7) per video.**
 
-简体中文 | [English](README.en.md)　·　**v1.2.0** · [Changelog](CHANGELOG.md)
+简体中文 | [English](README.en.md)　·　**v1.3.0** · [Changelog](CHANGELOG.md)
 
 </div>
 
@@ -24,7 +24,7 @@ topic → facts → script → storyboard → stills → full frames → QA gate
 pipeline/
 ├── run_all.ps1        # one-shot pipeline: render → QA gate → BGM → narration mix → assemble
 ├── render/            # render_frames.mjs — CDP fast-mode frame capture
-├── qa/                # qa_check.py — 11 metrics, hard gate at avg ≥ 8
+├── qa/                # qa_check.py — 11 metrics, hard gate at avg ≥ 8; test_edge_v4.py edge regression
 ├── audio/             # synth_bgm.py / wave_png.py / narrate/ (TTS + ducking mix)
 ├── compose/           # build.ps1 / build.sh — ffmpeg assembly
 ├── blocks/            # 10 building-block components + registry.json (QA score archive)

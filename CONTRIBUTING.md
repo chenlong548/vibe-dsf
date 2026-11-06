@@ -10,7 +10,7 @@ vibe-dsf/
 │   ├── requirements.txt       # Python 依赖（numpy / pillow / edge-tts）
 │   ├── palette.json           # 品牌契约：账号水印 + 已验证配色库（plan 用 palette_name 引用，docs/18）
 │   ├── render/                # 渲染：render_frames.mjs（CDP fast 模式逐帧截图）
-│   ├── qa/                    # 门禁：qa_check.py（11 项评分，avg<8 硬拦截）
+│   ├── qa/                    # 门禁：qa_check.py（11 项评分，avg<8 硬拦截）+ test_edge_v4.py（边缘回归夹具）
 │   ├── audio/                 # 音频：synth_bgm.py（BGM）/ synth_sfx.py（音效）/ wave_png.py（波形验收）
 │   │   └── narrate/           # 旁白：tts_edge.py / build_narration.py / mix_audio.py（闪避混音）
 │   ├── compose/               # 合成：build.ps1（Windows）/ build.sh（macOS/Linux）
@@ -75,6 +75,9 @@ powershell -File pipeline\run_all.ps1 -Project projects\<slug> -Duration <秒>
 # 分步跑（在项目目录里）
 node ..\..\pipeline\render\render_frames.mjs --fps 30 --duration <秒>
 python ..\..\pipeline\qa\qa_check.py frames --fps 30 --json qa.json
+python ..\..\pipeline\qa\qa_check.py frames --fps 30 --legacy-edge   # 只回退边缘检测（= v3 口径，同帧对比）
+python ..\..\pipeline\qa\qa_check.py frames --fps 30 --v2             # v2 全口径回退（固定阈值 + 绝对亮度边缘）
+python ..\..\pipeline\qa\test_edge_v4.py                              # 边缘检测回归夹具（CI 也跑，纯合成帧）
 python ..\..\pipeline\audio\synth_bgm.py bgm.wav --style vibe --duration <秒>
 python ..\..\pipeline\audio\synth_sfx.py sfx.wav --plan SCENE-PLAN.json --duration <秒>
 python ..\..\pipeline\audio\narrate\build_narration.py SCENE-PLAN.json --out narration.wav
@@ -106,6 +109,10 @@ node ..\..\pipeline\review.mjs --project projects\<slug> --qa path\to\qa.json   
 - **缓动纪律（P1 #10）**：GSAP 级 19 缓动全集在 `blocks/lib/_easings.js`（`EASE` 命名空间，build_html 恒定注入）；easeOutBack 是阻尼版定稿值（历史像素一致），只准一次性入场用；**禁 Elastic/Spring 振荡缓动**（库里故意不提供）。
 - **运动源铁律**：每帧变化像素 ≥0.35%（≈7.2k px @1080p30）才算"在动"；3px 细线/微脉冲没有面积，怎么动都不够——长场景配巡游光带或粒子流。
 - **入场淡入 ≤0.2s**：更长的面板淡入会被 QA 计成连续硬切。
+- **安全区口径（QA v4，docs/20）**：不再用绝对亮度 235 判溢出；按全片中位数定深/浅画风，
+  边带内「偏离背景 ±96 灰阶」的像素占比 ≥0.3% 才算。别再用「加强暗角把边缘亮度压到 235
+  以下」去迁就检测器——浅底暗色文字溢出时 `edge_max` 纹丝不动，旧口径根本看不见。
+  改阈值必须跑 `pipeline/qa/test_edge_v4.py` + 两条实片同帧对比。
 - **长场景**：最长静止段 ≤1.5s 满分 / ≤2.5s 9 分 / ≤4s 7 分，超出直接不及格。
 
 详见 `pipeline/blocks/README.md` 与 `docs/16-PROJECT-SUMMARY.md`。

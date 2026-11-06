@@ -4,7 +4,7 @@
 
 **全自动知识视频流水线 · 单条 ¥3–5 · QA 像素级验收**
 
-[English](README.en.md) | 简体中文　·　**v1.2.0** · [更新日志](CHANGELOG.md)
+[English](README.en.md) | 简体中文　·　**v1.3.0** · [更新日志](CHANGELOG.md)
 
 </div>
 
@@ -30,7 +30,7 @@
 pipeline/
 ├── run_all.ps1        # 一键流水线：渲染→QA闸→BGM→旁白混音→合成
 ├── render/            # render_frames.mjs —— CDP fast 模式逐帧截图
-├── qa/                # qa_check.py —— 11 项评分 + avg≥8 硬门禁
+├── qa/                # qa_check.py —— 11 项评分 + avg≥8 硬门禁；test_edge_v4.py 边缘回归夹具
 ├── audio/             # synth_bgm.py / wave_png.py / narrate/（TTS 旁白 + 闪避混音）
 ├── compose/           # build.ps1 / build.sh —— ffmpeg 合成
 ├── blocks/            # 10 个积木组件库 + registry.json（QA 分数档案）
@@ -108,7 +108,7 @@ vibe-dsf/
 │   └── fable.md                 ⬜ 仅竖屏版，横屏待改（心理/行为）
 ├── pipeline/                   模型无关的五件套（已实测）
 │   ├── render_frames.mjs        逐帧抓图（CDP 快模式 0.13s/帧 / 只重渲某段）
-│   ├── qa_check.py              像素级验收 v2（11 指标，avg≥8 硬门禁）
+│   ├── qa_check.py              像素级验收 v4（11 指标，avg≥8 硬门禁，画风感知安全区）
 │   ├── synth_bgm.py             确定性 BGM（ambient 纪录片 / vibe 电子两种风格）
 │   ├── wave_png.py              把 wav 画成波形图（agent 听不见，只能看图验）
 │   ├── build.ps1 / build.sh     ffmpeg 合成（−14 LUFS）

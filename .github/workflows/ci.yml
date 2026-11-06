@@ -51,6 +51,9 @@ jobs:
           test -s /tmp/smoke_index.html
           grep -q "render(" /tmp/smoke_index.html
 
+      - name: QA v4 edge regression (synthetic frames)
+        run: python pipeline/qa/test_edge_v4.py
+
       # 渲染/QA/合成需要 Chrome + ffmpeg + 音频轨，在本地跑：
       #   powershell -File pipeline/run_all.ps1 -Project projects/<slug> -Duration <秒>
       # （见 CONTRIBUTING.md「验证流程」）

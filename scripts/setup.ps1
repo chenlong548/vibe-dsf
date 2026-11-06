@@ -58,13 +58,13 @@ Write-Host "`n=== 2. 生态文件体检 ===" -ForegroundColor Cyan
 $root = Split-Path -Parent $PSScriptRoot
 $files = @(
   "pipeline\run_all.ps1", "pipeline\palette.json",
-  "pipeline\render\render_frames.mjs", "pipeline\qa\qa_check.py",
+  "pipeline\render\render_frames.mjs", "pipeline\qa\qa_check.py", "pipeline\qa\test_edge_v4.py",
   "pipeline\audio\synth_bgm.py", "pipeline\audio\synth_sfx.py", "pipeline\audio\wave_png.py",
   "pipeline\audio\narrate\build_narration.py", "pipeline\compose\build.ps1",
   "pipeline\blocks\registry.json", "pipeline\scene_writer\build_html.mjs",
   "skills\vibe-film-ds\SKILL.md",
   "skills\vibe-film-ds\references\ds-failure-modes.md",
-  "docs\03-FLASH-PLAYBOOK.md", "docs\18-BRAND.md",
+  "docs\03-FLASH-PLAYBOOK.md", "docs\18-BRAND.md", "docs\20-QA-V4.md",
   "styles\paper-gold.md", "styles\nocturne.md", "styles\fable.md", "styles\romance.md",
   "projects\demo-hook-entropy\index.html"
 )

@@ -31,7 +31,8 @@ function loadQA(dir, explicit) {
   try {
     const d = JSON.parse(fs.readFileSync(p, 'utf8'));
     return { avg: Number(d.avg) || 0, score: d.score || {},
-             version: d.qa_version || 'v2', budgets: d.budgets || null, raw: d.raw || {} };
+             version: d.qa_version || 'v2', budgets: d.budgets || null,
+             edge: d.edge || null, raw: d.raw || {} };
   } catch { return null; }
 }
 
@@ -129,9 +130,10 @@ function qaBanner(P) {
   const worst = Object.entries(q.score).sort((a, b) => a[1] - b[1]).slice(0, 3)
     .map(([k, v]) => `${k} ${v}`).join(' · ');
   const bud = q.budgets ? ` · 预算 断点≤${q.budgets.still_budget} / 硬切≤${q.budgets.cut_budget}` : '';
+  const ed = q.edge ? ` · 边缘 ${esc(q.edge.mode)} / ${esc(q.edge.style)} / 溢出 ${Number(q.edge.bleed_frames) || 0} 帧` : '';
   return `<div class="qabox ${pass ? 'pass' : 'fail'}"><b>QA ${q.avg.toFixed(2)}/10</b>
     <span class="verdict">${pass ? '✅ 过闸' : '⛔ 未过闸'}</span>
-    <span class="qmeta">${esc(q.version)}${bud} · 最弱三项：${esc(worst)}</span></div>`;
+    <span class="qmeta">${esc(q.version)}${bud}${ed} · 最弱三项：${esc(worst)}</span></div>`;
 }
 
 function buildPage(A, B) {
