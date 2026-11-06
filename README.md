@@ -4,7 +4,7 @@
 
 **全自动知识视频流水线 · 单条 ¥3–5 · QA 像素级验收**
 
-[English](README.en.md) | 简体中文　·　**v1.3.0** · [更新日志](CHANGELOG.md)
+[English](README.en.md) | 简体中文　·　**v1.4.0** · [更新日志](CHANGELOG.md)
 
 </div>
 
@@ -28,9 +28,10 @@
 
 ```
 pipeline/
-├── run_all.ps1        # 一键流水线：渲染→QA闸→BGM→旁白混音→合成
+├── run_all.ps1        # 一键流水线：渲染→QA闸→BGM→旁白混音→合成（每次产出 pipeline_report.json）
 ├── render/            # render_frames.mjs —— CDP fast 模式逐帧截图
 ├── qa/                # qa_check.py —— 11 项评分 + avg≥8 硬门禁；test_edge_v4.py 边缘回归夹具
+├── report/            # generate.py —— 阶段事件流 → pipeline_report.json（docs/21）
 ├── audio/             # synth_bgm.py / wave_png.py / narrate/（TTS 旁白 + 闪避混音）
 ├── compose/           # build.ps1 / build.sh —— ffmpeg 合成
 ├── blocks/            # 10 个积木组件库 + registry.json（QA 分数档案）

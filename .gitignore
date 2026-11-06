@@ -24,5 +24,9 @@ qa.json
 qa_v2.json
 qa_report.json
 
+# ===== 流水线执行报告（run_all 生成，可随时重建）=====
+pipeline_report.json
+_pipeline_events.jsonl
+
 # ===== 评审页（review.mjs 生成，可随时重建）=====
 review.html

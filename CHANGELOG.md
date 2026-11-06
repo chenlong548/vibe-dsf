@@ -4,6 +4,35 @@
 **纪律：每一次推送到 GitHub 都递增版本 + 在本文件记录 + 打同名 tag。**
 版本判定：新功能/工具增强 → MINOR；修 bug/文档同步 → PATCH；破坏性改动（渲染契约、plan 格式不兼容）→ MAJOR。
 
+## [1.4.0] - 2026-11-06
+
+### Added
+- **一键流水线执行报告**（`pipeline/report/generate.py`，`docs/21-PIPELINE-REPORT.md`）：
+  每次 `run_all.ps1` 运行（成功或失败）都在项目目录产出 `pipeline_report.json` ——
+  阶段耗时/状态/退出码、QA 摘要与最弱三项、帧数与分辨率、8 类产物字节数、
+  plan 摘要（场景/字幕/旁白/SFX）、失败阶段定位。事件原流 append-only 保存在
+  `_pipeline_events.jsonl`，中途崩溃也能留档。
+- `run_all.ps1` 的 12 处裸 `exit` 收敛为统一出口 `Complete-Report`，各阶段独立 Stopwatch
+  计时；新增 `-NoReport` 应急开关。报告生成失败恒定返回 0，绝不改变流水线退出码。
+- **回归夹具** `pipeline/report/test_generate.py`：8 条断言（成功形状 / QA 拦截 / 早期失败 /
+  合成失败 / 坏事件行 / 缺产物 / CLI 中文往返 / append-only 顺序），已接入 CI。
+
+### Design
+- PowerShell 不拼 JSON：PS 5.1 的 `ConvertTo-Json` 有 BOM / 中文 `\uXXXX` 转义 /
+  单元素数组退化等坑；PS 只传 6 个标量，结构化与目录扫描全交给 Python。
+- 报告是**观测**，不是门禁：`avg<8` 仍只由 `pipeline/qa/qa_check.py` 拦截。
+
+### Verified
+- 成功路径 demo-hook-compound `-SkipRender`：exit 0 / 5 阶段（4 ok + 1 skipped）/
+  57.85s / QA 8.82 (v4) / 8 类产物全在位；`qa 32.67s` 为最慢阶段。
+- 失败路径 30 帧全黑夹具：exit 2 / `verdict=qa_blocked` / `failed_stage=qa` /
+  QA 6.55 / 产物只剩 html + qa.json（后续阶段确实未跑）。
+- `run_all.ps1` BOM=True / PSParser 0 错；两个回归夹具共 15 条断言全绿。
+
+### Docs
+- 新增 `docs/21-PIPELINE-REPORT.md`；同步 CONTRIBUTING（目录地图/命令/验证流程）、
+  README 双语目录树与版本行、docs/16 架构图、`.gitignore`、`setup.ps1` 体检表、CI。
+
 ## [1.3.0] - 2026-11-06
 
 ### Added

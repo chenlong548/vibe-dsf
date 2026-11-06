@@ -4,6 +4,11 @@
 #   解决的问题：以前 5 条命令人肉跑、闸门靠自觉。
 #   film-love-math 7.14 分（低于 8 分线）照样出了片——这条流水线会让它停在 QA。
 #
+# 每次运行（成功或失败）都在项目目录产出 pipeline_report.json：
+#   阶段耗时/状态/退出码、QA 摘要、帧数与产物清单、失败阶段定位。
+#   事件原流保留在 _pipeline_events.jsonl（append-only，崩溃也能留档）。
+#   见 docs/21-PIPELINE-REPORT.md；报告生成失败绝不影响流水线退出码。
+#
 # 用法（在项目目录里跑，或用 -Project 指定）：
 #   powershell -File ..\..\pipeline\run_all.ps1 -Duration 26                 # 全片
 #   powershell -File ..\..\pipeline\run_all.ps1 -Start 12 -End 18            # 只重渲一段
@@ -32,7 +37,8 @@ param(
   [string]$Out      = "final.mp4",
   [switch]$SkipRender,
   [switch]$SkipBgm,
-  [switch]$NoGate
+  [switch]$NoGate,
+  [switch]$NoReport                   # 应急开关：跳过执行报告（默认始终生成）
 )
 
 # 注意：不能用 "Stop"。PS 5.1 会把原生命令(node/python)的 stderr 输出当成终止错误；
@@ -40,6 +46,36 @@ param(
 $ErrorActionPreference = "Continue"
 $pipeline = $PSScriptRoot
 $project  = (Resolve-Path $Project).Path
+
+# ---------- 执行报告：事件流 + 统一出口 ----------
+$reportScript = Join-Path $pipeline "report\generate.py"
+$eventsFile   = Join-Path $project "_pipeline_events.jsonl"
+$sw           = [System.Diagnostics.Stopwatch]::StartNew()
+$stageSw      = [System.Diagnostics.Stopwatch]::StartNew()
+if (-not $NoReport) {
+  try {
+    [System.IO.File]::WriteAllText($eventsFile, "", (New-Object System.Text.UTF8Encoding($false)))
+  } catch { }
+}
+
+# 追加一条阶段事件（PowerShell 不拼 JSON，交给 Python，避开 PS 5.1 编码/转义坑）
+function Add-Stage([string]$id, [string]$status, [int]$code, [string]$message) {
+  if ($NoReport -or -not $python -or -not (Test-Path $reportScript)) { return }
+  $sec = ($stageSw.Elapsed.TotalSeconds).ToString("0.000", [System.Globalization.CultureInfo]::InvariantCulture)
+  & $python $reportScript --event $eventsFile --stage $id --status $status `
+    --seconds $sec --code $code --message $message 2>$null | Out-Null
+}
+
+# 唯一出口：失败先补一条 failed 事件，再汇总落盘，最后按原退出码退出
+function Complete-Report([int]$code, [string]$stage = "", [string]$message = "") {
+  if (-not $NoReport -and $python -and (Test-Path $reportScript)) {
+    if ($code -ne 0 -and $stage) { Add-Stage $stage "failed" $code $message }
+    $elapsed = ($sw.Elapsed.TotalSeconds).ToString("0.00", [System.Globalization.CultureInfo]::InvariantCulture)
+    & $python $reportScript --finalize --events $eventsFile --project-dir $project `
+      --exit-code $code --elapsed $elapsed --fps $Fps 2>$null
+  }
+  exit $code
+}
 
 # ---------- 工具定位：node / python（含 WorkBuddy 托管运行时的回退） ----------
 function Resolve-Tool([string]$exe, [string[]]$fallbacks) {
@@ -61,7 +97,7 @@ if (-not $python -or -not (Test-Path $python)) {
     "C:\Python314\python.exe"
   )
 }
-if (-not $node)   { Write-Host "[X]找不到 node"   -ForegroundColor Red; exit 1 }
+if (-not $node)   { Write-Host "[X]找不到 node"   -ForegroundColor Red; Complete-Report 1 "preflight" "找不到 node" }
 if (-not $python) { Write-Host "[X]找不到 python（需要 pillow + numpy）" -ForegroundColor Red; exit 1 }
 
 # ---------- ffmpeg 定位：PATH → DSH_FFMPEG_PATH → imageio-ffmpeg → ffmpeg-static ----------
@@ -82,40 +118,43 @@ if ($ffmpeg) {
   Write-Host "    ffmpeg：$ffmpeg" -ForegroundColor DarkGray
 } else {
   Write-Host "[X]找不到 ffmpeg（装法：python -m pip install imageio-ffmpeg 或 winget install Gyan.FFmpeg）" -ForegroundColor Red
-  exit 1
+  Complete-Report 1 "preflight" "找不到 ffmpeg"
 }
 
 if (-not (Test-Path (Join-Path $project $Html))) {
-  Write-Host "[X]找不到 $Html（目录：$project）" -ForegroundColor Red; exit 1
+  Write-Host "[X]找不到 $Html（目录：$project）" -ForegroundColor Red
+  Complete-Report 1 "preflight" "找不到 $Html"
 }
 
 $framesDir = Join-Path $project $Frames
 Write-Host "=== 流水线开始：$project ===" -ForegroundColor Cyan
-$sw = [System.Diagnostics.Stopwatch]::StartNew()
 
 # ---------- 1. 渲染 ----------
+$stageSw.Restart()
 if (-not $SkipRender) {
   Write-Host "`n[1/5] 渲染帧…" -ForegroundColor Cyan
   Push-Location $project
   try {
     $renderArgs = @("$pipeline\render\render_frames.mjs", "--html", $Html, "--out", $Frames, "--fps", "$Fps")
     if ($Start -ge 0 -and $End -gt $Start) { $renderArgs += @("--start", "$Start", "--end", "$End") }
-    elseif ($Duration -le 0) { Write-Host "[X]全片渲染需要 -Duration（秒）" -ForegroundColor Red; exit 1 }
+    elseif ($Duration -le 0) { Write-Host "[X]全片渲染需要 -Duration（秒）" -ForegroundColor Red; Complete-Report 1 "render" "缺少 -Duration" }
     else { $renderArgs += @("--duration", "$Duration") }
     & $node @renderArgs
-    if ($LASTEXITCODE -ne 0) { Write-Host "[X]渲染失败" -ForegroundColor Red; exit 1 }
+    if ($LASTEXITCODE -ne 0) { Write-Host "[X]渲染失败" -ForegroundColor Red; Complete-Report 1 "render" "渲染失败" }
   } finally { Pop-Location }
 } else {
   Write-Host "`n[1/5] 跳过渲染（-SkipRender）"
 }
 
-if (-not (Test-Path $framesDir)) { Write-Host "[X]帧目录不存在：$framesDir" -ForegroundColor Red; exit 1 }
+if (-not (Test-Path $framesDir)) { Write-Host "[X]帧目录不存在：$framesDir" -ForegroundColor Red; Complete-Report 1 "render" "帧目录不存在" }
 $frameCount = (Get-ChildItem $framesDir -Filter "frame_*.png" -ErrorAction SilentlyContinue).Count
-if (-not $frameCount) { Write-Host "[X]帧目录里没有 frame_*.png" -ForegroundColor Red; exit 1 }
+if (-not $frameCount) { Write-Host "[X]帧目录里没有 frame_*.png" -ForegroundColor Red; Complete-Report 1 "render" "帧目录里没有 frame_*.png" }
 $seconds = [math]::Round($frameCount / $Fps, 2)
 Write-Host "    帧数 $frameCount（$seconds 秒 @ ${Fps}fps）"
+Add-Stage "render" $(if ($SkipRender) { "skipped" } else { "ok" }) 0 "$frameCount 帧 / $seconds s"
 
 # ---------- 2. QA 闸门 ----------
+$stageSw.Restart()
 Write-Host "`n[2/5] QA 验收（11 项）…" -ForegroundColor Cyan
 Push-Location $project
 try {
@@ -127,10 +166,12 @@ try {
 if ($qaCode -ne 0) {
   Write-Host "`n[STOP] QA 闸门拦截：总分 < 8。修完 [X] 项后用 -Start/-End 只重渲受影响的那几秒。" -ForegroundColor Red
   Write-Host "   报告：$(Join-Path $project 'qa.json')" -ForegroundColor Red
-  exit 2
+  Complete-Report 2 "qa" "QA 闸门拦截（总分 < 8）"
 }
+Add-Stage "qa" "ok" 0 $(if ($NoGate) { "QA 报告已生成（-NoGate 不拦截）" } else { "QA 过闸" })
 
 # ---------- 3. BGM ----------
+$stageSw.Restart()
 $bgmPath = Join-Path $project $Bgm
 if (-not $SkipBgm) {
   Write-Host "`n[3/5] 合成 BGM（style=$BgmStyle）…" -ForegroundColor Cyan
@@ -140,13 +181,16 @@ if (-not $SkipBgm) {
     if ($Bpm -gt 0) { $bgmArgs += @("--bpm", "$Bpm") }
     if ($BgmMarks -ne "") { $bgmArgs += @("--marks", $BgmMarks) }
     & $python @bgmArgs
-    if ($LASTEXITCODE -ne 0) { Write-Host "[X]BGM 合成失败" -ForegroundColor Red; exit 3 }
+    if ($LASTEXITCODE -ne 0) { Write-Host "[X]BGM 合成失败" -ForegroundColor Red; Complete-Report 3 "bgm" "BGM 合成失败" }
   } finally { Pop-Location }
+  Add-Stage "bgm" "ok" 0 "style=$BgmStyle / ${seconds}s"
 } else {
   Write-Host "`n[3/5] 跳过 BGM（-SkipBgm）"
+  Add-Stage "bgm" "skipped" 0 "-SkipBgm"
 }
 
 # ---------- 4. SFX（plan 带 sfx 时）+ 旁白（plan 带 narration 时）+ 闪避混音 ----------
+$stageSw.Restart()
 $narrPath = Join-Path $project $NarrOut
 $sfxPath  = Join-Path $project "sfx.wav"
 $mixPath  = Join-Path $project $MixOut
@@ -166,12 +210,12 @@ if ($hasNarr -or $hasSfx) {
   try {
     if ($hasSfx) {
       & $python "$pipeline\audio\synth_sfx.py" $sfxPath --plan $Plan --duration $seconds
-      if ($LASTEXITCODE -ne 0) { Write-Host "[X]音效合成失败" -ForegroundColor Red; exit 4 }
+      if ($LASTEXITCODE -ne 0) { Write-Host "[X]音效合成失败" -ForegroundColor Red; Complete-Report 4 "audio" "音效合成失败" }
       $needMix = $true
     }
     if ($hasNarr) {
       & $python "$pipeline\audio\narrate\build_narration.py" $Plan --out $NarrOut --rate $VoiceRate
-      if ($LASTEXITCODE -ne 0) { Write-Host "[X]旁白合成失败" -ForegroundColor Red; exit 4 }
+      if ($LASTEXITCODE -ne 0) { Write-Host "[X]旁白合成失败" -ForegroundColor Red; Complete-Report 4 "audio" "旁白合成失败" }
       $needMix = $true
     }
     if ($needMix) {
@@ -180,24 +224,29 @@ if ($hasNarr -or $hasSfx) {
       if ($hasSfx -and (Test-Path $sfxPath))  { $mixArgs += @("--sfx", "sfx.wav") }
       if ((Test-Path $bgmPath) -and -not $SkipBgm) { $mixArgs += @("--bgm", $Bgm) }
       & $python @mixArgs
-      if ($LASTEXITCODE -ne 0) { Write-Host "[X]混音失败" -ForegroundColor Red; exit 4 }
+      if ($LASTEXITCODE -ne 0) { Write-Host "[X]混音失败" -ForegroundColor Red; Complete-Report 4 "audio" "混音失败" }
     }
   } finally { Pop-Location }
+  Add-Stage "audio" "ok" 0 "narration=$hasNarr / sfx=$hasSfx / mix=$needMix"
 } else {
   Write-Host "`n[4/5] 跳过音效/旁白（无 $Plan 或 plan 不带 narration/sfx）"
+  Add-Stage "audio" "skipped" 0 "plan 无 narration/sfx"
 }
 
 # ---------- 5. 合成 ----------
+$stageSw.Restart()
 Write-Host "`n[5/5] ffmpeg 合成…" -ForegroundColor Cyan
 $buildArgs = @{ Frames = $framesDir; Fps = $Fps; Out = (Join-Path $project $Out) }
 if ($needMix -and (Test-Path $mixPath)) { $buildArgs.Audio = $mixPath }
 elseif ((Test-Path $bgmPath) -and -not $SkipBgm) { $buildArgs.Audio = $bgmPath }
 & powershell -NoProfile -File "$pipeline\compose\build.ps1" @buildArgs
-if ($LASTEXITCODE -ne 0) { Write-Host "[X]合成失败" -ForegroundColor Red; exit 3 }
+if ($LASTEXITCODE -ne 0) { Write-Host "[X]合成失败" -ForegroundColor Red; Complete-Report 3 "compose" "合成失败" }
+Add-Stage "compose" "ok" 0 $Out
 
 $sw.Stop()
 Write-Host "`n=== 完成 ===" -ForegroundColor Green
 Write-Host "  成片：$(Join-Path $project $Out)"
 Write-Host "  验收：$(Join-Path $project 'qa.json')"
+Write-Host "  报告：$(Join-Path $project 'pipeline_report.json')"
 Write-Host ("  总耗时：{0:mm\:ss}" -f $sw.Elapsed)
-exit 0
+Complete-Report 0

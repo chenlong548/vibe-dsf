@@ -5,12 +5,13 @@
 ```
 vibe-dsf/
 ├── pipeline/                  # 核心管线（一键入口：run_all.ps1）
-│   ├── run_all.ps1            # 五阶段一键流水线：渲染→QA闸→BGM→旁白混音→合成（exit 0-4 定位失败段）
+│   ├── run_all.ps1            # 五阶段一键流水线：渲染→QA闸→BGM→旁白混音→合成（exit 0-4 定位失败段；每次产出执行报告）
 │   ├── review.mjs             # 静帧评审页生成器：场景网格 + A/B 对比 + QA 病灶叠加（docs/10 #9）
 │   ├── requirements.txt       # Python 依赖（numpy / pillow / edge-tts）
 │   ├── palette.json           # 品牌契约：账号水印 + 已验证配色库（plan 用 palette_name 引用，docs/18）
 │   ├── render/                # 渲染：render_frames.mjs（CDP fast 模式逐帧截图）
 │   ├── qa/                    # 门禁：qa_check.py（11 项评分，avg<8 硬拦截）+ test_edge_v4.py（边缘回归夹具）
+│   ├── report/                # 执行报告：generate.py（事件流→pipeline_report.json）+ test_generate.py（docs/21）
 │   ├── audio/                 # 音频：synth_bgm.py（BGM）/ synth_sfx.py（音效）/ wave_png.py（波形验收）
 │   │   └── narrate/           # 旁白：tts_edge.py / build_narration.py / mix_audio.py（闪避混音）
 │   ├── compose/               # 合成：build.ps1（Windows）/ build.sh（macOS/Linux）
@@ -32,8 +33,8 @@ vibe-dsf/
 │   └── qa-gate/               # QA 门禁技能
 ├── styles/                    # 画风规范（fable / nocturne / paper-gold / romance）
 ├── scripts/                   # env.ps1（flash锁定）/ env-creative.ps1（Opus创意模式，云雾）/ setup.ps1（体检）
-├── docs/                      # 00-16 编号文档（见 docs/16 全景总结）
-└── .github/workflows/ci.yml   # CI：语法检查 + 场景规划冒烟
+├── docs/                      # 00-21 编号文档（见 docs/16 全景总结）
+└── .github/workflows/ci.yml   # CI：语法检查 + 场景规划冒烟 + 两个回归夹具
 ```
 
 **依赖方向**（保持单向，不加反向引用）：
@@ -71,6 +72,8 @@ powershell -File scripts\setup.ps1           # 只读体检
 powershell -File pipeline\run_all.ps1 -Project projects\<slug> -Duration <秒>
 # 可选：-Start 12 -End 18（局部重渲）| -SkipRender | -NoGate | -BgmStyle vibe -Bpm 126
 # 退出码：0 成功 / 1 渲染 / 2 QA拦截 / 3 BGM或合成 / 4 旁白
+# 每次运行都产出 <project>/pipeline_report.json（阶段耗时/QA 摘要/产物清单/失败阶段，docs/21）
+python -c "import json;d=json.load(open(r'projects\<slug>\pipeline_report.json',encoding='utf-8'));print(d['verdict'],d['summary'],d['qa']['avg'])"
 
 # 分步跑（在项目目录里）
 node ..\..\pipeline\render\render_frames.mjs --fps 30 --duration <秒>
@@ -121,7 +124,8 @@ node ..\..\pipeline\review.mjs --project projects\<slug> --qa path\to\qa.json   
 
 改了 `blocks/`、`scene_writer/`、`run_all.ps1` 或任何被引用路径后：
 
-1. CI 会自动跑语法检查 + `_probe` 夹具冒烟（规划闸 + 组装）；
+1. CI 会自动跑语法检查 + `_probe` 夹具冒烟（规划闸 + 组装）+ 两个回归夹具
+   （`qa/test_edge_v4.py` 边缘检测、`report/test_generate.py` 执行报告）；
 2. 本地跑一次最小端到端：
 
    ```powershell
@@ -129,7 +133,10 @@ node ..\..\pipeline\review.mjs --project projects\<slug> --qa path\to\qa.json   
    ```
 
 3. QA 过闸（avg≥8）才算完成；合成产物 `final.mp4` 人工过目一遍。
-4. 渲染产物（frames/*.png、*.wav、*.mp4、qa.json）都在 `.gitignore` 里，**不要提交**；要提交的是 plan/brief JSON 与 index.html。
+4. 改了 `run_all.ps1` 还要核对 `<project>/pipeline_report.json` 的 `verdict` /
+   `failed_stage` 与实际退出码一致；失败路径同样要产出报告。
+5. 渲染产物（frames/*.png、*.wav、*.mp4、qa.json、pipeline_report.json、
+   _pipeline_events.jsonl）都在 `.gitignore` 里，**不要提交**；要提交的是 plan/brief JSON 与 index.html。
 
 ## 提交约定
 
