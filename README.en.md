@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/demo.gif" width="640" alt="demo-hook-entropy · 8s clip, fully auto-generated"/>
+<img src="docs/demo.gif" width="800" alt="demo-hook-entropy · 8s clip, fully auto-generated"/>
 
 **vibe-dsf — a fully-automated pipeline that turns a topic into a finished knowledge video.**
 
