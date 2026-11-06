@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>真 3D 心形 · Three.js（透视相机 + PBR 材质 + 三灯）</title>
+<style>
+  html,body{margin:0;padding:0;background:#08030A;overflow:hidden}
+  canvas{display:block;position:absolute;inset:0}
+  #ui{z-index:2}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<canvas id="ui"></canvas>
+<script src="../../vendor/three.min.js"></script>
+<script>
+/* =====================================================================
+ * 真 3D 爱心 · Three.js 版 · 8s · 1920x1080 @30fps
+ * 相比 demo-heart-3d（手写软件 3D）的升级：
+ *   - ExtrudeGeometry + 高细分 bevel 圆角倒角（高光沿倒角连续流动）
+ *   - MeshPhysicalMaterial clearcoat 糖果质感（PBR）
+ *   - 三灯布光（key 暖白 / fill 冷玫瑰 / rim 白色勾边）+ 呼吸边缘光
+ *   - 真粒子系统（Points + 加法混合 sprite）与接触阴影平面
+ *   - 相机微漂移，心体连续摆动 + lub-dub 心跳（emissive 随收缩脉冲）
+ * 架构：#gl = WebGL 3D 层；#ui = 2D overlay（颗粒/ECG/公式/字幕/顶栏）。
+ *   render(t) 先渲染 3D 再画 2D，CDP 截整页 = 完整合成。
+ * 契约：render(t) 纯时间函数；?t= 抓帧模式；固定种子；无跨帧状态。
+ * Three.js r146 UMD 本地 vendored（../../vendor/three.min.js，MIT）。
+ * ===================================================================== */
+const W = 1920, H = 1080;
+const DUR = 8;
+const ACCENT = '#FF5C86';
+const ACCENT_DIM = '255,92,134';
+const INK = '#F2E8EC', GRAY = '#A08898';
+const CX = W * 0.435, CY = H * 0.40;       // 心中心（3D 投影目标 + 2D 元素锚点）
+
+/* ---------- 工具（2D 层共用） ---------- */
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const clamp01 = v => Math.max(0, Math.min(1, v));
+const easeOutCubic = p => 1 - Math.pow(1 - p, 3);
+const easeOutBack  = p => { const c = 1.70158 * 0.6; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+function seg(t, a, b){ return clamp01((t - a) / (b - a)); }
+function heartbeat(t){
+  const u = (t % 1.1) / 1.1;
+  const p1 = Math.exp(-Math.pow((u - 0.10) / 0.06, 2));
+  const p2 = 0.55 * Math.exp(-Math.pow((u - 0.28) / 0.09, 2));
+  return 1 + 0.058 * (p1 + p2) * seg(t, 1.6, 2.2);
+}
+function growScale(t){ return easeOutBack(seg(t, 0.30, 1.75)); }
+function drawText(text, x, y, opt){
+  const o = Object.assign({ font: '28px "Microsoft YaHei"', color: INK, align: 'center', maxW: W, alpha: 1, track: 0 }, opt);
+  const c = o.ctx || ctx2;
+  c.font = o.font; c.textBaseline = 'alphabetic'; c.globalAlpha = o.alpha;
+  const fs = parseFloat((o.font.match(/([\d.]+)px/) || [0, 28])[1]);
+  const lines = []; let cur = '';
+  const measure = s => c.measureText(s).width + s.length * o.track;
+  for (const ch of text){
+    if (measure(cur + ch) > o.maxW * 0.82 && cur){ lines.push(cur); cur = ch; }
+    else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  lines.forEach((ln, i) => {
+    const w = measure(ln);
+    let sx = o.align === 'left' ? x : o.align === 'right' ? x - w : x - w / 2;
+    for (const ch of ln){
+      c.fillStyle = o.color; c.fillText(ch, sx, y + i * (fs * 1.32));
+      sx += c.measureText(ch).width + o.track;
+    }
+  });
+  c.globalAlpha = 1;
+  return lines.length;
+}
+
+/* ═══════════ Three.js 3D 层 ═══════════ */
+const renderer = new THREE.WebGLRenderer({
+  canvas: document.getElementById('gl'),
+  antialias: true, alpha: false, preserveDrawingBuffer: true
+});
+renderer.setPixelRatio(1);
+renderer.setSize(W, H);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.12;
+
+const scene = new THREE.Scene();
+// 背景：径向渐变贴图（与 2.5D 版 L0 同语言）
+const bgCv = document.createElement('canvas'); bgCv.width = 512; bgCv.height = 512;
+{
+  const c = bgCv.getContext('2d');
+  const g = c.createRadialGradient(256*0.48, 256*0.42, 30, 256*0.48, 256*0.42, 300);
+  g.addColorStop(0, '#2A0E1E'); g.addColorStop(0.55, '#17060F'); g.addColorStop(1, '#08030A');
+  c.fillStyle = g; c.fillRect(0, 0, 512, 512);
+}
+scene.background = new THREE.CanvasTexture(bgCv);
+
+const camera = new THREE.PerspectiveCamera(38, W / H, 0.1, 200);
+camera.position.set(0, 1.2, 62);
+camera.lookAt(0, 0, 0);
+
+/* 心形 Shape（官方贝塞尔心，y 向上）→ 挤出 + 高细分圆角倒角 */
+const heartShape = new THREE.Shape();
+heartShape.moveTo(2.5, 2.5);
+heartShape.bezierCurveTo(2.5, 2.5, 2.0, 0, 0, 0);
+heartShape.bezierCurveTo(-3, 0, -3, 3.5, -3, 3.5);
+heartShape.bezierCurveTo(-3, 5.5, -1, 7.7, 2.5, 9.5);
+heartShape.bezierCurveTo(6, 7.7, 8, 5.5, 8, 3.5);
+heartShape.bezierCurveTo(8, 3.5, 8, 0, 5, 0);
+heartShape.bezierCurveTo(3.5, 0, 2.5, 2.5, 2.5, 2.5);
+const heartGeo = new THREE.ExtrudeGeometry(heartShape, {
+  depth: 5.2, bevelEnabled: true,
+  bevelThickness: 3.2, bevelSize: 3.0, bevelSegments: 16, curveSegments: 56
+});
+heartGeo.center();
+const heartMat = new THREE.MeshPhysicalMaterial({
+  color: 0xff5c86, roughness: 0.20, metalness: 0.06,
+  clearcoat: 1.0, clearcoatRoughness: 0.24,
+  emissive: 0x7a1030, emissiveIntensity: 0.22
+});
+const heart = new THREE.Mesh(heartGeo, heartMat);
+heart.rotation.z = Math.PI;                     // Shape 坐标 y 向上 → 翻正心尖朝下
+const heartGroup = new THREE.Group();
+heartGroup.add(heart);
+scene.add(heartGroup);
+
+/* 三灯布光 + 半球环境 */
+const keyLight = new THREE.DirectionalLight(0xfff0ea, 1.25);  keyLight.position.set(-18, 24, 30);
+const fillLight = new THREE.DirectionalLight(0xff9db8, 0.30); fillLight.position.set(22, -14, 18);
+const rimLight = new THREE.DirectionalLight(0xffffff, 0.85);  rimLight.position.set(4, 16, -30);
+const hemi = new THREE.HemisphereLight(0x5a2440, 0x0a0510, 0.55);
+scene.add(keyLight, fillLight, rimLight, hemi);
+
+/* 接触阴影：心底下方平面 + 径向渐变贴图 */
+const shCv = document.createElement('canvas'); shCv.width = 256; shCv.height = 128;
+{
+  const c = shCv.getContext('2d');
+  const g = c.createRadialGradient(128, 64, 8, 128, 64, 120);
+  g.addColorStop(0, 'rgba(150,20,60,0.55)'); g.addColorStop(1, 'rgba(150,20,60,0)');
+  c.scale(1, 0.5); c.fillStyle = g; c.fillRect(0, 0, 256, 256);
+}
+const shadow = new THREE.Mesh(
+  new THREE.PlaneGeometry(46, 46),
+  new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(shCv), transparent: true, depthWrite: false })
+);
+shadow.rotation.x = -Math.PI / 2;
+shadow.position.set(0, -24, 0);
+scene.add(shadow);
+
+/* 真粒子：球壳分布玫瑰尘埃（加法混合，纯函数位置） */
+const DUST_N = 700;
+const dustPos = new Float32Array(DUST_N * 3);
+{
+  const r = mulberry32(20261106);
+  window.__dustSeed = Array.from({ length: DUST_N }, () => [r(), r(), r(), r()]);
+}
+const dustTexCv = document.createElement('canvas'); dustTexCv.width = 32; dustTexCv.height = 32;
+{
+  const c = dustTexCv.getContext('2d');
+  const g = c.createRadialGradient(16, 16, 1, 16, 16, 15);
+  g.addColorStop(0, 'rgba(255,220,230,1)'); g.addColorStop(0.4, 'rgba(255,150,180,0.6)'); g.addColorStop(1, 'rgba(255,150,180,0)');
+  c.fillStyle = g; c.fillRect(0, 0, 32, 32);
+}
+const dustGeo = new THREE.BufferGeometry();
+dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
+  map: new THREE.CanvasTexture(dustTexCv), size: 1.15, transparent: true,
+  blending: THREE.AdditiveBlending, depthWrite: false, color: 0xffb0c4, opacity: 0.85
+}));
+scene.add(dust);
+
+function updateDust(t){
+  const seed = window.__dustSeed;
+  for (let i = 0; i < DUST_N; i++){
+    const [a, b, c, d] = seed[i];
+    const th = a * Math.PI * 2, ph = Math.acos(2 * b - 1);
+    const R = 16 + c * 30;
+    const drift = Math.sin(t * 0.4 + d * 6.28) * 2.2;
+    const rise = ((t * 0.55 + d * 40) % 30) - 15;         // 缓慢上浮循环
+    dustPos[i*3]   = Math.sin(ph) * Math.cos(th) * R + drift;
+    dustPos[i*3+1] = Math.cos(ph) * R * 0.72 + rise * 0.35;
+    dustPos[i*3+2] = Math.sin(ph) * Math.sin(th) * R;
+  }
+  dustGeo.attributes.position.needsUpdate = true;
+  dust.rotation.y = t * 0.05;
+}
+
+/* 起笔光点：小球 + 点光源（0–0.9s 唯一发光体） */
+const spark = new THREE.Mesh(
+  new THREE.SphereGeometry(0.9, 24, 24),
+  new THREE.MeshBasicMaterial({ color: 0xff8fab })
+);
+const sparkLight = new THREE.PointLight(0xff5c86, 0, 60);
+scene.add(spark, sparkLight);
+
+/* 3D 层渲染（纯时间函数） */
+function renderGL(t){
+  const gs = growScale(t);
+  const beat = heartbeat(t);
+  const vis = seg(t, 0.30, 0.42);                        // 心体出现时机（光点之后）
+
+  heartGroup.scale.setScalar(Math.max(0.0001, gs * beat));
+  heartGroup.rotation.y = -0.15 + Math.sin(t * 0.85) * 0.55;   // 连续摆动 ±31°
+  heartGroup.rotation.x = -0.05 + Math.sin(t * 0.5) * 0.045;
+  heartGroup.position.y = Math.sin(t * 0.9) * 0.6;             // 上下浮动
+  heartGroup.visible = vis > 0;
+  heartMat.emissiveIntensity = 0.22 + 0.55 * Math.pow(1 - beat, 3) * seg(t, 1.6, 2.2)   // 收缩瞬间脉冲
+                             + 0.18 * seg(t, 1.4, 2.6);
+
+  // 起笔光点：0–0.9s，随后并入心体（缩到 0 并移入心中心）
+  const sp = seg(t, 0.03, 0.32), spOut = seg(t, 0.75, 1.05);
+  spark.visible = t < 1.1;
+  spark.position.set(Math.sin(t * 2.1) * 0.4 * (1 - spOut), Math.cos(t * 1.7) * 0.3 * (1 - spOut) - 1.5, 6);
+  const sMag = sp * (1 - spOut);
+  spark.scale.setScalar(Math.max(0.001, sMag * (1 + 0.4 * Math.sin(t * 6))));
+  sparkLight.intensity = 2.6 * sMag;
+  sparkLight.position.copy(spark.position);
+
+  // 呼吸边缘光
+  rimLight.intensity = 0.75 + 0.45 * Math.sin(t * 1.1);
+  // 相机微漂移（手持感）
+  camera.position.x = Math.sin(t * 0.4) * 1.1;
+  camera.position.y = 1.2 + Math.cos(t * 0.33) * 0.6;
+  camera.lookAt(0, 0, 0);
+
+  updateDust(t);
+  shadow.material.opacity = 0.9 * vis;
+  renderer.render(scene, camera);
+}
+
+/* ═══════════ 2D overlay 层 ═══════════ */
+const cv2 = document.getElementById('ui');
+cv2.width = W; cv2.height = H;
+const ctx2 = cv2.getContext('2d');
+
+const GRAIN = (() => { const r = mulberry32(20261106); return Array.from({length: 900}, () => [r()*W, r()*H, r()*0.028+0.012]); })();
+function drawOverlayGrain(){
+  for (const [x, y, a] of GRAIN){ ctx2.fillStyle = `rgba(255,255,255,${a})`; ctx2.fillRect(x, y, 1.5, 1.5); }
+}
+function vignette(){
+  const v = ctx2.createRadialGradient(W/2, H/2, H*0.42, W/2, H/2, H*0.95);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.62)');
+  ctx2.fillStyle = v; ctx2.fillRect(0, 0, W, H);
+}
+
+/* ECG 心电扫描 */
+function ecgY(u){
+  const g = (c, w, h) => h * Math.exp(-Math.pow((u - c) / w, 2));
+  return g(0.16, 0.030, -12) + g(0.30, 0.010, 52) - g(0.335, 0.014, -16) + g(0.37, 0.012, 20) + g(0.55, 0.045, 16);
+}
+function drawECG(t){
+  const start = seg(t, 2.55, 2.95);
+  if (start <= 0) return;
+  const x0 = W * 0.08, x1 = W * 0.92, y0 = H * 0.72;
+  const sweep = easeOutCubic(seg(t, 2.6, 6.2));
+  ctx2.strokeStyle = `rgba(${ACCENT_DIM},${0.22 * start})`;
+  ctx2.lineWidth = 1.2;
+  ctx2.beginPath(); ctx2.moveTo(x0, y0); ctx2.lineTo(x0 + (x1 - x0) * sweep, y0); ctx2.stroke();
+  ctx2.strokeStyle = `rgba(${ACCENT_DIM},${0.62 * start})`;
+  ctx2.lineWidth = 2.2; ctx2.lineJoin = 'round';
+  ctx2.beginPath();
+  const N = 260;
+  for (let i = 0; i <= N * sweep; i++){
+    const u = i / N;
+    const x = x0 + (x1 - x0) * u;
+    const y = y0 - ecgY((u * 3) % 1) * seg(t, 2.6, 2.9);
+    if (i === 0) ctx2.moveTo(x, y); else ctx2.lineTo(x, y);
+  }
+  ctx2.stroke();
+  if (sweep < 1){
+    const hx = x0 + (x1 - x0) * sweep;
+    const hy = y0 - ecgY((sweep * 3) % 1) * seg(t, 2.6, 2.9);
+    ctx2.fillStyle = `rgba(255,179,200,${0.9 * start})`;
+    ctx2.beginPath(); ctx2.arc(hx, hy, 3.2, 0, Math.PI * 2); ctx2.fill();
+  }
+  drawText('ECG · 心电', x0, y0 + 44, { font: '20px Consolas, monospace', color: GRAY, align: 'left', alpha: seg(t, 5.6, 6.4) * 0.9 });
+}
+
+/* 标注层 */
+function drawL3(t){
+  drawText('THREE.JS · PBR 真渲染', CX - 175, CY - 335, { font: '21px "Microsoft YaHei"', color: GRAY, align: 'right', alpha: seg(t, 1.5, 2.3), track: 6 });
+  const fa = seg(t, 3.15, 4.05);
+  if (fa > 0){
+    ctx2.save();
+    ctx2.font = '52px Consolas, monospace';
+    ctx2.textBaseline = 'alphabetic';
+    const eq = '(x²+y²−1)³ − x²y³ = 0';
+    const fw = ctx2.measureText(eq).width;
+    const fx = W * 0.715 - fw / 2, fy = CY + 6;
+    ctx2.globalAlpha = fa;
+    ctx2.fillStyle = 'rgba(242,232,236,0.93)';
+    ctx2.fillText(eq, fx, fy);
+    ctx2.strokeStyle = ACCENT; ctx2.lineWidth = 2;
+    ctx2.strokeRect(fx - 26, fy - 52, fw + 52, 82);
+    ctx2.globalAlpha = 1;
+    ctx2.restore();
+    drawText('真实透视 · 真实光照', W * 0.70, CY + 62, { font: '22px "Microsoft YaHei"', color: `rgba(160,136,152,${fa})`, align: 'center' });
+  }
+}
+
+/* 字幕带 */
+function drawSubtitle(t){
+  const a1 = Math.min(seg(t, 0.90, 1.25), 1 - seg(t, 4.15, 4.45));
+  if (a1 > 0){
+    ctx2.save();
+    ctx2.shadowColor = 'rgba(18,4,14,0.9)'; ctx2.shadowBlur = 14; ctx2.shadowOffsetY = 3;
+    drawText('数学家是怎么画爱心的？', W / 2, 926, { font: '700 46px "Microsoft YaHei"', color: INK, alpha: a1 });
+    drawText('How does a mathematician draw a heart?', W / 2, 974, { font: 'italic 27px Georgia', color: '#E8CDD6', alpha: a1 * 0.92 });
+    ctx2.restore();
+  }
+  const a2 = seg(t, 6.50, 6.80);
+  if (a2 > 0){
+    const pk = t < 7.16 ? Math.sin(Math.PI * seg(t, 6.80, 7.16)) : 0;
+    const scale = 1 + 0.14 * pk;
+    ctx2.save();
+    ctx2.translate(W / 2, 910);
+    ctx2.scale(scale, scale);
+    ctx2.shadowColor = 'rgba(18,4,14,0.9)'; ctx2.shadowBlur = 14; ctx2.shadowOffsetY = 3;
+    drawText('一条曲线，就够了。', 0, 16, { font: '700 46px "Microsoft YaHei"', color: INK, alpha: a2 });
+    drawText('One curve is all it takes.', 0, 64, { font: 'italic 27px Georgia', color: '#E8CDD6', alpha: a2 * 0.92 });
+    ctx2.restore();
+  }
+}
+
+/* 顶栏 */
+function drawTopbar(t){
+  drawText('@VIBE·DSF', 64, 68, { font: '21px "Microsoft YaHei"', color: 'rgba(160,136,152,0.85)', align: 'left', track: 4 });
+  drawText('心形曲线 · THREE.JS', W / 2, 68, { font: '21px "Microsoft YaHei"', color: `rgba(255,92,134,0.9)`, track: 8 });
+  const mm = String(Math.floor(t / 60)).padStart(2, '0');
+  const ss = String(Math.floor(t % 60)).padStart(2, '0');
+  const ff = String(Math.floor((t % 1) * 30)).padStart(2, '0');
+  drawText(`${mm}:${ss}:${ff}`, W - 64, 68, { font: '21px Consolas, monospace', color: 'rgba(160,136,152,0.7)', align: 'right' });
+}
+
+/* ---------- 合成契约 ---------- */
+window.render = function(t){
+  renderGL(t);
+  ctx2.clearRect(0, 0, W, H);
+  drawOverlayGrain();
+  drawECG(t);
+  vignette();
+  drawL3(t);
+  drawSubtitle(t);
+  drawTopbar(t);
+};
+
+/* ---------- 抓帧模式 / 预览 ---------- */
+window.DUR = DUR;
+window.READY = false;
+if (new URLSearchParams(location.search).has('t')){
+  const t = parseFloat(new URLSearchParams(location.search).get('t'));
+  document.fonts.ready.then(() => { window.render(t); window.READY = true; });
+} else {
+  document.fonts.ready.then(() => {
+    window.READY = true;
+    const t0 = performance.now();
+    (function loop(now){ window.render(((now || performance.now()) - t0) / 1000 % DUR); requestAnimationFrame(loop); })();
+  });
+}
+</script>
+</body>
+</html>
