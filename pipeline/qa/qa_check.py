@@ -23,9 +23,9 @@ v2 新增（审美维度，每秒采样 1 帧，全部校准自真实成片）�
 门禁：总分 < 8 → 退出码 1（流水线据此硬卡，不许带病交付）。
 
 用法：
-  python qa_check.py frames/ --fps 30
-  python qa_check.py frames/ --fps 30 --json report.json
-  python qa_check.py frames/ --fps 30 --no-gate     # 只看报告，不卡门禁
+  python ../pipeline/qa/qa_check.py frames/ --fps 30
+  python ../pipeline/qa/qa_check.py frames/ --fps 30 --json report.json
+  python ../pipeline/qa/qa_check.py frames/ --fps 30 --no-gate     # 只看报告，不卡门禁
 """
 import argparse
 import json

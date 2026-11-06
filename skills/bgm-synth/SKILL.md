@@ -14,10 +14,10 @@ license: MIT
 
 ```bash
 # 纪录片慢速（知识片默认）
-python ../pipeline/synth_bgm.py bgm.wav --bpm 77 --duration 140
+python ../pipeline/audio/synth_bgm.py bgm.wav --bpm 77 --duration 140
 
 # 电子氛围（那类片子的常用听感：脉冲低音 + 16 分琶音 + 冲击）
-python ../pipeline/synth_bgm.py bgm.wav --style vibe --duration 64 --marks 24,48,60
+python ../pipeline/audio/synth_bgm.py bgm.wav --style vibe --duration 64 --marks 24,48,60
 ```
 
 | 参数 | 说明 |
@@ -33,7 +33,7 @@ python ../pipeline/synth_bgm.py bgm.wav --style vibe --duration 64 --marks 24,48
 agent 听不到声音，所以"有没有静音段、段落起伏对不对"只能看图：
 
 ```bash
-python ../pipeline/wave_png.py bgm.wav wave.png --bpm 96 --marks 24,48,60
+python ../pipeline/audio/wave_png.py bgm.wav wave.png --bpm 96 --marks 24,48,60
 ```
 
 图上能看出三件事：包络有没有断、拍点网格对不对齐、冲击点有没有重量。

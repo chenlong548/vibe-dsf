@@ -34,9 +34,9 @@
 python pipeline/scene_writer/validate_plan.py projects/<slug>/SCENE-PLAN.json
 node pipeline/scene_writer/build_html.mjs --plan projects/<slug>/SCENE-PLAN.json --out projects/<slug>/index.html
 cd projects/<slug>
-node ../../pipeline/render_frames.mjs --duration <秒> --fps 30
-python ../../pipeline/qa_check.py frames/ --fps 30
-powershell -File ../../pipeline/build.ps1        # 需 DSH_FFMPEG_PATH 指向 imageio 的 ffmpeg
+node ../../pipeline/render/render_frames.mjs --duration <秒> --fps 30
+python ../../pipeline/qa/qa_check.py frames/ --fps 30
+powershell -File ../../pipeline/compose/build.ps1        # 需 DSH_FFMPEG_PATH 指向 imageio 的 ffmpeg
 ```
 
 ## 三、SCENE-PLAN 是什么

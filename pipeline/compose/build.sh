@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =====================================================================
 # build.sh —— 把 frames/ 里的 PNG 序列 + 音频合成成片（macOS / Linux）
-#   ./build.sh                # 无音频
-#   ./build.sh bgm.wav        # 带音乐
+#   bash ../pipeline/compose/build.sh                # 无音频
+#   bash ../pipeline/compose/build.sh bgm.wav        # 带音乐
 #   需要 ffmpeg：brew install ffmpeg / apt install ffmpeg
 # =====================================================================
 set -euo pipefail

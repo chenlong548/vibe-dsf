@@ -6,8 +6,8 @@ synth_bgm.py —— 用 numpy 合成一条"纪录片感"的 BGM（无采样、�
 同一份脚本、同一个 --seed，永远得到同一个 wav —— 和 render(t) 一个道理。
 
 用法：
-  python synth_bgm.py bgm.wav --bpm 77 --duration 26
-  python synth_bgm.py bgm.wav --bpm 77 --duration 140 --key Am
+  python ../pipeline/audio/synth_bgm.py bgm.wav --bpm 77 --duration 26
+  python ../pipeline/audio/synth_bgm.py bgm.wav --bpm 77 --duration 140 --key Am
 """
 import argparse
 import wave
@@ -75,7 +75,7 @@ def mix(buf, start, seg, pan=1.0):
 
     注意：start 的单位是秒，不是采样点。这里乘 SR 是想当然踩过的坑——
     漏乘的话所有音频会被挤进开头几秒，后面全是静音，而 volumedetect
-    仍然会给出一个"看起来正常"的平均值，极难发现。用 wave_png.py 看波形才能抓到。
+    仍然会给出一个"看起来正常"的平均值，极难发现。用 ../pipeline/audio/wave_png.py 看波形才能抓到。
     """
     s = max(0, int(start * SR))
     if s >= len(buf):

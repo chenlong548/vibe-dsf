@@ -98,7 +98,7 @@ if (-not $SkipRender) {
   Write-Host "`n[1/5] 渲染帧…" -ForegroundColor Cyan
   Push-Location $project
   try {
-    $renderArgs = @("$pipeline\render_frames.mjs", "--html", $Html, "--out", $Frames, "--fps", "$Fps")
+    $renderArgs = @("$pipeline\render\render_frames.mjs", "--html", $Html, "--out", $Frames, "--fps", "$Fps")
     if ($Start -ge 0 -and $End -gt $Start) { $renderArgs += @("--start", "$Start", "--end", "$End") }
     elseif ($Duration -le 0) { Write-Host "[X]全片渲染需要 -Duration（秒）" -ForegroundColor Red; exit 1 }
     else { $renderArgs += @("--duration", "$Duration") }
@@ -119,7 +119,7 @@ Write-Host "    帧数 $frameCount（$seconds 秒 @ ${Fps}fps）"
 Write-Host "`n[2/5] QA 验收（11 项）…" -ForegroundColor Cyan
 Push-Location $project
 try {
-  $qaArgs = @("$pipeline\qa_check.py", $Frames, "--fps", "$Fps", "--json", "qa.json")
+  $qaArgs = @("$pipeline\qa\qa_check.py", $Frames, "--fps", "$Fps", "--json", "qa.json")
   if ($NoGate) { $qaArgs += "--no-gate" }
   & $python @qaArgs
   $qaCode = $LASTEXITCODE
@@ -136,7 +136,7 @@ if (-not $SkipBgm) {
   Write-Host "`n[3/5] 合成 BGM（style=$BgmStyle）…" -ForegroundColor Cyan
   Push-Location $project
   try {
-    $bgmArgs = @("$pipeline\synth_bgm.py", $Bgm, "--style", $BgmStyle, "--duration", "$seconds")
+    $bgmArgs = @("$pipeline\audio\synth_bgm.py", $Bgm, "--style", $BgmStyle, "--duration", "$seconds")
     if ($Bpm -gt 0) { $bgmArgs += @("--bpm", "$Bpm") }
     if ($BgmMarks -ne "") { $bgmArgs += @("--marks", $BgmMarks) }
     & $python @bgmArgs
@@ -159,9 +159,9 @@ if ($hasNarr) {
   Write-Host "`n[4/5] 旁白合成 + 闪避混音…" -ForegroundColor Cyan
   Push-Location $project
   try {
-    & $python "$pipeline\narrate\build_narration.py" $Plan --out $NarrOut --rate $VoiceRate
+    & $python "$pipeline\audio\narrate\build_narration.py" $Plan --out $NarrOut --rate $VoiceRate
     if ($LASTEXITCODE -ne 0) { Write-Host "[X]旁白合成失败" -ForegroundColor Red; exit 4 }
-    $mixArgs = @("$pipeline\narrate\mix_audio.py", "--narration", $NarrOut, "--duration", "$seconds", "--out", $MixOut)
+    $mixArgs = @("$pipeline\audio\narrate\mix_audio.py", "--narration", $NarrOut, "--duration", "$seconds", "--out", $MixOut)
     if ((Test-Path $bgmPath) -and -not $SkipBgm) { $mixArgs += @("--bgm", $Bgm) }
     & $python @mixArgs
     if ($LASTEXITCODE -ne 0) { Write-Host "[X]混音失败" -ForegroundColor Red; exit 4 }
@@ -175,7 +175,7 @@ Write-Host "`n[5/5] ffmpeg 合成…" -ForegroundColor Cyan
 $buildArgs = @{ Frames = $framesDir; Fps = $Fps; Out = (Join-Path $project $Out) }
 if ($hasNarr -and (Test-Path $mixPath)) { $buildArgs.Audio = $mixPath }
 elseif ((Test-Path $bgmPath) -and -not $SkipBgm) { $buildArgs.Audio = $bgmPath }
-& powershell -NoProfile -File "$pipeline\build.ps1" @buildArgs
+& powershell -NoProfile -File "$pipeline\compose\build.ps1" @buildArgs
 if ($LASTEXITCODE -ne 0) { Write-Host "[X]合成失败" -ForegroundColor Red; exit 3 }
 
 $sw.Stop()

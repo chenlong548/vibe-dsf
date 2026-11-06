@@ -1,9 +1,9 @@
 ﻿# =====================================================================
 # build.ps1 —— 把 frames/ 里的 PNG 序列 + 音频合成成片（Windows）
 #   用法：
-#     powershell -File build.ps1                        # 无音频
-#     powershell -File build.ps1 -Audio bgm.wav         # 带音乐
-#     powershell -File build.ps1 -Fps 60 -Out v2.mp4
+#     powershell -File ..\pipeline\compose\build.ps1                        # 无音频
+#     powershell -File ..\pipeline\compose\build.ps1 -Audio bgm.wav         # 带音乐
+#     powershell -File ..\pipeline\compose\build.ps1 -Fps 60 -Out v2.mp4
 #   需要 ffmpeg：winget install --id Gyan.FFmpeg -e
 # =====================================================================
 param(

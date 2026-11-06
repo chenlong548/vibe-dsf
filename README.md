@@ -24,6 +24,26 @@
                                                     synth_bgm.py + ffmpeg → final.mp4
 ```
 
+## 项目结构
+
+```
+pipeline/
+├── run_all.ps1        # 一键流水线：渲染→QA闸→BGM→旁白混音→合成
+├── render/            # render_frames.mjs —— CDP fast 模式逐帧截图
+├── qa/                # qa_check.py —— 11 项评分 + avg≥8 硬门禁
+├── audio/             # synth_bgm.py / wave_png.py / narrate/（TTS 旁白 + 闪避混音）
+├── compose/           # build.ps1 / build.sh —— ffmpeg 合成
+├── blocks/            # 10 个积木组件库 + registry.json（QA 分数档案）
+├── scene_writer/      # 主题一句话 → SCENE-PLAN.json → 硬闸 → 单文件 HTML
+├── paper2video/       # 论文 PDF → SCENE-PLAN.json（同一后半程）
+└── project2video/     # GitHub README → SCENE-PLAN.json（同一后半程）
+
+projects/<slug>/       # 每片一目录：plan JSON + index.html + 产物（产物不入库）
+skills/ styles/ docs/ scripts/   # 技能包 · 画风规范 · 方法论文档 · 环境脚本
+```
+
+完整目录地图 + 开发流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
 ---
 
 ## 一、这份生态只吃 flash 的四个特性
@@ -41,7 +61,7 @@
 |---|---|---|
 | 审美偏"安全"（爱居中/对称/等距） | 把审美翻译成 **10 条可 grep 的硬禁令** | `skills/vibe-film-ds/references/ds-failure-modes.md` |
 | 倾向整文件重写（改 1 字吐 2000 行） | 强制最小 diff + 每轮自报改了哪几行 | `SKILL.md` 第 5 步、playbook 第 10 条 |
-| 自我评价失真（"挺好的"，其实字被截了） | **像素级验收器，数字说了算** | `pipeline/qa_check.py` |
+| 自我评价失真（"挺好的"，其实字被截了） | **像素级验收器，数字说了算** | `pipeline/qa/qa_check.py` |
 
 ---
 
@@ -119,7 +139,7 @@ vibe-dsf/
 
 | 能力域 | 状态 | 实现 |
 |---|---|---|
-| 画面（代码渲染） | ✅ | `projects/demo-26s/index.html`，780 帧已渲完 |
+| 画面（代码渲染） | ✅ | `projects/demo-hook-entropy/index.html`（最新样片）；首条 26s 片在 `_archive/demo-26s` |
 | 声音（BGM） | ✅ | `synth_bgm.py`，已生成 `bgm.wav` |
 | 渲染（抓帧+合成） | ✅ | 780 帧 / 并发 8 / 实测推算 7–8 分钟（后台跑过 24 分钟的先例，见 playbook 第 11 条） |
 | 验收（质量门禁） | ✅ | `qa_check.py` 实测 9.4 与 8.3 分 |
@@ -142,8 +162,8 @@ vibe-dsf/
 | `setup.ps1` / `build.ps1` | ✅ 已验证 | 16/16 通过；`exit 0`、bt709、BOM 都已修 |
 | **并发对速度的影响** | ⚠️ 已验证且**推翻原假设** | 4/8/12 都是 0.54–0.57 s/帧，±5%（详见 playbook 第 11 条） |
 | **竖屏 1080×1920** | ⛔ 放弃（决策） | 2026-10-22 决定**只做横屏**。实测过：传宽高只会得到上下黑边，需重写坐标系统，不值得 |
-| `nocturne` 画风 | ✅ 已出帧 | `projects/nocturne-demo/`：坐标轴生长 + 收敛曲线 + 标准误参数卡 |
-| `romance` 画风 | ✅ 已出帧 | `projects/romance-demo/`：落日暖调 + 散景 + 纸条手写（爱情片验证） |
+| `nocturne` 画风 | ✅ 已出帧 | `projects/_archive/nocturne-demo/`：坐标轴生长 + 收敛曲线 + 标准误参数卡 |
+| `romance` 画风 | ✅ 已出帧 | `projects/_archive/romance-demo/`：落日暖调 + 散景 + 纸条手写（爱情片验证） |
 | `fable` 画风 | ❌ **仅竖屏版，横屏待改** | 原始规范是竖屏的，本项目只做横屏，所以它还没被改成横屏（不是"不支持竖屏"） |
 | **A/B 对照实验** | ✅ 已做（非盲测） | 同一镜头两种写法：7.7 → 9.1；但 B 的密度 0.21% 仍低于 0.3% 线 |
 | 10 条失败模式 | ⚠️ 观察假设 | 来自我自己的输出习惯，没做对照实验 |
@@ -161,20 +181,20 @@ vibe-dsf/
 powershell -File scripts\setup.ps1
 
 # 1) 看样片
-cd projects\demo-26s
+cd projects\demo-hook-entropy
 start final.mp4
 
 # 2) 改一个变量，出自己的帧（出 2 版抽卡）
-node ..\..\pipeline\render_frames.mjs --stills 3,45,132
+node ..\..\pipeline\render\render_frames.mjs --stills 3,45,132
 
 # 3) 全片 + 验收 + 合成
-node ..\..\pipeline\render_frames.mjs --fps 30 --duration 26
-python ..\..\pipeline\qa_check.py frames --fps 30 --json qa.json
-python ..\..\pipeline\synth_bgm.py bgm.wav --bpm 77 --duration 26
-powershell -File ..\..\pipeline\build.ps1 -Audio bgm.wav
+node ..\..\pipeline\render\render_frames.mjs --fps 30 --duration 8
+python ..\..\pipeline\qa\qa_check.py frames --fps 30 --json qa.json
+python ..\..\pipeline\audio\synth_bgm.py bgm.wav --bpm 77 --duration 8
+powershell -File ..\..\pipeline\compose\build.ps1 -Audio bgm.wav
 
 # 4) 只重渲某几秒（改文案后最常用）
-node ..\..\pipeline\render_frames.mjs --start 41 --end 47
+node ..\..\pipeline\render\render_frames.mjs --start 3 --end 5
 ```
 
 ---

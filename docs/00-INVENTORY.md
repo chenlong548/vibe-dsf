@@ -7,13 +7,13 @@
 
 | # | 能力域 | 状态 | 实现 | 验证方式 |
 |---|---|---|---|---|
-| 1 | 画面（代码渲染） | ✅ | `projects/demo-26s/index.html` | 780 帧已渲完，出片 26s |
-| 2 | 声音（BGM） | ✅ | `pipeline/synth_bgm.py` | 26.00s wav，mean −21.3dB |
+| 1 | 画面（代码渲染） | ✅ | `projects/_archive/demo-26s/index.html` | 780 帧已渲完，出片 26s |
+| 2 | 声音（BGM） | ✅ | `pipeline/audio/synth_bgm.py` | 26.00s wav，mean −21.3dB |
 | 3 | 渲染（抓帧+合成） | ✅ | `render_frames.mjs` + `build.ps1` | 780 帧实测推算 7–8 分钟 |
-| 4 | 验收（质量门禁） | ✅ | `pipeline/qa_check.py` | 实测 9.4 / 8.3 / 9.1 分 |
+| 4 | 验收（质量门禁） | ✅ | `pipeline/qa/qa_check.py` | 实测 9.4 / 8.3 / 9.1 分 |
 | 5 | 风格（画风包） | ✅ 3 套已出图 | `paper-gold`（成片）· `nocturne`（验证帧）· `romance`（验证帧）· `fable` 仅竖屏版 | 各自都有渲染产物 |
 | 6 | 事实（选题核实） | ✅ | DeepSeek Search/Fetch | ¥5/千次，2026-11-01 前免费 |
-| 7 | **审美对照实验** | ✅ | `projects/ab-test/` + `docs/04-AB-RESULT.md` | A 7.7 / B 9.1，同一镜头两种写法 |
+| 7 | **审美对照实验** | ✅ | `projects/_archive/ab-test/` + `docs/04-AB-RESULT.md` | A 7.7 / B 9.1，同一镜头两种写法 |
 
 ## 二、零插件决策（明确表）
 

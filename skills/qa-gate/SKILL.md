@@ -12,7 +12,7 @@ license: MIT
 ## 一条命令
 
 ```bash
-python ../pipeline/qa_check.py frames --fps 30 --json qa.json
+python ../pipeline/qa/qa_check.py frames --fps 30 --json qa.json
 ```
 
 ## 它测什么
@@ -37,7 +37,7 @@ python ../pipeline/qa_check.py frames --fps 30 --json qa.json
 
 只重渲某段：
 ```bash
-node ../pipeline/render_frames.mjs --start 41 --end 47
+node ../pipeline/render/render_frames.mjs --start 41 --end 47
 ```
 
 ## 判读经验

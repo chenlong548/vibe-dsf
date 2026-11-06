@@ -10,7 +10,7 @@ wave_png.py —— 把 wav 画成波形图（听不见也能验）
   · 冲击点（marks 的位置有没有"重量"）
 
 用法：
-  python wave_png.py bgm_vibe.wav out.png --bpm 96 --marks 24,48,60
+  python ../pipeline/audio/wave_png.py bgm_vibe.wav out.png --bpm 96 --marks 24,48,60
 """
 import argparse
 import wave

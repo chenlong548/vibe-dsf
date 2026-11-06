@@ -90,8 +90,8 @@ python pipeline/paper2video/validate_brief.py projects/<slug>/PAPER-BRIEF.json
 # ② 喂 PROMPT-SCRIPT.md + scene_writer/PROMPT.md + brief 给 LLM → SCENE-PLAN.json
 python pipeline/scene_writer/validate_plan.py projects/<slug>/SCENE-PLAN.json
 node pipeline/scene_writer/build_html.mjs --plan projects/<slug>/SCENE-PLAN.json --out projects/<slug>/index.html
-cd projects/<slug> && node ../../pipeline/render_frames.mjs --duration <秒> --fps 30
-python ../../pipeline/qa_check.py frames/ --fps 30
+cd projects/<slug> && node ../../pipeline/render/render_frames.mjs --duration <秒> --fps 30
+python ../../pipeline/qa/qa_check.py frames/ --fps 30
 # ③ 声音链 + 合成（一键）：
 powershell -File ..\..\pipeline\run_all.ps1 -SkipRender -Duration <秒> -BgmStyle vibe -Bpm 126 -BgmMarks "<切点秒值,逗号分隔>"
 ```

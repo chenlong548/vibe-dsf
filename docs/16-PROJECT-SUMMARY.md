@@ -40,6 +40,11 @@
 run_all.ps1：五阶段一键串联（渲染→QA闸→旁白→BGM→混音合成），exit 0-4 定位失败段
 ```
 
+> 目录归属（2026-11-06 企业级重构）：render_frames.mjs → `pipeline/render/`、qa_check.py →
+> `pipeline/qa/`、build_narration.py / mix_audio.py → `pipeline/audio/narrate/`、
+> synth_bgm.py / wave_png.py → `pipeline/audio/`、build.ps1 → `pipeline/compose/`。
+> 完整地图见 CONTRIBUTING.md。
+
 ## 三、分层实现要点
 
 ### 1. 渲染器 render_frames.mjs
@@ -77,7 +82,7 @@ run_all.ps1：五阶段一键串联（渲染→QA闸→旁白→BGM→混音合�
   （>0.4s 的一次淡入会被 QA 计成连续多次"硬切"）
 - 契约：`l2(ctx, T, sc, P, U)`，窗口时间用绝对秒，随机性由 seed 派生（确定性渲染）
 
-### 5. 旁白层 pipeline/narrate/（docs/13）
+### 5. 旁白层 pipeline/audio/narrate/（docs/13）
 - provider=**edge-tts**（零 key，zh-CN-YunxiNeural 男声）；本机无 N 卡，CosyVoice 挂起
 - 窗口拟合："读法音节 × 4.5 音节/秒"估句长；顿号有停顿要按读法估；超窗**加窗不压速**
   （金句宁加片长），tempo 上限 1.25；TTS 念数字极慢要留余量；语速用 TTS 原生 rate+15%

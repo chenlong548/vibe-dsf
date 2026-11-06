@@ -4,7 +4,7 @@
 > 而且渲染快 10 倍、改动小、不引入依赖。真 3D 只在"需要真实透视/材质/镜头运动"时才上，
 > **并且必须人工决定**（见 `09-HUMAN-IN-LOOP.md`）。
 
-参考样片：`projects/film-love-math/shots/ecg-heart.html`（心电图 → 爱心，6 秒）
+参考样片：`projects/_archive/film-love-math/shots/ecg-heart.html`（心电图 → 爱心，6 秒）
 
 ## 一、四招（按性价比排序）
 

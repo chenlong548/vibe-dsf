@@ -40,10 +40,10 @@ ffmpeg concat      cover_frames + frames → final.mp4
 2. 片头可以给别的视频复用（把标题当参数传进去）
 3. 计时的错误只影响 4 秒，不会污染正片的时间轴
 
-**命令**（已封装在 `projects/film-love-math/`）：
+**命令**（已封装在 `projects/_archive/film-love-math/`）：
 ```powershell
-node ..\..\pipeline\render_frames.mjs --html cover.html --duration 4 --start 0 --end 4 --out cover_frames
-node ..\..\pipeline\render_frames.mjs --duration 180 --out frames
+node ..\..\pipeline\render\render_frames.mjs --html cover.html --duration 4 --start 0 --end 4 --out cover_frames
+node ..\..\pipeline\render\render_frames.mjs --duration 180 --out frames
 # 合成时先拼帧目录，再走 build.ps1
 ```
 

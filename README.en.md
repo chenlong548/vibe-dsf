@@ -18,6 +18,26 @@ One command. No editor, no footage, no voiceover artist. **¥3–5 (~$0.5–0.7)
 topic → facts → script → storyboard → stills → full frames → QA gate → BGM + TTS → final.mp4
 ```
 
+## Layout
+
+```
+pipeline/
+├── run_all.ps1        # one-shot pipeline: render → QA gate → BGM → narration mix → assemble
+├── render/            # render_frames.mjs — CDP fast-mode frame capture
+├── qa/                # qa_check.py — 11 metrics, hard gate at avg ≥ 8
+├── audio/             # synth_bgm.py / wave_png.py / narrate/ (TTS + ducking mix)
+├── compose/           # build.ps1 / build.sh — ffmpeg assembly
+├── blocks/            # 10 building-block components + registry.json (QA score archive)
+├── scene_writer/      # one-line topic → SCENE-PLAN.json → hard gate → single-file HTML
+├── paper2video/       # paper PDF → SCENE-PLAN.json (same back half)
+└── project2video/     # GitHub README → SCENE-PLAN.json (same back half)
+
+projects/<slug>/       # one directory per video: plan JSON + index.html + artifacts
+skills/ styles/ docs/ scripts/   # agent skills · style packs · playbook docs · env scripts
+```
+
+Full directory map and development workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
+
 vibe-dsf renders **1080p knowledge videos the way "比特新语"-style channels do** (the fastest-growing
 knowledge channel on Bilibili, 600k followers in half a month): motion-graphics frames drawn by code,
 bilingual subtitles, beat-matched BGM — everything generated, rendered, scored and assembled by a
@@ -51,11 +71,11 @@ One rendering path, zero plugins. Every design decision exists because of how fl
 ```powershell
 powershell -File scripts\setup.ps1          # health check (read-only)
 
-cd projects\demo-26s                        # watch a finished 26s sample
-node ..\..\pipeline\render_frames.mjs --stills 3,45,132      # your own stills
-node ..\..\pipeline\render_frames.mjs --fps 30 --duration 26 # full render
-python ..\..\pipeline\qa_check.py frames --fps 30 --json qa.json
-powershell -File ..\..\pipeline\build.ps1 -Audio bgm.wav     # assemble final.mp4
+cd projects\demo-hook-entropy               # watch a finished 8s sample
+node ..\..\pipeline\render\render_frames.mjs --stills 3,45,132      # your own stills
+node ..\..\pipeline\render\render_frames.mjs --fps 30 --duration 8  # full render
+python ..\..\pipeline\qa\qa_check.py frames --fps 30 --json qa.json
+powershell -File ..\..\pipeline\compose\build.ps1 -Audio bgm.wav     # assemble final.mp4
 ```
 
 See [`docs/`](docs/) for the full playbook (12 flash-specific tuning rules, A/B results,

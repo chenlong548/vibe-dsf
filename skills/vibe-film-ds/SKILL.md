@@ -67,7 +67,7 @@ window.render = (t) => { /* 画第 t 秒 */ }; // 确定性，无副作用
 只实现开场 / 高潮 / 结尾三帧，渲成 PNG：
 
 ```bash
-node ../pipeline/render_frames.mjs --stills 3,45,132
+node ../pipeline/render/render_frames.mjs --stills 3,45,132
 ```
 
 **然后必须看图**（`read_image`），并逐条对照：
@@ -95,14 +95,14 @@ node ../pipeline/render_frames.mjs --stills 3,45,132
 
 ### ⑦ QA + 合成
 ```bash
-node ../pipeline/render_frames.mjs --fps 30 --duration 140
-python ../pipeline/qa_check.py frames --fps 30 --json qa.json
-python ../pipeline/synth_bgm.py bgm.wav --bpm 77 --duration 140
-powershell -File ../pipeline/build.ps1 -Audio bgm.wav
+node ../pipeline/render/render_frames.mjs --fps 30 --duration 140
+python ../pipeline/qa/qa_check.py frames --fps 30 --json qa.json
+python ../pipeline/audio/synth_bgm.py bgm.wav --bpm 77 --duration 140
+powershell -File ../pipeline/compose/build.ps1 -Audio bgm.wav
 ```
 **QA 总分 < 8 不许交付**。按断点清单定位，只重渲那几秒：
 ```bash
-node ../pipeline/render_frames.mjs --start 41 --end 47
+node ../pipeline/render/render_frames.mjs --start 41 --end 47
 ```
 
 ## 4. 回看回路（本 skill 的核心）

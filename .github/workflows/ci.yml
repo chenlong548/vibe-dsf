@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  syntax-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Python deps
+        run: pip install -r pipeline/requirements.txt
+
+      - name: Python syntax check
+        run: python -m compileall -q pipeline
+
+      - name: Node syntax check
+        run: |
+          fail=0
+          for f in pipeline/render/*.mjs pipeline/scene_writer/*.mjs pipeline/blocks/lib/*.js; do
+            node --check "$f" || fail=1
+          done
+          exit $fail
+
+      - name: Smoke — scene plan hard gate (_probe fixture)
+        run: python pipeline/scene_writer/validate_plan.py projects/_probe/SCENE-PLAN.json
+
+      - name: Smoke — assemble single-file HTML (_probe fixture)
+        run: |
+          node pipeline/scene_writer/build_html.mjs \
+            --plan projects/_probe/SCENE-PLAN.json \
+            --out /tmp/smoke_index.html
+          test -s /tmp/smoke_index.html
+          grep -q "render(" /tmp/smoke_index.html
+
+      # 渲染/QA/合成需要 Chrome + ffmpeg + 音频轨，在本地跑：
+      #   powershell -File pipeline/run_all.ps1 -Project projects/<slug> -Duration <秒>
+      # （见 CONTRIBUTING.md「验证流程」）

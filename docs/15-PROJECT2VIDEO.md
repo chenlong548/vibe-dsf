@@ -96,11 +96,11 @@ python pipeline/project2video/validate_brief_project.py projects/<slug>/PROJECT-
 python pipeline/scene_writer/validate_plan.py projects/<slug>/SCENE-PLAN.json
 node pipeline/scene_writer/build_html.mjs --plan projects/<slug>/SCENE-PLAN.json --out projects/<slug>/index.html
 cd projects/<slug>
-node ../../pipeline/render_frames.mjs --duration 50 --fps 30        # 全量；--stills 20,36 定风格
-python ../../pipeline/qa_check.py frames/ --fps 30                  # 门禁 ≥8
-python ../../pipeline/narrate/build_narration.py SCENE-PLAN.json --out narration.wav --rate "+15%"
-python ../../pipeline/synth_bgm.py bgm.wav --style vibe --bpm 126 --duration 50 --seed <n> --marks "<卡点>"
-python ../../pipeline/narrate/mix_audio.py --narration narration.wav --bgm bgm.wav --duration 50 --out final_audio.wav
+node ../../pipeline/render/render_frames.mjs --duration 50 --fps 30        # 全量；--stills 20,36 定风格
+python ../../pipeline/qa/qa_check.py frames/ --fps 30                  # 门禁 ≥8
+python ../../pipeline/audio/narrate/build_narration.py SCENE-PLAN.json --out narration.wav --rate "+15%"
+python ../../pipeline/audio/synth_bgm.py bgm.wav --style vibe --bpm 126 --duration 50 --seed <n> --marks "<卡点>"
+python ../../pipeline/audio/narrate/mix_audio.py --narration narration.wav --bgm bgm.wav --duration 50 --out final_audio.wav
 # 合成见 build.ps1（-Audio final_audio.wav，内部 loudnorm -14 LUFS）
 ```
 

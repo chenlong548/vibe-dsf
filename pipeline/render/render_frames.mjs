@@ -9,11 +9,11 @@
  *            fast 模式启动失败时也会自动回退到这里，保证总能出帧。
  *
  * 用法（在你的项目目录里跑，输出落在当前目录）：
- *   node ../pipeline/render_frames.mjs                      # 全片，默认 30fps / 26s
- *   node ../pipeline/render_frames.mjs --duration 120       # 2 分钟片
- *   node ../pipeline/render_frames.mjs --start 12 --end 16  # 只重渲 12~16 秒
- *   node ../pipeline/render_frames.mjs --stills 2,6,13,18   # 只出几张静帧（定风格用）
- *   node ../pipeline/render_frames.mjs --slow               # 强制旧模式
+ *   node ../pipeline/render/render_frames.mjs                      # 全片，默认 30fps / 26s
+ *   node ../pipeline/render/render_frames.mjs --duration 120       # 2 分钟片
+ *   node ../pipeline/render/render_frames.mjs --start 12 --end 16  # 只重渲 12~16 秒
+ *   node ../pipeline/render/render_frames.mjs --stills 2,6,13,18   # 只出几张静帧（定风格用）
+ *   node ../pipeline/render/render_frames.mjs --slow               # 强制旧模式
  * ===================================================================== */
 
 import { spawn } from 'node:child_process';
@@ -331,7 +331,7 @@ async function main(){
     await legacyMode();
   }
   console.log(`\n${failed ? '⚠' : '✓'} 完成：${jobs.length - failed} 成功 / ${failed} 失败  → ${OUT}`);
-  if (!STILLS) console.log(`\n下一步合成视频：\n  powershell -File build.ps1\n  或 bash build.sh`);
+  if (!STILLS) console.log(`\n下一步合成视频：\n  powershell -File ../pipeline/compose/build.ps1\n  或 bash ../pipeline/compose/build.sh`);
   if (failed > 0 && failed === jobs.length) process.exit(1);
 }
 

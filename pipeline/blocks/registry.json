@@ -17,7 +17,7 @@
         "r_max": "最大扩散半径 px",
         "squash": "纵向压扁比，默认 0.78"
       },
-      "qa": "8.5/10 @ demo-hook-entropy（2026-10-27）"
+      "qa": "9.1/10 @ demo-hook-entropy（2026-10-27）"
     },
     {
       "name": "data-chart",
@@ -124,7 +124,7 @@
         "gap": "卡间距 px，默认 40",
         "cards": "[{tag, title, sub, t_in}] 3-4 张，t_in 为命中时刻（绝对秒）"
       },
-      "qa": "8.5/10 @ project-vibe-dsf（2026-11-06）"
+      "qa": "9.1/10 @ project-vibe-dsf（2026-11-06）"
     },
     {
       "name": "terminal-window",
@@ -140,7 +140,7 @@
         "cursor": "false 关闭末行空闲光标呼吸",
         "progress_to": "底部执行进度条终点（默认场景尾）"
       },
-      "qa": "8.5/10 @ project-vibe-dsf（2026-11-06）"
+      "qa": "9.1/10 @ project-vibe-dsf（2026-11-06）"
     },
     {
       "name": "repo-card",
@@ -157,7 +157,7 @@
         "install": "一行安装命令",
         "t_star": "星数滚动起点时刻"
       },
-      "qa": "8.5/10 @ project-vibe-dsf（2026-11-06）"
+      "qa": "9.1/10 @ project-vibe-dsf（2026-11-06）"
     }
   ]
 }

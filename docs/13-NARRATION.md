@@ -54,9 +54,9 @@ powershell -File ..\..\pipeline\run_all.ps1 -Duration 11.43 -BgmStyle vibe -Bpm 
 
 | 文件 | 职责 |
 |---|---|
-| `pipeline/narrate/tts_edge.py` | provider：edge-tts → 44.1k mono wav（单句自测可 CLI） |
-| `pipeline/narrate/build_narration.py` | 逐句合成 → 窗口拟合（超窗 atempo≤1.25 只警告不截断）→ 铺全片底轨，输出 JSON 报告（每句 raw/atempo/fit） |
-| `pipeline/narrate/mix_audio.py` | 50ms RMS 包络 → attack 0.12s/release 0.45s 平滑 → BGM 闪避；纯 numpy 确定性 |
+| `pipeline/audio/narrate/tts_edge.py` | provider：edge-tts → 44.1k mono wav（单句自测可 CLI） |
+| `pipeline/audio/narrate/build_narration.py` | 逐句合成 → 窗口拟合（超窗 atempo≤1.25 只警告不截断）→ 铺全片底轨，输出 JSON 报告（每句 raw/atempo/fit） |
+| `pipeline/audio/narrate/mix_audio.py` | 50ms RMS 包络 → attack 0.12s/release 0.45s 平滑 → BGM 闪避；纯 numpy 确定性 |
 | `pipeline/run_all.ps1` | 第 4 阶段（plan 带 narration 自动启用） |
 
 ## 五、验收方法（agent 听不见，只能看）

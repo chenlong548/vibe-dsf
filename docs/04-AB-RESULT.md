@@ -10,8 +10,8 @@
 
 | 组 | 写法 | 文件 |
 |---|---|---|
-| **A** | 不加任何禁令，按"最省事"的方式写：居中、等距、线性淡入、渐变底 | `projects/ab-test/a_naive.html` |
-| **B** | 逐条套 F1/F2/F3 + style-dna：偏置构图、easeOutBack、不等距、星点颗粒、双语字幕 | `projects/ab-test/b_directed.html` |
+| **A** | 不加任何禁令，按"最省事"的方式写：居中、等距、线性淡入、渐变底 | `projects/_archive/ab-test/a_naive.html` |
+| **B** | 逐条套 F1/F2/F3 + style-dna：偏置构图、easeOutBack、不等距、星点颗粒、双语字幕 | `projects/_archive/ab-test/b_directed.html` |
 
 ## 2. 数字
 
@@ -44,7 +44,7 @@ B 的密度 0.21%，**低于 style-dna 定的 0.3% 合格线**。原因不是禁
 
 ## 5. 第二个实验：深空理性（nocturne）能不能出片
 
-`projects/nocturne-demo/` —— 8 秒，坐标轴生长 + 收敛曲线 + 移动发光点 + 标准误参数卡。
+`projects/_archive/nocturne-demo/` —— 8 秒，坐标轴生长 + 收敛曲线 + 移动发光点 + 标准误参数卡。
 
 结论：**能出片，而且比纸金风更容易"看起来专业"**。因为数据可视化天然有运动（曲线在长、点在走、数字在变），
 密度不用堆装饰就够。这条验证也回答了"这套东西是不是只有一种画风"——不是。
@@ -68,8 +68,8 @@ B 的密度 0.21%，**低于 style-dna 定的 0.3% 合格线**。原因不是禁
 
 ```powershell
 cd projects\ab-test
-node ..\..\pipeline\render_frames.mjs --html a_naive.html --start 0 --end 4 --out fa
-node ..\..\pipeline\render_frames.mjs --html b_directed.html --start 0 --end 4 --out fb
-python ..\..\pipeline\qa_check.py fa --fps 30
-python ..\..\pipeline\qa_check.py fb --fps 30
+node ..\..\pipeline\render\render_frames.mjs --html a_naive.html --start 0 --end 4 --out fa
+node ..\..\pipeline\render\render_frames.mjs --html b_directed.html --start 0 --end 4 --out fb
+python ..\..\pipeline\qa\qa_check.py fa --fps 30
+python ..\..\pipeline\qa\qa_check.py fb --fps 30
 ```

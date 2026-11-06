@@ -141,7 +141,7 @@ render_frames --stills → read_image 看 3 张 → 说 3 个具体问题 → �
 
 ```powershell
 # 一次不行，原样再来两次
-node ..\..\pipeline\render_frames.mjs --stills 45
+node ..\..\pipeline\render\render_frames.mjs --stills 45
 ```
 三次都崩，才说明是提示词问题（这时候去补 F 系列禁令）。
 

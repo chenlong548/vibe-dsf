@@ -38,12 +38,12 @@
     {
       "name": "QA 门禁",
       "what": "五个审美维度打分，均分不到 8 不许出片",
-      "proof": "pipeline/qa_check.py · avg<8 exit 1"
+      "proof": "pipeline/qa/qa_check.py · avg<8 exit 1"
     },
     {
       "name": "人声旁白",
       "what": "TTS 旁白自动卡点，闪避混音让位人声",
-      "proof": "pipeline/narrate/mix_audio.py · RMS 侧链"
+      "proof": "pipeline/audio/narrate/mix_audio.py · RMS 侧链"
     }
   ],
   "quickstart": {
