@@ -132,7 +132,8 @@ run_all.ps1：五阶段一键串联（渲染→QA闸→BGM→音效/旁白→混
 ## 六、下一步（P1）
 
 6. ~~synth_sfx.py 按 CUE-SHEET 卡点合成音效轨~~ ✅ 2026-11-06 落地（docs/17，demo-hook-compound 三层音频首验）
-   7. palette.json 品牌契约 + 水印参数化
+   7. ~~palette.json 品牌契约 + 水印参数化~~ ✅ 2026-11-06 落地（docs/18：palette_name 引用制+水印回落，
+      三层优先级 内联>引用>默认）
 8. 强模型出创意帧 + flash 批量　9. 静帧并排评审页　10. easings.js GSAP 级缓动
 - QA v3 想法：长片断点阈值按时长缩放（180s 片天然累积更多静止段）
 - 音色 A/B（Yunxi/Yunyang/Xiaoxiao 盲选）；系列化三连发（hook + 深讲 + 项目片，brief 互通）

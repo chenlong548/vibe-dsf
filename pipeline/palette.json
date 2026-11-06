@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "_doc": "品牌契约（G7）：账号级视觉资产。plan 的 meta.palette_name 引用这里的键 = 整套已验证配色直接生效；内联 meta.palette 仍可用（显式覆盖优先）。watermark 缺省时 build_html 从 brand.watermark 取。只收录 QA 过闸的配色——新调色先实测过闸再入库。",
+  "brand": {
+    "watermark": "@VIBE·DSF"
+  },
+  "default_palette": "deep-space",
+  "palettes": {
+    "deep-space": {
+      "_from": "demo-hook-entropy / paper-shannon-deep（QA 9.1 / 9.2）",
+      "style": "deep-space",
+      "pattern": "dots",
+      "bg_in": "#141026",
+      "bg_out": "#05050F",
+      "accent": "#E8A87C",
+      "ink": "#EAEAF2",
+      "gray": "#8A8AA0",
+      "dim": "138,138,160"
+    },
+    "paper": {
+      "_from": "project-vibe-dsf（QA 9.1）· 独立站设计令牌",
+      "style": "paper",
+      "pattern": "hairline",
+      "bg_in": "#fcfcfa",
+      "bg_out": "#f2f1ec",
+      "accent": "#0d6e63",
+      "ink": "#16181c",
+      "gray": "#666c74",
+      "surface": "#ffffff",
+      "line": "#e6e5e1",
+      "sunken": "#f4f4f1",
+      "dim": "102,108,116",
+      "sub_en": "#7c828b",
+      "term_bg": "#0e1214",
+      "term_line": "#242c30",
+      "term_ink": "#d6dde1",
+      "term_dim": "#7c878e",
+      "term_accent": "#5ed3b8",
+      "term_amber": "#e3b341"
+    }
+  }
+}

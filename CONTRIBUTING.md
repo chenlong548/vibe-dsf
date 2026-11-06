@@ -7,6 +7,7 @@ vibe-dsf/
 ├── pipeline/                  # 核心管线（一键入口：run_all.ps1）
 │   ├── run_all.ps1            # 五阶段一键流水线：渲染→QA闸→BGM→旁白混音→合成（exit 0-4 定位失败段）
 │   ├── requirements.txt       # Python 依赖（numpy / pillow / edge-tts）
+│   ├── palette.json           # 品牌契约：账号水印 + 已验证配色库（plan 用 palette_name 引用，docs/18）
 │   ├── render/                # 渲染：render_frames.mjs（CDP fast 模式逐帧截图）
 │   ├── qa/                    # 门禁：qa_check.py（11 项评分，avg<8 硬拦截）
 │   ├── audio/                 # 音频：synth_bgm.py（BGM）/ synth_sfx.py（音效）/ wave_png.py（波形验收）

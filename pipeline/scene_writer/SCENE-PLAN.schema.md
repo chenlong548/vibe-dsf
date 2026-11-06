@@ -15,14 +15,16 @@
     "bpm": 126,                            // BGM 拍点网格：beat = 60/bpm
     "style": "deep-space",                 // L0 风格预设（当前支持 deep-space）
     "pattern": "dots",                     // L0 纹理：dots | grid | rings
-    "palette": {
+    "palette_name": "deep-space",          // 推荐：引用 pipeline/palette.json 的已验证配色（一套名=配色+style+pattern）
+                                           // 三层优先级：内联 palette > palette_name > default_palette
+    "palette": {                           // 内联写法（向后兼容；新调色实测过闸后应收编进 palette.json）
       "bg_in": "#141026",                  // 径向渐变内色（中心比边缘亮 25-40%）
       "bg_out": "#05050F",                 // 外色。禁纯黑（校验器会挂）
       "accent": "#E8A87C",                 // 全片唯一强调色。只染 L2 主角
       "ink":   "#EAEAF2",                  // 主文字
       "gray":  "#8A8AA0"                   // 辅助灰（L3 标注）
     },
-    "watermark": "@VIBE·DSF"
+    "watermark": "@VIBE·DSF"               // 缺省时 build_html 取品牌契约 brand.watermark
   },
 
   "scenes": [                              // 时间轴必须无缝全覆盖 [0, duration]

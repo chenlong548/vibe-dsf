@@ -97,9 +97,13 @@ def main():
         warn(f"找不到 {registry_path}（跳过积木检查）", "registry")
 
     meta = plan.get("meta", {})
-    for k in ("topic", "duration", "fps", "bpm", "palette"):
+    for k in ("topic", "duration", "fps", "bpm"):
         if k not in meta:
             err(f"meta.{k} 缺失")
+    if "palette" not in meta and "palette_name" not in meta:
+        err("meta.palette / meta.palette_name 至少给一个（palette_name 引用 pipeline/palette.json）")
+    if not meta.get("watermark"):
+        warn("meta.watermark 缺失——build_html 将回落品牌契约的 brand.watermark", "brand")
     if errors:
         report(meta, plan)
         return 1
@@ -115,7 +119,22 @@ def main():
     if not on_beat(dur, beat, fps):
         err(f"duration={dur} 不在拍点网格（beat={beat:.6f}s）")
 
-    check_color(meta["palette"])
+    # ---- 品牌契约（G7）：palette_name 必须在库里；解析后与内联 palette 走同一套配色校验 ----
+    pal = meta.get("palette")
+    if not pal and "palette_name" in meta:
+        pal_path = Path(__file__).resolve().parents[1] / "palette.json"
+        if pal_path.exists():
+            brand = json.loads(pal_path.read_text(encoding="utf-8"))
+            known = brand.get("palettes", {})
+            name = meta["palette_name"]
+            if name not in known:
+                err(f"meta.palette_name '{name}' 不在 pipeline/palette.json（可用: {', '.join(known)}）")
+            else:
+                pal = {k: v for k, v in known[name].items() if not k.startswith("_")}
+        else:
+            warn("找不到 pipeline/palette.json（跳过 palette_name 解析与配色校验）", "palette")
+    if pal:
+        check_color(pal)
 
     # ---- scenes ----
     scenes = plan.get("scenes", [])

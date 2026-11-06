@@ -23,6 +23,31 @@ const blocksRoot = path.join(here, '..', 'blocks');
 const registry = JSON.parse(fs.readFileSync(path.join(blocksRoot, 'registry.json'), 'utf8'));
 const regMap = Object.fromEntries(registry.blocks.map(b => [b.name, b]));
 
+/* ---- 品牌契约物化（G7）：palette_name 引用 / 内联 palette / 默认值 三层优先级 ----
+ * 内联 meta.palette > meta.palette_name（引用 pipeline/palette.json）> default_palette。
+ * watermark 缺省取 brand.watermark。解析结果直接写回 plan.meta——template.html 零感知。 */
+const palettePath = path.join(here, '..', 'palette.json');
+if (fs.existsSync(palettePath)) {
+  const brand = JSON.parse(fs.readFileSync(palettePath, 'utf8'));
+  const M = plan.meta;
+  if (!M.palette && M.palette_name) {
+    const p = brand.palettes[M.palette_name];
+    if (!p) { console.error(`[build_html] palette_name "${M.palette_name}" 不在 pipeline/palette.json（可用: ${Object.keys(brand.palettes).join(', ')}）`); process.exit(1); }
+    const { _from, ...colors } = p;
+    M.palette = colors;
+    if (!M.style && colors.style) M.style = colors.style;
+    if (!M.pattern && colors.pattern) M.pattern = colors.pattern;
+  }
+  if (!M.palette && brand.default_palette && brand.palettes[brand.default_palette]) {
+    const { _from, ...colors } = brand.palettes[brand.default_palette];
+    M.palette = colors;
+    if (!M.style && colors.style) M.style = colors.style;
+    if (!M.pattern && colors.pattern) M.pattern = colors.pattern;
+    console.log(`[build_html] palette 未指定，回落 default_palette "${brand.default_palette}"`);
+  }
+  if (!M.watermark && brand.brand && brand.brand.watermark) M.watermark = brand.brand.watermark;
+}
+
 const needed = [...new Set(plan.scenes.map(s => s.l2 && s.l2.block).filter(Boolean))];
 const missing = needed.filter(n => !regMap[n]);
 if (missing.length) {

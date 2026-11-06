@@ -12,6 +12,7 @@
 |---|---|
 | `meta.style` | `"paper"`（浅底模式：无星空、墨色纸纹、浅墨影边缘） |
 | `meta.pattern` | `"hairline"`（teal 发丝线正交网格，图纸感） |
+| `meta.palette_name` | **推荐：`"paper"`**——整套已验证配色（下表全部键）+ style + pattern 一次引用生效，见 `pipeline/palette.json`；下表逐键内联仅在新调色时用 |
 | `palette.bg_in / bg_out` | `"#fcfcfa"` / `"#f2f1ec"`（暖白纸面渐变） |
 | `palette.ink / gray` | `"#16181c"` / `"#666c74"` |
 | `palette.accent` | `"#0d6e63"`（deep teal——独立站唯一强调色，刻意不用蓝） |
