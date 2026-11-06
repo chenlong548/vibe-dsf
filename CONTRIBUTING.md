@@ -6,7 +6,7 @@
 vibe-dsf/
 ├── pipeline/                  # 核心管线（一键入口：run_all.ps1）
 │   ├── run_all.ps1            # 五阶段一键流水线：渲染→QA闸→BGM→旁白混音→合成（exit 0-4 定位失败段）
-│   ├── review.mjs             # 静帧评审页生成器：场景网格 + A/B 对比（人工挑卡点，docs/10 #9）
+│   ├── review.mjs             # 静帧评审页生成器：场景网格 + A/B 对比 + QA 病灶叠加（docs/10 #9）
 │   ├── requirements.txt       # Python 依赖（numpy / pillow / edge-tts）
 │   ├── palette.json           # 品牌契约：账号水印 + 已验证配色库（plan 用 palette_name 引用，docs/18）
 │   ├── render/                # 渲染：render_frames.mjs（CDP fast 模式逐帧截图）
@@ -84,9 +84,11 @@ powershell -File ..\..\pipeline\compose\build.ps1 -Audio final_audio.wav
 # 波形目检（agent 听不见，看图验收音频）
 python ..\..\pipeline\audio\wave_png.py bgm.wav wave.png --bpm 96 --marks 24,48,60
 
-# 静帧评审页（场景网格 + A/B 对比，人工挑卡点/比风格；产物 review.html 浏览器打开）
+# 静帧评审页（场景网格 + A/B 对比 + QA 病灶叠加，人工挑卡点/比风格；产物 review.html 浏览器打开）
+# 自动读项目里的 qa.json：静止段/硬切/溢出标红，病灶帧自动补采（红框）
 node ..\..\pipeline\review.mjs --project projects\<slug>
 node ..\..\pipeline\review.mjs --project projects\<slugA> --compare projects\<slugB>
+node ..\..\pipeline\review.mjs --project projects\<slug> --qa path\to\qa.json   # 手动指定报告
 ```
 
 ## 加一块积木

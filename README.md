@@ -4,7 +4,7 @@
 
 **全自动知识视频流水线 · 单条 ¥3–5 · QA 像素级验收**
 
-[English](README.en.md) | 简体中文　·　**v1.1.0** · [更新日志](CHANGELOG.md)
+[English](README.en.md) | 简体中文　·　**v1.2.0** · [更新日志](CHANGELOG.md)
 
 </div>
 
