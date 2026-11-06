@@ -339,11 +339,10 @@ window.BLOCKS['timeline'] = {
       ctx.globalAlpha = g;
       ctx.beginPath(); ctx.arc(mx, cy, (isAccent ? 9 : 6) * g, 0, Math.PI * 2); ctx.fill();
       if (isAccent) {
-        /* 终点年持续呼吸环：强调焦点 + 持续运动源 */
-        const pr = 9 + 4.5 * (0.5 + 0.5 * Math.sin(T * 4.0));
+        /* 终点年静态双环：强调 = 大小 + 颜色 + 环，不呼吸不伸缩 */
         ctx.strokeStyle = U.rgba(0.55);
         ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(mx, cy, pr, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(mx, cy, 16, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.globalAlpha = 1;
       const rise = 14 * (1 - g);
@@ -449,7 +448,10 @@ window.BLOCKS['flow-pipe'] = {
 /* beat-counter — 大数字滚动 + 公式框积木（数字锚点/机制推演）
  * params: {cx, cy, font_px, to, decimals, prefix, suffix, expr,
  *          t_count:[a,b], t_expr:[a,b]}
- * 数字 = 唯一发光元素（计数期间），公式框描边用强调色。 */
+ * 数字 = 唯一发光元素（计数期间），公式框描边用强调色。
+ * 强调语言（2026-11-06 用户定调）：数字落定后绝对静止——不呼吸不缩放；
+ * 强调 = 落定瞬间下方 accent 下划线一次性扫出（之后静态保持）；
+ * 持续运动源交给场景级巡游光带（数字本体永远稳）。 */
 window.BLOCKS = window.BLOCKS || {};
 window.BLOCKS['beat-counter'] = {
   l2: function (ctx, T, sc, P, U) {
@@ -460,7 +462,6 @@ window.BLOCKS['beat-counter'] = {
     const val = (P.to ?? 37.8) * g;
     const txt = (P.prefix ?? '') + val.toFixed(P.decimals ?? 1) + (P.suffix ?? '');
     const glow = T >= tc[0] && T < tc[1] + 0.4;
-    const pulse = T > tc[1] + 0.4 ? 1 + 0.035 * Math.sin((T - tc[1] - 0.4) * 3.7) : 1;
     if (glow) {
       ctx.save();
       ctx.shadowColor = U.ACCENT; ctx.shadowBlur = 30;
@@ -470,13 +471,14 @@ window.BLOCKS['beat-counter'] = {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     const w = ctx.measureText(txt).width;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.scale(pulse, pulse);
-    ctx.translate(-cx, -cy);
     ctx.fillText(txt, cx - w / 2, cy + fs * 0.35);
-    ctx.restore();
     if (glow) ctx.restore();
+    /* 落定下划线：定格后一次性扫出，静态保持 */
+    const ulA = U.easeOutCubic(U.seg(T, tc[1] + 0.4, tc[1] + 1.0));
+    if (ulA > 0) {
+      ctx.fillStyle = U.rgba(0.85 * ulA);
+      ctx.fillRect(cx - w / 2, cy + fs * 0.35 + 22, w * ulA, 5);
+    }
     const te = P.t_expr || [tc[0] + 0.2, tc[0] + 1.0];
     const ea = U.seg(T, te[0], te[1]);
     if (ea > 0 && P.expr) {
@@ -492,13 +494,22 @@ window.BLOCKS['beat-counter'] = {
       ctx.strokeRect(ex - 24, ey - 44, ew + 48, 64);
       ctx.globalAlpha = 1;
     }
+    /* 巡游光带：扫过数字+公式区（大面积匀速平移才是够 0.35%/帧的运动源） */
+    const zoneW = Math.max(w, 720) + 280;
+    const swp = ((T - tc[0]) % 4.2) / 4.2;
+    const bA = 0.085 * Math.min(1, Math.min(swp, 1 - swp) / 0.12);
+    if (bA > 0.004) {
+      const sx = cx - zoneW / 2 - 60 + swp * (zoneW + 120);
+      ctx.fillStyle = U.rgba(bA);
+      ctx.fillRect(sx, cy - fs * 1.05, 110, fs * 1.45 + 170);
+    }
   }
 };
 
 
 /* text-points — 要点逐条点亮积木（机制步骤/三要点展开）
  * params: {cx, cy, w, area_pct, items:[{text, sub, t_in}], row_h, t_hold}
- * 视觉：每条 = accent 编号点（命中时亮起并持续脉冲）+ 主文 ink + 副行 gray；
+ * 视觉：每条 = accent 编号点（命中亮起后恒定不脉冲）+ 主文 ink + 副行 gray；
  * 进场 = 点亮 + 文本上移淡入；未进场条不可见。
  * 持续运动源：进度下划线（点亮→场景尾持续填充）+ 编号点脉冲 + 巡游光带。
  * QA 教训（paper-shannon-deep 实测）：3px 细线怎么动都凑不够 0.35%/帧 的
@@ -519,13 +530,11 @@ window.BLOCKS['text-points'] = {
       if (g <= 0) continue;
       const iy = cy - ((items.length - 1) * rowH) / 2 + i * rowH;
       const isActive = (it.t_out === undefined) || (T < it.t_out);
-      const ph = T * 5.0 + i * 1.3;
-      const dotR = 8 + 3.2 * Math.sin(ph);
-      const dotA = 0.62 + 0.38 * Math.sin(ph + 0.9);
+      /* 编号点恒定（不脉冲不伸缩——用户定调：晃动别扭）；运动源 = 下划线 + 巡游光带 */
       const col = isActive ? U.ACCENT : U.GRAY;
       ctx.fillStyle = col;
-      ctx.globalAlpha = g * Math.max(0.25, dotA);
-      ctx.beginPath(); ctx.arc(x0 + 16, iy, Math.max(3, dotR * g), 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = g * 0.9;
+      ctx.beginPath(); ctx.arc(x0 + 16, iy, Math.max(3, 8 * g), 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1;
       /* 进度下划线：从点亮到 t_out（默认场景尾）持续填充 */
       const iEnd = it.t_out ?? sc.t_out;
@@ -621,9 +630,7 @@ window.BLOCKS['data-chart'] = {
         }
       }
       if (g > 0.96 && drawn > 0 && s.label) {
-        const pulseR = s.color === 'accent'
-          ? lw * 1.6 + 2 + 2.2 * Math.sin(T * 4.5)
-          : lw * 1.6 + 2;
+        const pulseR = lw * 1.6 + 2;
         ctx.fillStyle = color;
         ctx.beginPath(); ctx.arc(lx, ly, Math.max(1.5, pulseR), 0, Math.PI * 2); ctx.fill();
         U.drawText(ctx, s.label, lx + 20, ly + 6,
@@ -650,7 +657,9 @@ window.BLOCKS['data-chart'] = {
 /* vs-counters — 左右双数字对撞积木（双结局/反转落点）
  * params: {font_px, cy, t_count:[a,b], left:{cx,to,decimals,label,expr,t_label},
  *          right:{...同 left}}
- * 约定：右侧 = 强调色 + 发光（赢家），左侧 = 辅助灰。中缝竖线脉冲一次。 */
+ * 约定：右侧 = 强调色 + 发光（赢家），左侧 = 辅助灰。中缝竖线脉冲一次。
+ * 强调语言（2026-11-06）：数字落定后绝对静止（不呼吸不缩放）；强调 = 落定
+ * 下划线一次性扫出（accent 侧 accent 色、灰侧 ink 淡线）+ 巡游光带供运动。 */
 window.BLOCKS = window.BLOCKS || {};
 window.BLOCKS['vs-counters'] = {
   l2: function (ctx, T, sc, P, U) {
@@ -665,8 +674,6 @@ window.BLOCKS['vs-counters'] = {
       const val = (cfg.to ?? 1) * g;
       const txt = (cfg.prefix ?? '') + val.toFixed(cfg.decimals ?? 2) + (cfg.suffix ?? '');
       const color = isAccent ? U.ACCENT : U.GRAY;
-      const isPulse = T > tc[1] + 0.4;
-      const pulse = isPulse ? 1 + 0.035 * Math.sin((T - tc[1] - 0.4) * 3.7) : 1;
       if (isAccent && T >= tc[0] && T < tc[1] + 0.4) {
         ctx.save();
         ctx.shadowColor = U.ACCENT; ctx.shadowBlur = 26;
@@ -676,13 +683,14 @@ window.BLOCKS['vs-counters'] = {
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
       const w = ctx.measureText(txt).width;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.scale(pulse, pulse);
-      ctx.translate(-cx, -cy);
       ctx.fillText(txt, cx - w / 2, cy + fs * 0.35);
-      ctx.restore();
       if (isAccent && T >= tc[0] && T < tc[1] + 0.4) ctx.restore();
+      /* 落定下划线：定格后一次性扫出，静态保持 */
+      const ulA = U.easeOutCubic(U.seg(T, tc[1] + 0.4, tc[1] + 1.0));
+      if (ulA > 0) {
+        ctx.fillStyle = isAccent ? U.rgba(0.85 * ulA) : U.rgbaInk(0.3 * ulA);
+        ctx.fillRect(cx - w / 2, cy + fs * 0.35 + 20, w * ulA, 4);
+      }
       const tl = cfg.t_label ?? tc[0];
       const la = U.seg(T, tl, tl + 0.8);
       if (la > 0) {
@@ -702,6 +710,18 @@ window.BLOCKS['vs-counters'] = {
         ctx.lineTo(U.W * 0.5, U.H * 0.58);
         ctx.stroke();
       }
+    }
+    /* 巡游光带：扫过双数字对撞区（持续运动源；数字本体保持静止） */
+    const lcx = ((P.left && P.left.cx) ?? 0.31) * U.W;
+    const rcx = ((P.right && P.right.cx) ?? 0.69) * U.W;
+    const vyy = (P.cy ?? 0.40) * U.H;
+    const swp = ((T - tc[0]) % 4.0) / 4.0;
+    const bA = 0.085 * Math.min(1, Math.min(swp, 1 - swp) / 0.12);
+    if (bA > 0.004) {
+      const zx0 = lcx - fs * 1.6, zx1 = rcx + fs * 1.6;
+      const sx = zx0 - 60 + swp * (zx1 - zx0 + 120);
+      ctx.fillStyle = U.rgba(bA);
+      ctx.fillRect(sx, vyy - fs * 1.1, 110, fs * 2.1);
     }
   }
 };

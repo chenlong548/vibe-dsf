@@ -2,7 +2,7 @@
  * params: {cx, cy, card_w, card_h, gap, cards:[{tag, title, sub, t_in}]}
  * 视觉：白面卡片 + 发丝线框 + 墨影（独立站 surface/line 语言）；
  * 命中 = teal 顶条从 0 拉满（easeOutCubic）+ 卡片上浮淡入（easeOutBack）；
- * 命中后 tag 前的 accent 点持续脉冲。
+ * 命中后 tag 前的 accent 点恒定显示（不脉冲）。
  * 持续运动源（QA 教训：四卡弹入完毕后仅剩微脉冲 → 4.86s 静止段）：
  *   ① teal 微光带沿卡行横向巡游（每 4.2s 一轮，两缘 ~19px/帧）；
  *   ② 各卡底部进度线自命中起持续填充到场景尾。 */
@@ -40,11 +40,10 @@ window.BLOCKS['feature-cards'] = {
       const bar = U.easeOutCubic(U.seg(T, tIn + 0.05, tIn + 0.75));
       ctx.fillStyle = U.ACCENT;
       ctx.fillRect(x, y + 24 * (1 - pop), cw * bar, 4);
-      /* tag：accent 点脉冲 + 灰色小标 */
+      /* tag：accent 点恒定（不脉冲）+ 灰色小标 */
       const oy = y + 24 * (1 - pop);
-      const dotR = 5 + 1.6 * Math.sin(T * 5.0 + i * 1.7);
       ctx.fillStyle = U.ACCENT;
-      ctx.beginPath(); ctx.arc(x + 34, oy + 62, Math.max(2.5, dotR * g), 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 34, oy + 62, Math.max(2.5, 5 * g), 0, Math.PI * 2); ctx.fill();
       U.drawText(ctx, it.tag ?? '', x + 52, oy + 68, { font: '20px Consolas, monospace', color: U.GRAY, align: 'left', alpha: g, track: 2 });
       /* 标题 + 副行 */
       U.drawText(ctx, it.title ?? '', x + 34, oy + 138, { font: '600 34px "Microsoft YaHei"', color: U.INK, align: 'left', alpha: g });

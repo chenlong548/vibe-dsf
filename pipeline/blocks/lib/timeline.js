@@ -28,11 +28,10 @@ window.BLOCKS['timeline'] = {
       ctx.globalAlpha = g;
       ctx.beginPath(); ctx.arc(mx, cy, (isAccent ? 9 : 6) * g, 0, Math.PI * 2); ctx.fill();
       if (isAccent) {
-        /* 终点年持续呼吸环：强调焦点 + 持续运动源 */
-        const pr = 9 + 4.5 * (0.5 + 0.5 * Math.sin(T * 4.0));
+        /* 终点年静态双环：强调 = 大小 + 颜色 + 环，不呼吸不伸缩 */
         ctx.strokeStyle = U.rgba(0.55);
         ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(mx, cy, pr, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(mx, cy, 16, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.globalAlpha = 1;
       const rise = 14 * (1 - g);

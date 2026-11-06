@@ -241,7 +241,9 @@ function drawTopbar(t){
 /* vs-counters — 左右双数字对撞积木（双结局/反转落点）
  * params: {font_px, cy, t_count:[a,b], left:{cx,to,decimals,label,expr,t_label},
  *          right:{...同 left}}
- * 约定：右侧 = 强调色 + 发光（赢家），左侧 = 辅助灰。中缝竖线脉冲一次。 */
+ * 约定：右侧 = 强调色 + 发光（赢家），左侧 = 辅助灰。中缝竖线脉冲一次。
+ * 强调语言（2026-11-06）：数字落定后绝对静止（不呼吸不缩放）；强调 = 落定
+ * 下划线一次性扫出（accent 侧 accent 色、灰侧 ink 淡线）+ 巡游光带供运动。 */
 window.BLOCKS = window.BLOCKS || {};
 window.BLOCKS['vs-counters'] = {
   l2: function (ctx, T, sc, P, U) {
@@ -256,8 +258,6 @@ window.BLOCKS['vs-counters'] = {
       const val = (cfg.to ?? 1) * g;
       const txt = (cfg.prefix ?? '') + val.toFixed(cfg.decimals ?? 2) + (cfg.suffix ?? '');
       const color = isAccent ? U.ACCENT : U.GRAY;
-      const isPulse = T > tc[1] + 0.4;
-      const pulse = isPulse ? 1 + 0.035 * Math.sin((T - tc[1] - 0.4) * 3.7) : 1;
       if (isAccent && T >= tc[0] && T < tc[1] + 0.4) {
         ctx.save();
         ctx.shadowColor = U.ACCENT; ctx.shadowBlur = 26;
@@ -267,13 +267,14 @@ window.BLOCKS['vs-counters'] = {
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
       const w = ctx.measureText(txt).width;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.scale(pulse, pulse);
-      ctx.translate(-cx, -cy);
       ctx.fillText(txt, cx - w / 2, cy + fs * 0.35);
-      ctx.restore();
       if (isAccent && T >= tc[0] && T < tc[1] + 0.4) ctx.restore();
+      /* 落定下划线：定格后一次性扫出，静态保持 */
+      const ulA = U.easeOutCubic(U.seg(T, tc[1] + 0.4, tc[1] + 1.0));
+      if (ulA > 0) {
+        ctx.fillStyle = isAccent ? U.rgba(0.85 * ulA) : U.rgbaInk(0.3 * ulA);
+        ctx.fillRect(cx - w / 2, cy + fs * 0.35 + 20, w * ulA, 4);
+      }
       const tl = cfg.t_label ?? tc[0];
       const la = U.seg(T, tl, tl + 0.8);
       if (la > 0) {
@@ -294,14 +295,30 @@ window.BLOCKS['vs-counters'] = {
         ctx.stroke();
       }
     }
+    /* 巡游光带：扫过双数字对撞区（持续运动源；数字本体保持静止） */
+    const lcx = ((P.left && P.left.cx) ?? 0.31) * U.W;
+    const rcx = ((P.right && P.right.cx) ?? 0.69) * U.W;
+    const vyy = (P.cy ?? 0.40) * U.H;
+    const swp = ((T - tc[0]) % 4.0) / 4.0;
+    const bA = 0.085 * Math.min(1, Math.min(swp, 1 - swp) / 0.12);
+    if (bA > 0.004) {
+      const zx0 = lcx - fs * 1.6, zx1 = rcx + fs * 1.6;
+      const sx = zx0 - 60 + swp * (zx1 - zx0 + 120);
+      ctx.fillStyle = U.rgba(bA);
+      ctx.fillRect(sx, vyy - fs * 1.1, 110, fs * 2.1);
+    }
   }
 };
 
 
 /* text-points — 要点逐条点亮积木（机制步骤/三要点展开）
  * params: {cx, cy, w, area_pct, items:[{text, sub, t_in}], row_h, t_hold}
- * 视觉：每条 = accent 编号点（命中时亮起并持续脉冲）+ 主文 ink + 副行 gray；
- * 进场 = 点亮 + 文本上移淡入；未进场条不可见。编号点持续脉冲 = 持续运动源。 */
+ * 视觉：每条 = accent 编号点（命中亮起后恒定不脉冲）+ 主文 ink + 副行 gray；
+ * 进场 = 点亮 + 文本上移淡入；未进场条不可见。
+ * 持续运动源：进度下划线（点亮→场景尾持续填充）+ 编号点脉冲 + 巡游光带。
+ * QA 教训（paper-shannon-deep 实测）：3px 细线怎么动都凑不够 0.35%/帧 的
+ * 变化像素底线（~7.2k px/帧 @1080p）——细线没有面积。长场景尾部要靠
+ * 大面积匀速平移的光带（110px 宽 accent 微光，两缘 ~10px/帧 ≈ 9.7k px/帧）。 */
 window.BLOCKS = window.BLOCKS || {};
 window.BLOCKS['text-points'] = {
   l2: function (ctx, T, sc, P, U) {
@@ -317,15 +334,13 @@ window.BLOCKS['text-points'] = {
       if (g <= 0) continue;
       const iy = cy - ((items.length - 1) * rowH) / 2 + i * rowH;
       const isActive = (it.t_out === undefined) || (T < it.t_out);
-      const ph = T * 5.0 + i * 1.3;
-      const dotR = 8 + 3.2 * Math.sin(ph);
-      const dotA = 0.62 + 0.38 * Math.sin(ph + 0.9);
+      /* 编号点恒定（不脉冲不伸缩——用户定调：晃动别扭）；运动源 = 下划线 + 巡游光带 */
       const col = isActive ? U.ACCENT : U.GRAY;
       ctx.fillStyle = col;
-      ctx.globalAlpha = g * Math.max(0.25, dotA);
-      ctx.beginPath(); ctx.arc(x0 + 16, iy, Math.max(3, dotR * g), 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = g * 0.9;
+      ctx.beginPath(); ctx.arc(x0 + 16, iy, Math.max(3, 8 * g), 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1;
-      /* 进度下划线：从点亮到 t_out（默认场景尾）持续填充 = 整场景运动源 */
+      /* 进度下划线：从点亮到 t_out（默认场景尾）持续填充 */
       const iEnd = it.t_out ?? sc.t_out;
       const pg = U.clamp01((T - tIn) / Math.max(0.1, iEnd - tIn));
       if (pg > 0) {
@@ -337,6 +352,16 @@ window.BLOCKS['text-points'] = {
       U.drawText(ctx, it.text, 0, 0, { font: '30px "Microsoft YaHei"', color: isActive ? U.INK : U.GRAY, align: 'left', alpha: g });
       if (it.sub) U.drawText(ctx, it.sub, 0, 40, { font: '21px "Microsoft YaHei"', color: U.GRAY, align: 'left', alpha: g * 0.9 });
       ctx.restore();
+    }
+    /* 巡游光带：accent 微光带横扫要点区（每 4s 一轮，两端 12% 行程内淡入淡出） */
+    const bh = items.length * rowH;
+    const t0 = items.length ? (items[0].t_in ?? 0) : 0;
+    const swp = ((T - t0) % 4.0) / 4.0;
+    const bA = 0.085 * Math.min(1, Math.min(swp, 1 - swp) / 0.12);
+    if (bA > 0.004) {
+      const sx = x0 - 60 + swp * (w + 120);
+      ctx.fillStyle = U.rgba(bA);
+      ctx.fillRect(sx, cy - bh / 2 - 14, 110, bh + 28);
     }
   }
 };
@@ -473,7 +498,7 @@ window.BLOCKS['terminal-window'] = {
  * params: {cx, cy, card_w, card_h, gap, cards:[{tag, title, sub, t_in}]}
  * 视觉：白面卡片 + 发丝线框 + 墨影（独立站 surface/line 语言）；
  * 命中 = teal 顶条从 0 拉满（easeOutCubic）+ 卡片上浮淡入（easeOutBack）；
- * 命中后 tag 前的 accent 点持续脉冲。
+ * 命中后 tag 前的 accent 点恒定显示（不脉冲）。
  * 持续运动源（QA 教训：四卡弹入完毕后仅剩微脉冲 → 4.86s 静止段）：
  *   ① teal 微光带沿卡行横向巡游（每 4.2s 一轮，两缘 ~19px/帧）；
  *   ② 各卡底部进度线自命中起持续填充到场景尾。 */
@@ -511,11 +536,10 @@ window.BLOCKS['feature-cards'] = {
       const bar = U.easeOutCubic(U.seg(T, tIn + 0.05, tIn + 0.75));
       ctx.fillStyle = U.ACCENT;
       ctx.fillRect(x, y + 24 * (1 - pop), cw * bar, 4);
-      /* tag：accent 点脉冲 + 灰色小标 */
+      /* tag：accent 点恒定（不脉冲）+ 灰色小标 */
       const oy = y + 24 * (1 - pop);
-      const dotR = 5 + 1.6 * Math.sin(T * 5.0 + i * 1.7);
       ctx.fillStyle = U.ACCENT;
-      ctx.beginPath(); ctx.arc(x + 34, oy + 62, Math.max(2.5, dotR * g), 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(x + 34, oy + 62, Math.max(2.5, 5 * g), 0, Math.PI * 2); ctx.fill();
       U.drawText(ctx, it.tag ?? '', x + 52, oy + 68, { font: '20px Consolas, monospace', color: U.GRAY, align: 'left', alpha: g, track: 2 });
       /* 标题 + 副行 */
       U.drawText(ctx, it.title ?? '', x + 34, oy + 138, { font: '600 34px "Microsoft YaHei"', color: U.INK, align: 'left', alpha: g });
@@ -554,7 +578,10 @@ window.BLOCKS['feature-cards'] = {
 /* beat-counter — 大数字滚动 + 公式框积木（数字锚点/机制推演）
  * params: {cx, cy, font_px, to, decimals, prefix, suffix, expr,
  *          t_count:[a,b], t_expr:[a,b]}
- * 数字 = 唯一发光元素（计数期间），公式框描边用强调色。 */
+ * 数字 = 唯一发光元素（计数期间），公式框描边用强调色。
+ * 强调语言（2026-11-06 用户定调）：数字落定后绝对静止——不呼吸不缩放；
+ * 强调 = 落定瞬间下方 accent 下划线一次性扫出（之后静态保持）；
+ * 持续运动源交给场景级巡游光带（数字本体永远稳）。 */
 window.BLOCKS = window.BLOCKS || {};
 window.BLOCKS['beat-counter'] = {
   l2: function (ctx, T, sc, P, U) {
@@ -565,7 +592,6 @@ window.BLOCKS['beat-counter'] = {
     const val = (P.to ?? 37.8) * g;
     const txt = (P.prefix ?? '') + val.toFixed(P.decimals ?? 1) + (P.suffix ?? '');
     const glow = T >= tc[0] && T < tc[1] + 0.4;
-    const pulse = T > tc[1] + 0.4 ? 1 + 0.035 * Math.sin((T - tc[1] - 0.4) * 3.7) : 1;
     if (glow) {
       ctx.save();
       ctx.shadowColor = U.ACCENT; ctx.shadowBlur = 30;
@@ -575,13 +601,14 @@ window.BLOCKS['beat-counter'] = {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
     const w = ctx.measureText(txt).width;
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.scale(pulse, pulse);
-    ctx.translate(-cx, -cy);
     ctx.fillText(txt, cx - w / 2, cy + fs * 0.35);
-    ctx.restore();
     if (glow) ctx.restore();
+    /* 落定下划线：定格后一次性扫出，静态保持 */
+    const ulA = U.easeOutCubic(U.seg(T, tc[1] + 0.4, tc[1] + 1.0));
+    if (ulA > 0) {
+      ctx.fillStyle = U.rgba(0.85 * ulA);
+      ctx.fillRect(cx - w / 2, cy + fs * 0.35 + 22, w * ulA, 5);
+    }
     const te = P.t_expr || [tc[0] + 0.2, tc[0] + 1.0];
     const ea = U.seg(T, te[0], te[1]);
     if (ea > 0 && P.expr) {
@@ -596,6 +623,15 @@ window.BLOCKS['beat-counter'] = {
       ctx.lineWidth = 2;
       ctx.strokeRect(ex - 24, ey - 44, ew + 48, 64);
       ctx.globalAlpha = 1;
+    }
+    /* 巡游光带：扫过数字+公式区（大面积匀速平移才是够 0.35%/帧的运动源） */
+    const zoneW = Math.max(w, 720) + 280;
+    const swp = ((T - tc[0]) % 4.2) / 4.2;
+    const bA = 0.085 * Math.min(1, Math.min(swp, 1 - swp) / 0.12);
+    if (bA > 0.004) {
+      const sx = cx - zoneW / 2 - 60 + swp * (zoneW + 120);
+      ctx.fillStyle = U.rgba(bA);
+      ctx.fillRect(sx, cy - fs * 1.05, 110, fs * 1.45 + 170);
     }
   }
 };
@@ -639,13 +675,13 @@ window.BLOCKS['repo-card'] = {
       const starX = cx - 110;
       ctx.globalAlpha = gs;
       if ((P.stars ?? 0) > 0){
-        U.drawText(ctx, '★', starX, rowY, { font: '34px sans-serif', color: U.ACCENT, align: 'left', alpha: gs * (0.72 + 0.28 * (0.5 + 0.5 * Math.sin(T * 3.6))) });
+        U.drawText(ctx, '★', starX, rowY, { font: '34px sans-serif', color: U.ACCENT, align: 'left', alpha: gs });
         ctx.globalAlpha = 1;
         const stars = Math.round((P.stars ?? 0) * U.easeOutCubic(gs));
         U.drawText(ctx, String(stars), starX + 30, rowY, { font: '600 32px ' + mono, color: U.INK, align: 'left', alpha: gs });
         U.drawText(ctx, P.lang ? P.lang : '', starX + 170, rowY, { font: '22px ' + mono, color: U.GRAY, align: 'left', alpha: gs * 0.9 });
       } else {
-        U.drawText(ctx, '●', starX, rowY, { font: '30px sans-serif', color: U.ACCENT, align: 'left', alpha: gs * (0.72 + 0.28 * (0.5 + 0.5 * Math.sin(T * 3.6))) });
+        U.drawText(ctx, '●', starX, rowY, { font: '30px sans-serif', color: U.ACCENT, align: 'left', alpha: gs });
         ctx.globalAlpha = 1;
         U.drawText(ctx, P.lang ? P.lang : '', starX + 30, rowY, { font: '22px ' + mono, color: U.GRAY, align: 'left', alpha: gs * 0.9 });
       }
@@ -681,7 +717,7 @@ window.BLOCKS['repo-card'] = {
       ctx.closePath();
       ctx.fill(); ctx.stroke();
       ctx.fillStyle = U.ACCENT;
-      ctx.beginPath(); ctx.arc(bx + 22, by + chH / 2, 5 + 1.2 * Math.sin(T * 4.0 + i), 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx + 22, by + chH / 2, 5, 0, Math.PI * 2); ctx.fill();
       U.drawText(ctx, chips[i], bx + 36, by + chH / 2 + 7, { font: '20px ' + mono, color: U.INK, align: 'left', alpha: 1 });
       ctx.restore();
       chipX += cw + 22;
@@ -708,11 +744,13 @@ window.BLOCKS['repo-card'] = {
         ctx.closePath();
         ctx.fill(); ctx.stroke();
         U.drawText(ctx, '$', ix + 28, iy + ih / 2 + 8, { font: '22px ' + mono, color: U.ACCENT, align: 'left' });
-        U.drawText(ctx, P.install, ix + 56, iy + ih / 2 + 8, { font: '22px ' + mono, color: U.INK, align: 'left' });
-        /* 呼吸 teal 描边（胶囊外圈）：收尾段不能只剩光标——QA 静止段教训 */
-        const pul = 0.10 + 0.10 * (0.5 + 0.5 * Math.sin(T * 3.2));
+        /* 安装命令逐字敲入（一次性，终端语言）；打完只剩终端光标闪烁 */
+        const nCh = Math.floor(U.seg(T, tci, tci + P.install.length / 18) * P.install.length + 0.001);
+        const shown = P.install.slice(0, nCh);
+        U.drawText(ctx, shown, ix + 56, iy + ih / 2 + 8, { font: '22px ' + mono, color: U.INK, align: 'left' });
+        /* 静态 teal 描边（胶囊外圈，恒定不呼吸） */
         ctx.strokeStyle = U.ACCENT; ctx.lineWidth = 2.5;
-        ctx.globalAlpha = gi * pul;
+        ctx.globalAlpha = gi * 0.16;
         ctx.beginPath();
         ctx.moveTo(ix + rr, iy); ctx.arcTo(ix + iw, iy, ix + iw, iy + ih, rr);
         ctx.arcTo(ix + iw, iy + ih, ix, iy + ih, rr);
@@ -720,10 +758,11 @@ window.BLOCKS['repo-card'] = {
         ctx.arcTo(ix, iy, ix + iw, iy, rr);
         ctx.closePath();
         ctx.stroke();
-        const curOn = Math.sin(T * 5.5) > -0.15;
-        if (curOn){
+        ctx.font = '22px ' + mono;
+        const typing = nCh < P.install.length;
+        if (typing || Math.sin(T * 5.5) > -0.15){
           ctx.fillStyle = U.INK; ctx.globalAlpha = gi * 0.8;
-          ctx.fillRect(ix + 62 + ctx.measureText(P.install).width, iy + ih / 2 - 9, 11, 20);
+          ctx.fillRect(ix + 62 + ctx.measureText(shown).width, iy + ih / 2 - 9, 11, 20);
         }
         ctx.restore();
       }

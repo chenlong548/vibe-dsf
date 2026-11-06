@@ -36,13 +36,13 @@ window.BLOCKS['repo-card'] = {
       const starX = cx - 110;
       ctx.globalAlpha = gs;
       if ((P.stars ?? 0) > 0){
-        U.drawText(ctx, '★', starX, rowY, { font: '34px sans-serif', color: U.ACCENT, align: 'left', alpha: gs * (0.72 + 0.28 * (0.5 + 0.5 * Math.sin(T * 3.6))) });
+        U.drawText(ctx, '★', starX, rowY, { font: '34px sans-serif', color: U.ACCENT, align: 'left', alpha: gs });
         ctx.globalAlpha = 1;
         const stars = Math.round((P.stars ?? 0) * U.easeOutCubic(gs));
         U.drawText(ctx, String(stars), starX + 30, rowY, { font: '600 32px ' + mono, color: U.INK, align: 'left', alpha: gs });
         U.drawText(ctx, P.lang ? P.lang : '', starX + 170, rowY, { font: '22px ' + mono, color: U.GRAY, align: 'left', alpha: gs * 0.9 });
       } else {
-        U.drawText(ctx, '●', starX, rowY, { font: '30px sans-serif', color: U.ACCENT, align: 'left', alpha: gs * (0.72 + 0.28 * (0.5 + 0.5 * Math.sin(T * 3.6))) });
+        U.drawText(ctx, '●', starX, rowY, { font: '30px sans-serif', color: U.ACCENT, align: 'left', alpha: gs });
         ctx.globalAlpha = 1;
         U.drawText(ctx, P.lang ? P.lang : '', starX + 30, rowY, { font: '22px ' + mono, color: U.GRAY, align: 'left', alpha: gs * 0.9 });
       }
@@ -78,7 +78,7 @@ window.BLOCKS['repo-card'] = {
       ctx.closePath();
       ctx.fill(); ctx.stroke();
       ctx.fillStyle = U.ACCENT;
-      ctx.beginPath(); ctx.arc(bx + 22, by + chH / 2, 5 + 1.2 * Math.sin(T * 4.0 + i), 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx + 22, by + chH / 2, 5, 0, Math.PI * 2); ctx.fill();
       U.drawText(ctx, chips[i], bx + 36, by + chH / 2 + 7, { font: '20px ' + mono, color: U.INK, align: 'left', alpha: 1 });
       ctx.restore();
       chipX += cw + 22;
@@ -105,11 +105,13 @@ window.BLOCKS['repo-card'] = {
         ctx.closePath();
         ctx.fill(); ctx.stroke();
         U.drawText(ctx, '$', ix + 28, iy + ih / 2 + 8, { font: '22px ' + mono, color: U.ACCENT, align: 'left' });
-        U.drawText(ctx, P.install, ix + 56, iy + ih / 2 + 8, { font: '22px ' + mono, color: U.INK, align: 'left' });
-        /* 呼吸 teal 描边（胶囊外圈）：收尾段不能只剩光标——QA 静止段教训 */
-        const pul = 0.10 + 0.10 * (0.5 + 0.5 * Math.sin(T * 3.2));
+        /* 安装命令逐字敲入（一次性，终端语言）；打完只剩终端光标闪烁 */
+        const nCh = Math.floor(U.seg(T, tci, tci + P.install.length / 18) * P.install.length + 0.001);
+        const shown = P.install.slice(0, nCh);
+        U.drawText(ctx, shown, ix + 56, iy + ih / 2 + 8, { font: '22px ' + mono, color: U.INK, align: 'left' });
+        /* 静态 teal 描边（胶囊外圈，恒定不呼吸） */
         ctx.strokeStyle = U.ACCENT; ctx.lineWidth = 2.5;
-        ctx.globalAlpha = gi * pul;
+        ctx.globalAlpha = gi * 0.16;
         ctx.beginPath();
         ctx.moveTo(ix + rr, iy); ctx.arcTo(ix + iw, iy, ix + iw, iy + ih, rr);
         ctx.arcTo(ix + iw, iy + ih, ix, iy + ih, rr);
@@ -117,10 +119,11 @@ window.BLOCKS['repo-card'] = {
         ctx.arcTo(ix, iy, ix + iw, iy, rr);
         ctx.closePath();
         ctx.stroke();
-        const curOn = Math.sin(T * 5.5) > -0.15;
-        if (curOn){
+        ctx.font = '22px ' + mono;
+        const typing = nCh < P.install.length;
+        if (typing || Math.sin(T * 5.5) > -0.15){
           ctx.fillStyle = U.INK; ctx.globalAlpha = gi * 0.8;
-          ctx.fillRect(ix + 62 + ctx.measureText(P.install).width, iy + ih / 2 - 9, 11, 20);
+          ctx.fillRect(ix + 62 + ctx.measureText(shown).width, iy + ih / 2 - 9, 11, 20);
         }
         ctx.restore();
       }

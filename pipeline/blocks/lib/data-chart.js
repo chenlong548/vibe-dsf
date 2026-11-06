@@ -65,9 +65,7 @@ window.BLOCKS['data-chart'] = {
         }
       }
       if (g > 0.96 && drawn > 0 && s.label) {
-        const pulseR = s.color === 'accent'
-          ? lw * 1.6 + 2 + 2.2 * Math.sin(T * 4.5)
-          : lw * 1.6 + 2;
+        const pulseR = lw * 1.6 + 2;
         ctx.fillStyle = color;
         ctx.beginPath(); ctx.arc(lx, ly, Math.max(1.5, pulseR), 0, Math.PI * 2); ctx.fill();
         U.drawText(ctx, s.label, lx + 20, ly + 6,

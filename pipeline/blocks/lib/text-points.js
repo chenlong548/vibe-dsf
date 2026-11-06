@@ -1,6 +1,6 @@
 /* text-points — 要点逐条点亮积木（机制步骤/三要点展开）
  * params: {cx, cy, w, area_pct, items:[{text, sub, t_in}], row_h, t_hold}
- * 视觉：每条 = accent 编号点（命中时亮起并持续脉冲）+ 主文 ink + 副行 gray；
+ * 视觉：每条 = accent 编号点（命中亮起后恒定不脉冲）+ 主文 ink + 副行 gray；
  * 进场 = 点亮 + 文本上移淡入；未进场条不可见。
  * 持续运动源：进度下划线（点亮→场景尾持续填充）+ 编号点脉冲 + 巡游光带。
  * QA 教训（paper-shannon-deep 实测）：3px 细线怎么动都凑不够 0.35%/帧 的
@@ -21,13 +21,11 @@ window.BLOCKS['text-points'] = {
       if (g <= 0) continue;
       const iy = cy - ((items.length - 1) * rowH) / 2 + i * rowH;
       const isActive = (it.t_out === undefined) || (T < it.t_out);
-      const ph = T * 5.0 + i * 1.3;
-      const dotR = 8 + 3.2 * Math.sin(ph);
-      const dotA = 0.62 + 0.38 * Math.sin(ph + 0.9);
+      /* 编号点恒定（不脉冲不伸缩——用户定调：晃动别扭）；运动源 = 下划线 + 巡游光带 */
       const col = isActive ? U.ACCENT : U.GRAY;
       ctx.fillStyle = col;
-      ctx.globalAlpha = g * Math.max(0.25, dotA);
-      ctx.beginPath(); ctx.arc(x0 + 16, iy, Math.max(3, dotR * g), 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = g * 0.9;
+      ctx.beginPath(); ctx.arc(x0 + 16, iy, Math.max(3, 8 * g), 0, Math.PI * 2); ctx.fill();
       ctx.globalAlpha = 1;
       /* 进度下划线：从点亮到 t_out（默认场景尾）持续填充 */
       const iEnd = it.t_out ?? sc.t_out;

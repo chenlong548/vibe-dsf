@@ -1,7 +1,9 @@
 /* vs-counters — 左右双数字对撞积木（双结局/反转落点）
  * params: {font_px, cy, t_count:[a,b], left:{cx,to,decimals,label,expr,t_label},
  *          right:{...同 left}}
- * 约定：右侧 = 强调色 + 发光（赢家），左侧 = 辅助灰。中缝竖线脉冲一次。 */
+ * 约定：右侧 = 强调色 + 发光（赢家），左侧 = 辅助灰。中缝竖线脉冲一次。
+ * 强调语言（2026-11-06）：数字落定后绝对静止（不呼吸不缩放）；强调 = 落定
+ * 下划线一次性扫出（accent 侧 accent 色、灰侧 ink 淡线）+ 巡游光带供运动。 */
 window.BLOCKS = window.BLOCKS || {};
 window.BLOCKS['vs-counters'] = {
   l2: function (ctx, T, sc, P, U) {
@@ -16,8 +18,6 @@ window.BLOCKS['vs-counters'] = {
       const val = (cfg.to ?? 1) * g;
       const txt = (cfg.prefix ?? '') + val.toFixed(cfg.decimals ?? 2) + (cfg.suffix ?? '');
       const color = isAccent ? U.ACCENT : U.GRAY;
-      const isPulse = T > tc[1] + 0.4;
-      const pulse = isPulse ? 1 + 0.035 * Math.sin((T - tc[1] - 0.4) * 3.7) : 1;
       if (isAccent && T >= tc[0] && T < tc[1] + 0.4) {
         ctx.save();
         ctx.shadowColor = U.ACCENT; ctx.shadowBlur = 26;
@@ -27,13 +27,14 @@ window.BLOCKS['vs-counters'] = {
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
       const w = ctx.measureText(txt).width;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.scale(pulse, pulse);
-      ctx.translate(-cx, -cy);
       ctx.fillText(txt, cx - w / 2, cy + fs * 0.35);
-      ctx.restore();
       if (isAccent && T >= tc[0] && T < tc[1] + 0.4) ctx.restore();
+      /* 落定下划线：定格后一次性扫出，静态保持 */
+      const ulA = U.easeOutCubic(U.seg(T, tc[1] + 0.4, tc[1] + 1.0));
+      if (ulA > 0) {
+        ctx.fillStyle = isAccent ? U.rgba(0.85 * ulA) : U.rgbaInk(0.3 * ulA);
+        ctx.fillRect(cx - w / 2, cy + fs * 0.35 + 20, w * ulA, 4);
+      }
       const tl = cfg.t_label ?? tc[0];
       const la = U.seg(T, tl, tl + 0.8);
       if (la > 0) {
@@ -53,6 +54,18 @@ window.BLOCKS['vs-counters'] = {
         ctx.lineTo(U.W * 0.5, U.H * 0.58);
         ctx.stroke();
       }
+    }
+    /* 巡游光带：扫过双数字对撞区（持续运动源；数字本体保持静止） */
+    const lcx = ((P.left && P.left.cx) ?? 0.31) * U.W;
+    const rcx = ((P.right && P.right.cx) ?? 0.69) * U.W;
+    const vyy = (P.cy ?? 0.40) * U.H;
+    const swp = ((T - tc[0]) % 4.0) / 4.0;
+    const bA = 0.085 * Math.min(1, Math.min(swp, 1 - swp) / 0.12);
+    if (bA > 0.004) {
+      const zx0 = lcx - fs * 1.6, zx1 = rcx + fs * 1.6;
+      const sx = zx0 - 60 + swp * (zx1 - zx0 + 120);
+      ctx.fillStyle = U.rgba(bA);
+      ctx.fillRect(sx, vyy - fs * 1.1, 110, fs * 2.1);
     }
   }
 };
