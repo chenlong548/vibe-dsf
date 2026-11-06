@@ -95,7 +95,7 @@ riser 向前铺 + SFX 不闪避，见 docs/17-SFX.md；demo-hook-compound 三层
 |---|---|---|
 | 6 | `synth_sfx.py`：按 CUE-SHEET 卡点合成 whoosh/impact/tick 音效轨 | G6 |
 | 7 | 品牌契约：`palette.json`（每片一套色彩身份）+ 水印/署名参数化 | G7 |
-| 8 | 强模型分工：创意帧/关键场景用强模型出（GLM/Opus），flash 批量跑与局部修补 | G1（根源） |
+| 8 | 强模型分工：创意帧/关键场景用强模型出（GLM/Opus），flash 批量跑与局部修补 | G1（根源）——✅ 已落地（2026-11-06）：docs/01 §7 分工契约 + `scripts/env-creative.ps1`（云雾 + claude-opus-5-5），批量/QA 循环仍走 flash |
 | 9 | 静帧并排评审页（本地 HTML）：7 章静帧一屏看齐，人工挑卡点 | 质控效率 |
 
 ### P2（变现层）

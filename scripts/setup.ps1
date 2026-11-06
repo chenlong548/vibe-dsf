@@ -57,12 +57,16 @@ Check "python 依赖 (PIL/numpy)" $pil "" "python -m pip install -r pipeline\req
 Write-Host "`n=== 2. 生态文件体检 ===" -ForegroundColor Cyan
 $root = Split-Path -Parent $PSScriptRoot
 $files = @(
-  "pipeline\render_frames.mjs", "pipeline\qa_check.py", "pipeline\synth_bgm.py", "pipeline\wave_png.py",
-  "pipeline\build.ps1", "skills\vibe-film-ds\SKILL.md",
+  "pipeline\run_all.ps1", "pipeline\palette.json",
+  "pipeline\render\render_frames.mjs", "pipeline\qa\qa_check.py",
+  "pipeline\audio\synth_bgm.py", "pipeline\audio\synth_sfx.py", "pipeline\audio\wave_png.py",
+  "pipeline\audio\narrate\build_narration.py", "pipeline\compose\build.ps1",
+  "pipeline\blocks\registry.json", "pipeline\scene_writer\build_html.mjs",
+  "skills\vibe-film-ds\SKILL.md",
   "skills\vibe-film-ds\references\ds-failure-modes.md",
-  "docs\03-FLASH-PLAYBOOK.md",
+  "docs\03-FLASH-PLAYBOOK.md", "docs\18-BRAND.md",
   "styles\paper-gold.md", "styles\nocturne.md", "styles\fable.md", "styles\romance.md",
-  "projects\demo-26s\index.html"
+  "projects\demo-hook-entropy\index.html"
 )
 foreach ($f in $files) {
   $p = Join-Path $root $f

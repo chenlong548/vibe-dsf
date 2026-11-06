@@ -76,3 +76,29 @@ $env:CLAUDE_CODE_AUTO_COMPACT_WINDOW = "786432"
 | 长上下文会记混 | 忘记禁令、坐标串场景 | 60% 上下文换会话（playbook 第 8 条） |
 | 多任务会互相污染 | 一个回合改三处，坏两处 | 一次一件事（playbook 第 7 条） |
 | 创意密度低 | "正确但无聊" | 温度 0.9 出 5 个方案挑 1 |
+
+## 7. 模型分工（P1 #8）：创意帧给 Opus，批量给 flash
+
+flash 的创意密度是结构性短板（第 6 节第一条）——禁令和模板只能保底，拔不高上限。
+强模型分工不是换模型，是**按任务性质路由**：
+
+| 任务 | 模型 | 环境 | 为什么 |
+|---|---|---|---|
+| 风格定义 / 首版创意帧抽卡 | **Opus 5.5** | `scripts\env-creative.ps1`（云雾） | 审美方差大=优点，一次出高密度构图；每片只做 1-2 次 |
+| 复杂积木首版（entropy-burst 类） | **Opus 5.5** | 同上 | 首版质量决定积木上限，入库后 flash 直接复用 |
+| 批量场景帧 / 局部修补 / QA 修复循环 | flash | `scripts\env.ps1` | ¥3-5/片；1M 上下文吃任务书；禁令可 grep |
+| plan 编写（SCENE-PLAN.json） | flash | 同上 | 闸会拦错——机器校验面前模型便宜优先 |
+| 规划闸 / 组装 / 渲染 / QA / 混音 | **无模型** | 管线代码 | 已全部机器化，不烧 token |
+
+**成本直觉**：Opus 5.5 是 $4/$20 每百万 token（输入/输出，约为 flash 的 10-20 倍），
+但创意帧环节每片只跑 1-2 次（几千 token 级），摊到一条片不到 ¥0.5——
+**用 2% 的成本买定调质量，批量环节一分不涨**。
+
+**Opus 5.5 行为注意**：自适应思考常开（不可关），effort 档 low/medium/high/xhigh/max
+控制深度；Creative 会话默认 `CLAUDE_CODE_EFFORT_LEVEL=max`。
+
+**云雾接入（2026-11 实测）**：旧 `yunwu.ai` / `api.yunwu.cloud` 已停用迁移——
+新注册用户用 `https://v2.cloudmist.cloud`，老用户用 `https://api.cloudmist.cloud`
+（两站 Key 不通用）。Claude Code 的 `ANTHROPIC_BASE_URL` 不带 `/v1`。
+模型 ID：`claude-opus-5-5`（1M ctx / 128K 输出）。填充 key 后自测：
+`curl -s --noproxy "*" -X POST https://v2.cloudmist.cloud/v1/messages -H "Authorization: Bearer sk-你的key" -H "Content-Type: application/json" -d "{\"model\":\"claude-opus-5-5\",\"max_tokens\":8,\"messages\":[{\"role\":\"user\",\"content\":\"ping\"}]}"`

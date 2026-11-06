@@ -30,7 +30,7 @@ vibe-dsf/
 │   ├── bgm-synth/             # BGM 合成技能
 │   └── qa-gate/               # QA 门禁技能
 ├── styles/                    # 画风规范（fable / nocturne / paper-gold / romance）
-├── scripts/                   # env.ps1（模型锁定）/ setup.ps1（体检）
+├── scripts/                   # env.ps1（flash锁定）/ env-creative.ps1（Opus创意模式，云雾）/ setup.ps1（体检）
 ├── docs/                      # 00-16 编号文档（见 docs/16 全景总结）
 └── .github/workflows/ci.yml   # CI：语法检查 + 场景规划冒烟
 ```
