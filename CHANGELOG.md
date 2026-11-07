@@ -4,6 +4,38 @@
 **纪律：每一次推送到 GitHub 都递增版本 + 在本文件记录 + 打同名 tag。**
 版本判定：新功能/工具增强 → MINOR；修 bug/文档同步 → PATCH；破坏性改动（渲染契约、plan 格式不兼容）→ MAJOR。
 
+## [1.6.0] - 2026-11-07
+
+### Added — MVP 发布面与一键验收
+- **`scripts/verify.py`**：一条命令验收当前功能完整性（9 项：版本四处同步、发布面文件齐全、
+  Python / Node 语法、规划硬闸、单文件 HTML 组装冒烟、QA v4 与执行报告回归夹具、站点自检）。
+  纯 ASCII 输出避开宿主控制台编码坑；无需 Chrome / ffmpeg / 帧 / 音频；`exit 0/1` 明确判据。
+  `CORE_FILES` 是 MVP 发布面的机器可读定义。
+- **`docs/24-MVP.md`**：MVP = 发布面定义而非功能削减。明确必备链路、一条命令验收、
+  发布判据，以及「保留但不进发布面」的可选扩展清单（判据：删掉它 `verify.py` 仍 9/9）。
+- **`docs/25-ROADMAP.md`**：分阶段升级计划（打磨 / 内容产能 / 有条件项），
+  全部标注为计划项：不进验收、不进 CI 必过项、不进发布清单必选项、**不阻塞当前版本发布**。
+
+### Changed — 收敛发布面，不删文件
+- **CI 收敛**：`.github/workflows/ci.yml` 原本 6 个分散检查步骤改为调用同一条
+  `python scripts/verify.py`，本地与远端验收逻辑不再漂移。
+- `README.md` / `README.en.md` 加「MVP 三步」入口（验收 → 体检 → 出片），
+  文档地图补 24–25，目录树 docs 范围同步 00–25。
+- `CONTRIBUTING.md` 目录地图与验证流程、`docs/23-RELEASE.md` 发布清单与功能冒烟段同步；
+  `docs/16-PROJECT-SUMMARY.md` 的历史 P1 清单标注为已收口，统一指向 `docs/25`。
+- `scripts/setup.ps1` 体检表补新增文件；站点页脚版本同步。
+
+### Fixed — 修掉两处误导性指引
+- `scripts/setup.ps1` 末尾「下一步」还指向已归档的 `projects\demo-26s` 和重构前的扁平路径
+  `pipeline\render_frames.mjs` → 改为 `scripts\verify.py` 与 `run_all.ps1 -SkipRender`。
+- README 双语「分步跑」里评审页命令混用了两种工作目录上下文 → 拆开注明在仓库根目录执行；
+  体检脚本第 3 节的过时引用「README 第二节」改为 `docs/11`（引擎选型结论）。
+
+### Notes
+- **没有删除任何文件**：历史归档、额外内容线、风格与技能包全部保留为回退资产，
+  只收敛检查面与心智负担。
+- 版本判定：新增一键验收入口属工具增强 → MINOR。
+
 ## [1.5.0] - 2026-11-06
 
 ### Added — 可发布级商业包装

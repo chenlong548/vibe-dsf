@@ -23,42 +23,11 @@ jobs:
       - name: Install Python deps
         run: pip install -r pipeline/requirements.txt
 
-      - name: Version discipline (VERSION ↔ CHANGELOG)
-        run: |
-          v=$(cat VERSION)
-          echo "current version: $v"
-          grep -qF "[$v]" CHANGELOG.md || { echo "::error::CHANGELOG.md 缺少 [$v] 条目——每次提交必须更新版本记录"; exit 1; }
-
-      - name: Python syntax check
-        run: python -m compileall -q pipeline
-
-      - name: Node syntax check
-        run: |
-          fail=0
-          for f in pipeline/*.mjs pipeline/render/*.mjs pipeline/scene_writer/*.mjs pipeline/blocks/lib/*.js; do
-            node --check "$f" || fail=1
-          done
-          exit $fail
-
-      - name: Smoke — scene plan hard gate (_probe fixture)
-        run: python pipeline/scene_writer/validate_plan.py projects/_probe/SCENE-PLAN.json
-
-      - name: Smoke — assemble single-file HTML (_probe fixture)
-        run: |
-          node pipeline/scene_writer/build_html.mjs \
-            --plan projects/_probe/SCENE-PLAN.json \
-            --out /tmp/smoke_index.html
-          test -s /tmp/smoke_index.html
-          grep -q "render(" /tmp/smoke_index.html
-
-      - name: QA v4 edge regression (synthetic frames)
-        run: python pipeline/qa/test_edge_v4.py
-
-      - name: Pipeline report regression (synthetic project)
-        run: python pipeline/report/test_generate.py
-
-      - name: Publishable site self-check
-        run: python site/check.py
+      # Single source of truth: the same command developers run locally.
+      # All MVP checks (version sync, core files, syntax, plan gate,
+      # assemble smoke, two regression fixtures, site self-check) live there.
+      - name: MVP acceptance (scripts/verify.py)
+        run: python scripts/verify.py
 
       # 渲染/QA/合成需要 Chrome + ffmpeg + 音频轨，在本地跑：
       #   powershell -File pipeline/run_all.ps1 -Project projects/<slug> -Duration <秒>

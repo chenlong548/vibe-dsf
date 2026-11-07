@@ -4,7 +4,7 @@
 
 **The automated knowledge-video pipeline — from one line to a release-ready film**
 
-[简体中文](README.md) | [Live site](site/index.html) · **v1.5.0** · [Changelog](CHANGELOG.md) · [Commercial](docs/22-COMMERCIAL.md)
+[简体中文](README.md) | [Live site](site/index.html) · **v1.6.0** · [Changelog](CHANGELOG.md) · [MVP scope](docs/24-MVP.md) · [Roadmap](docs/25-ROADMAP.md) · [Commercial](docs/22-COMMERCIAL.md)
 
 `MIT` · `QA ≥ 8 hard gate` · `Zero paid dependencies` · `Self-hosted`
 
@@ -84,34 +84,50 @@ pipeline/
 └── project2video/     repository → PROJECT-BRIEF → SCENE-PLAN
 projects/              5 reference films + _probe fixture + _archive (kept for rollback)
 skills/ styles/ docs/ scripts/ .github/
-docs/                  00–23 numbered playbook and engineering notes
+docs/                  00–25 numbered playbook and engineering notes (24 MVP / 25 roadmap)
 ```
 
 Full directory map, dependency direction and the "add a block" workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## 5. Quick start
+## 5. Quick start (three MVP steps)
+
+To confirm the current release is complete and publishable — steps 1 and 2 need
+neither Chrome nor ffmpeg:
+
+```bash
+python scripts/verify.py                 # 1) 9 checks, 9/9 PASS = MVP READY
+```
+
+```powershell
+powershell -File scripts\setup.ps1       # 2) read-only environment / file health check
+powershell -File pipeline\run_all.ps1 -Project projects\demo-hook-compound -SkipRender
+                                       # 3) ship: QA gate + audio + assembly + run report
+```
+
+Drop `-SkipRender` and pass `-Duration <seconds>` for a full render, then read
+`pipeline_report.json`. The release surface is defined in [docs/24-MVP.md](docs/24-MVP.md);
+everything planned for later lives in [docs/25-ROADMAP.md](docs/25-ROADMAP.md) and does not
+block this release.
 
 Requires Python 3.10+ (`numpy` / `pillow` / `edge-tts`), Node 20+, a local Chrome, and ffmpeg.
 No GPU and no paid connector required.
 
+<details>
+<summary>Step-by-step commands (when a single stage needs manual control)</summary>
+
 ```powershell
-# 0) Health check (read-only)
-powershell -File scripts\setup.ps1
-
-# 1) One-shot pipeline (-SkipRender reuses existing frames)
-powershell -File pipeline\run_all.ps1 -Project projects\demo-hook-compound -SkipRender
-#   For a full render drop -SkipRender and pass -Duration <seconds>; then read pipeline_report.json
-
-# 2) Step by step, from inside a project directory
+# From inside a project directory
 node ..\..\pipeline\render\render_frames.mjs --fps 30 --duration 8
 python ..\..\pipeline\qa\qa_check.py frames --fps 30 --json qa.json
 python ..\..\pipeline\audio\synth_bgm.py bgm.wav --bpm 77 --duration 8
 powershell -File ..\..\pipeline\compose\build.ps1 -Audio bgm.wav
-
-# 3) Re-render a segment and review stills
 node ..\..\pipeline\render\render_frames.mjs --start 3 --end 5
-node ..\..\pipeline\review.mjs --project projects\demo-hook-compound
+
+# From the repository root: human still-frame review
+node pipeline\review.mjs --project projects\demo-hook-compound
 ```
+
+</details>
 
 The site is a single static file — open `site/index.html` offline, or run `python site/check.py`
 as a pre-publish check.
@@ -123,8 +139,9 @@ as a pre-publish check.
   on the same frames (`docs/20`).
 - **Run reports** carry stage timings, a QA summary, byte counts for 8 artifact classes,
   `verdict` and `failed_stage` — including when the QA gate blocks the run (`docs/21`).
-- **CI** runs syntax checks, `_probe` smoke, two regression fixtures, the site check and the
-  version-discipline guard.
+- **One source of truth for checks**: CI runs only `python scripts/verify.py` — 9 checks
+  covering version sync, release-surface files, syntax, the plan gate, assemble smoke,
+  two regression fixtures and the site self-check. Local and CI never drift.
 - **Honest limits**: 1920×1080 landscape only. Some methodology rules are observations, not
   controlled A/B results. Portrait was tested and deliberately dropped — we do not list it as a
   roadmap promise.
@@ -168,6 +185,7 @@ See [docs/22-COMMERCIAL.md](docs/22-COMMERCIAL.md) and the [site](site/index.htm
 | 16 | Full project summary and the bug knowledge base |
 | 17–21 | SFX, brand contract, QA v3, QA v4, run reports |
 | 22–23 | Commercial positioning, release checklist |
+| 24–25 | MVP release surface, one-command acceptance, optional roadmap |
 
 ## 10. Legal and maintenance
 

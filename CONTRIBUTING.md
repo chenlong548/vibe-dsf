@@ -34,9 +34,9 @@ vibe-dsf/
 │   ├── bgm-synth/             # BGM 合成技能
 │   └── qa-gate/               # QA 门禁技能
 ├── styles/                    # 画风规范（fable / nocturne / paper-gold / romance）
-├── scripts/                   # env.ps1（flash锁定）/ env-creative.ps1（Opus创意模式，云雾）/ setup.ps1（体检）
-├── docs/                      # 00-23 编号文档（22 商业化 / 23 发布清单；见 docs/16 全景总结）
-└── .github/workflows/ci.yml   # CI：语法检查 + 冒烟 + 两个回归夹具 + 站点自检 + 版本守卫
+├── scripts/                   # verify.py（MVP 一键验收）/ setup.ps1（体检）/ env*.ps1（模型环境）
+├── docs/                      # 00-25 编号文档（24 MVP 发布面 / 25 升级计划；见 docs/16 全景总结）
+└── .github/workflows/ci.yml   # CI：python scripts/verify.py（与本地同一套 9 项验收）
 ```
 
 **依赖方向**（保持单向，不加反向引用）：
@@ -92,11 +92,11 @@ powershell -File ..\..\pipeline\compose\build.ps1 -Audio final_audio.wav
 # 波形目检（agent 听不见，看图验收音频）
 python ..\..\pipeline\audio\wave_png.py bgm.wav wave.png --bpm 96 --marks 24,48,60
 
-# 静帧评审页（场景网格 + A/B 对比 + QA 病灶叠加，人工挑卡点/比风格；产物 review.html 浏览器打开）
+# 静帧评审页（以下三条在仓库根目录跑；场景网格 + A/B 对比 + QA 病灶叠加）
 # 自动读项目里的 qa.json：静止段/硬切/溢出标红，病灶帧自动补采（红框）
-node ..\..\pipeline\review.mjs --project projects\<slug>
-node ..\..\pipeline\review.mjs --project projects\<slugA> --compare projects\<slugB>
-node ..\..\pipeline\review.mjs --project projects\<slug> --qa path\to\qa.json   # 手动指定报告
+node pipeline\review.mjs --project projects\<slug>
+node pipeline\review.mjs --project projects\<slugA> --compare projects\<slugB>
+node pipeline\review.mjs --project projects\<slug> --qa path\to\qa.json   # 手动指定报告
 ```
 
 ## 加一块积木
@@ -126,9 +126,10 @@ node ..\..\pipeline\review.mjs --project projects\<slug> --qa path\to\qa.json   
 
 改了 `blocks/`、`scene_writer/`、`run_all.ps1` 或任何被引用路径后：
 
-1. CI 会自动跑语法检查 + `_probe` 夹具冒烟（规划闸 + 组装）+ 两个回归夹具
-   （`qa/test_edge_v4.py` 边缘检测、`report/test_generate.py` 执行报告）+
-   `site/check.py`（站点零外链 / 双语成对 / 版本同步）；
+1. 先跑 `python scripts/verify.py`（9/9 PASS 才算 MVP READY）；CI 跑的是同一条命令，
+   覆盖版本同步、发布面文件、Python / Node 语法、`_probe` 规划硬闸 + 组装冒烟、
+   `qa/test_edge_v4.py`、`report/test_generate.py`、`site/check.py`。
+   发布面定义在 `docs/24-MVP.md`，`docs/25-ROADMAP.md` 里的计划项不进验收；
 2. 本地跑一次最小端到端：
 
    ```powershell

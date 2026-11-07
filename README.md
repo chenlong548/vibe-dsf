@@ -4,7 +4,7 @@
 
 **自动化知识视频流水线 · 从一句话到可发布成片**
 
-[展示站点](site/index.html) · [English](README.en.md) · **v1.5.0** · [更新日志](CHANGELOG.md) · [商业化](docs/22-COMMERCIAL.md)
+[展示站点](site/index.html) · [English](README.en.md) · **v1.6.0** · [更新日志](CHANGELOG.md) · [MVP 发布面](docs/24-MVP.md) · [升级计划](docs/25-ROADMAP.md) · [商业化](docs/22-COMMERCIAL.md)
 
 `MIT` · `QA ≥ 8 硬门禁` · `零付费依赖` · `自托管`
 
@@ -82,34 +82,48 @@ pipeline/
 └── project2video/     仓库 → PROJECT-BRIEF → SCENE-PLAN
 projects/              5 条正式样片 + _probe 回归夹具 + _archive 历史归档
 skills/ styles/ docs/ scripts/ .github/
-docs/                  00–23 编号方法论与工程文档
+docs/                  00–25 编号方法论与工程文档（24 MVP 发布面 / 25 升级计划）
 ```
 
 完整目录地图、依赖方向与加积木流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
-## 五、跑起来
+## 五、跑起来（MVP 三步）
+
+**只想确认当前功能完整、可发布**——三步，前两步不需要 Chrome / ffmpeg：
+
+```bash
+python scripts/verify.py                 # 1) 9 项验收，9/9 PASS 即 MVP READY
+```
+
+```powershell
+powershell -File scripts\setup.ps1       # 2) 环境与文件体检（只读）
+powershell -File pipeline\run_all.ps1 -Project projects\demo-hook-compound -SkipRender
+                                       # 3) 出片：QA 闸 + 音频 + 合成 + 执行报告
+```
+
+`run_all.ps1` 去掉 `-SkipRender` 并加 `-Duration <秒>` 即全片渲染；
+成功后看 `pipeline_report.json`。发布面定义见 [docs/24-MVP.md](docs/24-MVP.md)，
+后续增强都是不阻塞发布的计划项，见 [docs/25-ROADMAP.md](docs/25-ROADMAP.md)。
 
 依赖：Python 3.10+（`numpy` / `pillow` / `edge-tts`）、Node 20+、本机 Chrome、ffmpeg。
 不需要 GPU，也不需要付费连接器。
 
+<details>
+<summary>分步命令（需要手动控制某个阶段时）</summary>
+
 ```powershell
-# 0) 体检（只读，不动系统）
-powershell -File scripts\setup.ps1
-
-# 1) 一键全流程（在项目目录已有帧时可 -SkipRender 免重渲）
-powershell -File pipeline\run_all.ps1 -Project projects\demo-hook-compound -SkipRender
-#   全片渲染去掉 -SkipRender 并加 -Duration <秒>；成功后看 pipeline_report.json
-
-# 2) 分步跑（在项目目录里）
+# 在项目目录里：分步跑 / 局部重渲
 node ..\..\pipeline\render\render_frames.mjs --fps 30 --duration 8
 python ..\..\pipeline\qa\qa_check.py frames --fps 30 --json qa.json
 python ..\..\pipeline\audio\synth_bgm.py bgm.wav --bpm 77 --duration 8
 powershell -File ..\..\pipeline\compose\build.ps1 -Audio bgm.wav
-
-# 3) 局部重渲 + 人工评审
 node ..\..\pipeline\render\render_frames.mjs --start 3 --end 5
-node ..\..\pipeline\review.mjs --project projects\demo-hook-compound
+
+# 在仓库根目录：人工评审（场景网格 / A/B 对比 / QA 病灶叠加）
+node pipeline\review.mjs --project projects\demo-hook-compound
 ```
+
+</details>
 
 站点是单文件静态页，双击 `site/index.html` 即可离线打开；`python site/check.py` 是发布自检。
 
@@ -119,7 +133,8 @@ node ..\..\pipeline\review.mjs --project projects\demo-hook-compound
   取代旧版绝对亮度线的双盲；`--v2` / `--legacy-edge` 可回退做同帧对比（`docs/20`）。
 - **执行报告**：阶段耗时、QA 摘要、8 类产物字节数、`verdict` 与 `failed_stage`；
   QA 拦截时同样落盘（`docs/21`）。
-- **CI**：语法检查、`_probe` 冒烟、两个回归夹具、站点自检、版本纪律守卫。
+- **CI 与本地同源**：CI 只跑 `python scripts/verify.py`（版本同步、发布面文件、
+  语法、规划硬闸、组装冒烟、两个回归夹具、站点自检共 9 项），本地与远端不会漂移。
 - **诚实边界**：只做 1920×1080 横屏；方法论中的部分禁令来自观察、未全部做 A/B；
   竖屏是实测后主动放弃，不写成「后续支持」。
 
@@ -161,6 +176,7 @@ node ..\..\pipeline\review.mjs --project projects\demo-hook-compound
 | 16 | 全景总结与踩坑知识库 |
 | 17–21 | SFX、品牌契约、QA v3、QA v4、执行报告 |
 | 22–23 | 商业化定位、发布清单 |
+| 24–25 | MVP 发布面与一键验收、后续升级计划（不阻塞发布） |
 
 ## 十、合规与维护
 

@@ -5,6 +5,8 @@
 #   powershell -File scripts\setup.ps1 -InstallDeps     # 装 python 依赖
 #   powershell -File scripts\setup.ps1 -InstallPlugins  # 装 DSH 视频插件（可选增强）
 #   powershell -File scripts\setup.ps1 -All             # 全上
+#
+# 验收当前功能完整性用 scripts\verify.py（9 项，见 docs\24-MVP.md）；本脚本只做环境体检。
 # =====================================================================
 param(
   [switch]$InstallDeps,
@@ -66,7 +68,8 @@ $files = @(
   "skills\vibe-film-ds\SKILL.md",
   "skills\vibe-film-ds\references\ds-failure-modes.md",
   "docs\03-FLASH-PLAYBOOK.md", "docs\18-BRAND.md", "docs\20-QA-V4.md", "docs\21-PIPELINE-REPORT.md",
-  "docs\22-COMMERCIAL.md", "docs\23-RELEASE.md", "SECURITY.md", "CODE_OF_CONDUCT.md",
+  "docs\22-COMMERCIAL.md", "docs\23-RELEASE.md", "docs\24-MVP.md", "docs\25-ROADMAP.md",
+  "SECURITY.md", "CODE_OF_CONDUCT.md", "scripts\verify.py",
   "brand\logo.svg", "brand\BRAND.md", "site\index.html", "site\check.py",
   "styles\paper-gold.md", "styles\nocturne.md", "styles\fable.md", "styles\romance.md",
   "projects\demo-hook-entropy\index.html"
@@ -76,9 +79,8 @@ foreach ($f in $files) {
   Check $f (Test-Path $p) "" "文件缺失，重新解压生态包"
 }
 
-Write-Host "`n=== 3. DSH 插件：本生态主张「一个都不装」===" -ForegroundColor Cyan
-Write-Host "  hyperframes / remotion / ffmpeg / modlens 全部拒绝（理由见 README 第二节）" -ForegroundColor DarkGray
-Write-Host "  核心原因：多一条渲染路径 = flash 多一次走错的机会，而且它不会告诉你。" -ForegroundColor DarkGray
+Write-Host "`n=== 3. 渲染引擎：不引入第二条路径（结论见 docs\11）===" -ForegroundColor Cyan
+Write-Host "  Remotion / HyperFrames 等插件一律不装；-InstallPlugins 只给提示，不装任何东西。" -ForegroundColor DarkGray
 if ($InstallPlugins) {
   Write-Host "`n  你（或某个脚本）传了 -InstallPlugins，但本生态已改为零插件。" -ForegroundColor Yellow
   Write-Host "  若确有需要（例如要做 React/3D 视频），请手动执行：" -ForegroundColor Yellow
@@ -98,9 +100,9 @@ if ($InstallDeps) {
 Write-Host "`n=== 体检结果 ===" -ForegroundColor Cyan
 Write-Host ("  通过 {0} 项 / 缺失 {1} 项" -f $ok, $warn) -ForegroundColor $(if ($warn -eq 0) { "Green" } else { "Yellow" })
 if ($warn -eq 0) {
-  Write-Host "  全部就绪。下一步：" -ForegroundColor Green
-  Write-Host "    cd projects\demo-26s" -ForegroundColor White
-  Write-Host "    node ..\..\pipeline\render_frames.mjs --stills 3,45,132" -ForegroundColor White
+  Write-Host "  全部就绪。下一步（MVP 三步，见 docs\24-MVP.md）：" -ForegroundColor Green
+  Write-Host "    python scripts\verify.py" -ForegroundColor White
+  Write-Host "    powershell -File pipeline\run_all.ps1 -Project projects\demo-hook-compound -SkipRender" -ForegroundColor White
 } else {
   Write-Host "  按上面 [MISS] 的提示补齐后重跑本脚本。" -ForegroundColor Yellow
 }

@@ -13,7 +13,9 @@
 | 站点 | 单文件双语展示页 + 自检脚本 | `site/index.html` `site/check.py` |
 | 商业 | 定位与合作方式 | `docs/22-COMMERCIAL.md` |
 | 法务 | 许可 / 安全政策 / 行为准则 | `LICENSE` `SECURITY.md` `CODE_OF_CONDUCT.md` |
-| 方法论 | 00–23 编号文档（编号连续） | `docs/` |
+| MVP 定义 | 发布面清单与一键验收判据 | `docs/24-MVP.md` `scripts/verify.py` |
+| 升级计划 | 可选取舍的后续增强（不进发布检查） | `docs/25-ROADMAP.md` |
+| 方法论 | 00–25 编号文档（编号连续） | `docs/` |
 | 样片 | 5 条正式样片（产物不入库，README 用分数呈现） | `projects/` |
 
 ## 二、版本纪律（每次 push GitHub 必做，CI 有守卫）
@@ -30,7 +32,8 @@ CI 守卫：`grep -qF "[$v]" CHANGELOG.md`，缺当前版本条目直接 fail。
 ## 三、静态站点自检
 
 ```bash
-python site/check.py                 # 零外链 / i18n key 对齐 / 必需锚点 / meta 齐全
+python scripts/verify.py             # MVP 一键验收（含站点自检）
+python site/check.py                 # 单独复检：零外链 / i18n key 对齐 / 锚点 / meta / 版本同步
 ```
 
 再用浏览器打开 `site/index.html` 目检：
@@ -56,16 +59,17 @@ python site/check.py                 # 零外链 / i18n key 对齐 / 必需锚�
 ## 五、功能冒烟
 
 ```bash
-python pipeline/qa/test_edge_v4.py                     # 7 条
-python pipeline/report/test_generate.py                # 8 条
-python pipeline/scene_writer/validate_plan.py projects/_probe/SCENE-PLAN.json
-node pipeline/scene_writer/build_html.mjs --plan projects/_probe/SCENE-PLAN.json --out /tmp/smoke_index.html
+python scripts/verify.py        # 一条命令覆盖前四项（9 项验收，见 docs/24）
 powershell -File pipeline/run_all.ps1 -Project projects/demo-hook-compound -SkipRender
 ```
 
-最后一条要求 `exit 0`，且 `pipeline_report.json` 的 `verdict=success`、
+`verify.py` 内部会跑规划硬闸、单文件 HTML 组装冒烟、`test_edge_v4.py`（7 条）、
+`test_generate.py`（8 条）、`site/check.py` 以及版本四处同步；CI 复用同一条命令。
+出片那条要求 `exit 0`，且 `pipeline_report.json` 的 `verdict=success`、
 `pipeline_version` 等于当前 `VERSION`。失败路径也要抽查一次（QA 拦截应得到 `exit 2` +
 `verdict=qa_blocked`）。
+
+`docs/25-ROADMAP.md` 是可选升级计划，**不列入本节检查**，任何计划项都不影响发布判定。
 
 ## 六、文档一致性
 
