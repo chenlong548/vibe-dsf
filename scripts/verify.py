@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """One-command MVP acceptance check for VIBE-DSF.
 
-Runs the core release-surface checks WITHOUT Chrome, ffmpeg, audio files or
+Runs the active-maintenance checks WITHOUT Chrome, ffmpeg, audio files or
 rendered frames. The same command is used locally and in CI, so the two never
-drift apart. It does not test the optional extensions (paper2video,
-project2video, review page, creative-model helpers) -- see docs/24-MVP.md.
+drift apart. Frozen-archive files are deliberately NOT checked: an MVP should
+not create maintenance work for capabilities it does not promise.
+See docs/24-MVP.md for the active / frozen split.
 
 Usage:  python scripts/verify.py
 Exit:   0 = MVP READY, 1 = MVP NOT READY
@@ -25,30 +26,20 @@ ROOT = Path(__file__).resolve().parent.parent
 PY = sys.executable
 NODE = shutil.which("node")
 
-# Machine-readable definition of the MVP release surface. Anything not listed
-# here is an optional extension and must never block a release.
+# Only the files the acceptance run actually needs. Adding a block, a doc or a
+# sample film does NOT require registering it here -- that would be exactly the
+# kind of maintenance overhead an MVP must not create.
 CORE_FILES = (
     "VERSION", "CHANGELOG.md", "README.md", "README.en.md", "LICENSE",
-    "SECURITY.md", "CODE_OF_CONDUCT.md", "CONTRIBUTING.md",
-    ".gitignore", ".github/workflows/ci.yml",
-    "docs/24-MVP.md", "docs/25-ROADMAP.md", "docs/23-RELEASE.md",
-    "brand/BRAND.md", "brand/logo.svg",
+    "docs/22-COMMERCIAL.md", "docs/23-RELEASE.md",
+    "docs/24-MVP.md", "docs/25-ROADMAP.md",
     "site/index.html", "site/check.py",
-    "scripts/setup.ps1", "scripts/verify.py",
-    "pipeline/requirements.txt", "pipeline/palette.json",
+    "scripts/verify.py",
     "pipeline/run_all.ps1", "pipeline/render/render_frames.mjs",
     "pipeline/qa/qa_check.py", "pipeline/qa/test_edge_v4.py",
     "pipeline/report/generate.py", "pipeline/report/test_generate.py",
-    "pipeline/scene_writer/PROMPT.md", "pipeline/scene_writer/template.html",
-    "pipeline/scene_writer/SCENE-PLAN.schema.md",
     "pipeline/scene_writer/validate_plan.py",
     "pipeline/scene_writer/build_html.mjs",
-    "pipeline/blocks/registry.json", "pipeline/blocks/lib/_easings.js",
-    "pipeline/audio/synth_bgm.py", "pipeline/audio/synth_sfx.py",
-    "pipeline/audio/wave_png.py",
-    "pipeline/audio/narrate/tts_edge.py",
-    "pipeline/audio/narrate/build_narration.py",
-    "pipeline/audio/narrate/mix_audio.py",
     "pipeline/compose/build.ps1",
     "projects/_probe/SCENE-PLAN.json",
 )
@@ -102,6 +93,8 @@ def run(name: str, argv: list[str], check=None, timeout: int = 180) -> None:
 
 
 def check_version() -> None:
+    # Four files carry the version: VERSION is the source of truth, the other
+    # three must mention it. The site footer deliberately carries none.
     try:
         v = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
     except Exception as exc:  # noqa: BLE001
@@ -111,7 +104,6 @@ def check_version() -> None:
         "CHANGELOG.md": f"[{v}]",
         "README.md": f"v{v}",
         "README.en.md": f"v{v}",
-        "site/index.html": f"v{v}",
     }
     missing = []
     for rel, needle in targets.items():
@@ -130,7 +122,7 @@ def check_version() -> None:
 def check_core_files() -> None:
     missing = [rel for rel in CORE_FILES if not (ROOT / rel).is_file()]
     record("core-files", not missing,
-           f"{len(CORE_FILES) - len(missing)}/{len(CORE_FILES)} required files"
+           f"{len(CORE_FILES) - len(missing)}/{len(CORE_FILES)} active inputs"
            + (f" | missing: {', '.join(missing)}" if missing else ""))
 
 

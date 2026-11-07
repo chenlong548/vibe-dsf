@@ -2,11 +2,11 @@
 
 <img src="brand/logo.svg" width="420" alt="VIBE·DSF — knowledge video pipeline"/>
 
-**The automated knowledge-video pipeline — from one line to a release-ready film**
+**A knowledge-video pipeline for solo creators — no QA pass, no film**
 
-[简体中文](README.md) | [Live site](site/index.html) · **v1.6.0** · [Changelog](CHANGELOG.md) · [MVP scope](docs/24-MVP.md) · [Roadmap](docs/25-ROADMAP.md) · [Commercial](docs/22-COMMERCIAL.md)
+[简体中文](README.md) | [Live site](site/index.html) · **v1.7.0** · [Changelog](CHANGELOG.md) · [MVP definition](docs/24-MVP.md) · [Roadmap](docs/25-ROADMAP.md) · [Who it's for](docs/22-COMMERCIAL.md)
 
-`MIT` · `QA ≥ 8 hard gate` · `Zero paid dependencies` · `Self-hosted`
+`Free · MIT` · `QA ≥ 8 hard gate` · `Zero paid dependencies` · `Self-hosted`
 
 </div>
 
@@ -14,13 +14,16 @@
 
 # VIBE·DSF
 
-> We turn one line, a paper, or a repository into a release-ready 1080p knowledge video.
-> Frames are drawn by code, audio is synthesised deterministically, and a **pixel-level QA gate**
-> decides whether the film is allowed to ship.
+> We turn one line into a release-ready 1080p knowledge video: frames drawn by code,
+> audio synthesised deterministically, and a **pixel-level QA gate** that decides
+> whether the film is allowed to ship.
 
-This is not an editor and not a SaaS. It is a local pipeline that produces the film, the audit
-report and the reproducible render source. Models are interchangeable; the rule that numbers decide
-is not.
+**This release serves one audience: solo video creators and people growing a new channel.**
+One person handles the topic, the film and the publish, with no editor, designer or
+engineering colleague — and no second pair of eyes. We replace that second pair with
+measurements. Every input and runtime stays available (a topic line, a paper PDF or a
+repo README; 8–180s) but behind one single pipeline. Free, local, no team, no server,
+no paid service. Full product definition: [docs/24-MVP.md](docs/24-MVP.md).
 
 ## 1. Why we built it this way
 
@@ -84,18 +87,17 @@ pipeline/
 └── project2video/     repository → PROJECT-BRIEF → SCENE-PLAN
 projects/              5 reference films + _probe fixture + _archive (kept for rollback)
 skills/ styles/ docs/ scripts/ .github/
-docs/                  00–25 numbered playbook and engineering notes (24 MVP / 25 roadmap)
+docs/                  active: 22 positioning / 23 release / 24 MVP / 25 roadmap; 00–21 frozen
 ```
 
 Full directory map, dependency direction and the "add a block" workflow: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 5. Quick start (three MVP steps)
 
-To confirm the current release is complete and publishable — steps 1 and 2 need
-neither Chrome nor ffmpeg:
+To confirm this release runs — steps 1 and 2 need neither Chrome nor ffmpeg:
 
 ```bash
-python scripts/verify.py                 # 1) 9 checks, 9/9 PASS = MVP READY
+python scripts/verify.py                 # 1) all checks PASS = MVP READY
 ```
 
 ```powershell
@@ -105,7 +107,7 @@ powershell -File pipeline\run_all.ps1 -Project projects\demo-hook-compound -Skip
 ```
 
 Drop `-SkipRender` and pass `-Duration <seconds>` for a full render, then read
-`pipeline_report.json`. The release surface is defined in [docs/24-MVP.md](docs/24-MVP.md);
+`pipeline_report.json`. The product definition is in [docs/24-MVP.md](docs/24-MVP.md);
 everything planned for later lives in [docs/25-ROADMAP.md](docs/25-ROADMAP.md) and does not
 block this release.
 
@@ -139,9 +141,11 @@ as a pre-publish check.
   on the same frames (`docs/20`).
 - **Run reports** carry stage timings, a QA summary, byte counts for 8 artifact classes,
   `verdict` and `failed_stage` — including when the QA gate blocks the run (`docs/21`).
-- **One source of truth for checks**: CI runs only `python scripts/verify.py` — 9 checks
-  covering version sync, release-surface files, syntax, the plan gate, assemble smoke,
-  two regression fixtures and the site self-check. Local and CI never drift.
+- **One source of truth for checks**: CI runs only `python scripts/verify.py`, covering
+  version sync, active-maintenance files, syntax, the plan gate, assemble smoke,
+  two regression fixtures and the site self-check. Local and CI never drift; the
+  frozen archive is deliberately outside the check, and new blocks/docs/films need
+  no registration.
 - **Honest limits**: 1920×1080 landscape only. Some methodology rules are observations, not
   controlled A/B results. Portrait was tested and deliberately dropped — we do not list it as a
   roadmap promise.
@@ -158,34 +162,43 @@ as a pre-publish check.
 | paper-shannon-deep | PAPER2VIDEO long form | 180s | 9.2 |
 | project-vibe-dsf | PROJECT2VIDEO self-showcase | 50s | 9.1 |
 
-Scores come from each film's `qa.json` on the actual rendered frames (short-film scores are
-item-for-item equivalent across v2/v3/v4). Frames, audio and videos are regenerated locally and
-are not committed.
+All five run on **one pipeline** — only the input source and runtime differ (8–180s);
+they are not five product lines. Scores come from each film's `qa.json` on the actual
+rendered frames (short-film scores are item-for-item equivalent across v2/v3/v4).
+Frames, audio and videos are regenerated locally and are not committed.
 
-## 8. Commercial
+## 8. Who it's for · how to get it
 
-The core is MIT, self-hosted and telemetry-free. Services come in three shapes:
+**One audience: solo video creators and people growing a new channel.** One way to get it:
 
-| Tier | Fit | Pricing |
-|---|---|---|
-| Self-host | You have an engineering team and want full control | Free (MIT) |
-| Integration | Fit it into your content stack, custom blocks and palettes | Scoped quote |
-| Managed series | We deliver episodes, reviewed by our team | Per-series quote |
+| | |
+|---|---|
+| You get | The full open-source repo (MIT), running locally — no account, no telemetry, no server |
+| It costs | Nothing. No subscription, no token markup; only your own model API usage and compute |
+| Custom work | Open an issue or discussion. No quote tiers, no scheduling, no delivery promise |
 
-No SaaS subscription. You pay for your own model API usage and compute; we do not mark up tokens.
-See [docs/22-COMMERCIAL.md](docs/22-COMMERCIAL.md) and the [site](site/index.html).
+Integration, Managed series and discovery-call pricing have been removed from all outward
+material — they do not fit solo creators. See [docs/22-COMMERCIAL.md](docs/22-COMMERCIAL.md).
 
-## 9. Documentation map
+## 9. Documentation map (active / frozen)
+
+**Active maintenance** (version-synced, in CI, guaranteed to run): both READMEs,
+[docs/22](docs/22-COMMERCIAL.md) positioning, [docs/24](docs/24-MVP.md) MVP definition,
+[docs/23](docs/23-RELEASE.md) release checklist, `site/`, the single pipeline and
+`scripts/verify.py`.
+
+**Frozen archive** (kept in the repo for rollback; no outward promise, no CI, no version sync):
 
 | Range | Topic |
 |---|---|
 | 00–09 | Inventory, model profile, flash playbook, style DNA, failure modes, layer templates |
-| 10–11 | Gap analysis, engine decision (no Remotion — the engine was never the bottleneck) |
-| 12–15 | SCENE-WRITER / narration / PAPER2VIDEO / PROJECT2VIDEO |
-| 16 | Full project summary and the bug knowledge base |
-| 17–21 | SFX, brand contract, QA v3, QA v4, run reports |
-| 22–23 | Commercial positioning, release checklist |
-| 24–25 | MVP release surface, one-command acceptance, optional roadmap |
+| 10–11 | Gap analysis, engine decision |
+| 12–15 | Extra contracts for SCENE-WRITER / narration / PAPER2VIDEO / PROJECT2VIDEO |
+| 16–21 | Project summary, SFX, brand contract, QA v3 / v4, run reports |
+| 25 | Optional roadmap (not part of acceptance, never blocks a release) |
+
+No file is deleted. Frozen material can be reactivated, but its maintenance cost is
+assessed first (`docs/24`, section 6).
 
 ## 10. Legal and maintenance
 

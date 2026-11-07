@@ -6,7 +6,7 @@
   2. EN/中文 i18n key 成对且非空；
   3. 必需锚点存在、页内 #链接 都有落点；
   4. meta / 品牌色 / reduced-motion / 配套资产齐全；
-  5. 页脚展示的版本与仓库根 VERSION 一致（防止发布时忘同步）。
+  5. 页脚不写死版本号（版本只由 VERSION / CHANGELOG / README 双语维护）。
 
 用法：python site/check.py
 """
@@ -102,10 +102,9 @@ def main():
         if not (HERE / name).exists():
             errors.append(f"缺少配套资产 {name}")
 
-    # 5. 版本同步
-    version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    if f"v{version}" not in text:
-        errors.append(f"页脚版本未同步到 v{version}")
+    # 5. 站点不写死版本：少一处同步负担，版本守卫统一交给 scripts/verify.py
+    if re.search(r"VIBE·DSF\s*·\s*v\d+\.\d+\.\d+", text):
+        errors.append("页脚写死了版本号；版本只由 VERSION / CHANGELOG / README 双语维护")
 
     if errors:
         print(f"[site] FAIL · {len(errors)} 项：")
@@ -113,7 +112,7 @@ def main():
             print("  -", e)
         return 1
     print(f"[site] OK · {s.i18n} 组双语文案 · {len(s.ids)} 个锚点 · "
-          f"零外部依赖 · v{version}")
+          f"零外部依赖 · 版本不写死")
     return 0
 
 

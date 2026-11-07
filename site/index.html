@@ -158,7 +158,7 @@
   .film .score{color:var(--accent);font-weight:700}
 
   /* engagement */
-  .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .tiers{display:grid;grid-template-columns:1fr;gap:16px}
   .tier{border:1px solid var(--line);border-radius:14px;padding:26px;background:var(--surface);display:flex;flex-direction:column}
   .tier.featured{border-color:rgba(232,168,124,.6);background:rgba(232,168,124,.055)}
   .tier .tag{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
@@ -247,17 +247,17 @@
 <main>
   <section id="top" class="hero wrap">
     <div>
-      <p class="eyebrow" data-en="Open source · MIT · Self-hosted" data-zh="开源 · MIT · 自托管">Open source · MIT · Self-hosted</p>
+      <p class="eyebrow" data-en="Free · MIT · For solo creators" data-zh="免费 · MIT · 给个人创作者">Free · MIT · For solo creators</p>
       <h1>
-        <span data-en="Knowledge videos," data-zh="知识视频，">Knowledge videos,</span>
-        <span class="accent" data-en="rendered and scored." data-zh="渲染并打分。">rendered and scored.</span>
+        <span data-en="Ship a film alone," data-zh="一个人出片，">Ship a film alone,</span>
+        <span class="accent" data-en="with a gate that says no." data-zh="有门禁替你说不。">with a gate that says no.</span>
       </h1>
-      <p class="lead" style="margin-top:22px" data-en="We turn one line, a paper, or a repository into a release-ready 1080p film. Motion graphics, bilingual subtitles, deterministic audio and a pixel-level QA gate — no editor, no footage, no guesswork." data-zh="我们把一句话主题、一篇论文或一个代码仓库，变成可发布的 1080p 成片。代码绘制动效、双语字幕、确定性音频、像素级 QA 门禁——不用剪辑软件、不用实拍素材、不靠感觉。">We turn one line, a paper, or a repository into a release-ready 1080p film. Motion graphics, bilingual subtitles, deterministic audio and a pixel-level QA gate — no editor, no footage, no guesswork.</p>
+      <p class="lead" style="margin-top:22px" data-en="A one-person knowledge-video pipeline. Turn a topic line, a paper or a repo into a 1080p film that only ships after an 11-metric pixel-level QA pass. No editor, no team, no subscription, no second pair of eyes needed." data-zh="一个人用的知识视频流水线。一句话主题、论文或仓库变成 1080p 成片，但必须过 11 项像素级 QA 才放行。不需要剪辑、不需要团队、不需要订阅，也不需要第二双眼睛。">A one-person knowledge-video pipeline. Turn a topic line, a paper or a repo into a 1080p film that only ships after an 11-metric pixel-level QA pass. No editor, no team, no subscription, no second pair of eyes needed.</p>
       <div class="actions">
         <a class="btn primary" href="https://github.com/chenlong548/vibe-dsf" target="_blank" rel="noopener" data-en="Get the code" data-zh="获取源码">Get the code</a>
         <a class="btn" href="#work" data-en="See the work" data-zh="查看样片">See the work</a>
       </div>
-      <p class="fine" data-en="No SaaS fee. Your keys, your machine, your footage." data-zh="无 SaaS 订阅费。你的密钥、你的机器、你的素材。">No SaaS fee. Your keys, your machine, your footage.</p>
+      <p class="fine" data-en="Free and self-hosted. Your keys, your machine, your footage." data-zh="免费自托管。你的密钥、你的机器、你的素材。">Free and self-hosted. Your keys, your machine, your footage.</p>
     </div>
     <div class="frame" role="img" aria-label="A rendered knowledge-video frame with bilingual subtitles">
       <div class="grid"></div><div class="orbit"></div><div class="burst"></div>
@@ -286,7 +286,7 @@
   <section id="how" class="wrap">
     <div class="sec-head">
       <p class="eyebrow" data-en="One pipeline, three entry points" data-zh="一条流水线，三种入口">One pipeline, three entry points</p>
-      <h2 data-en="From an idea to a signed-off film" data-zh="从一个想法，到验收通过的成片">From an idea to a signed-off film</h2>
+      <h2 data-en="From an idea to a signed-off film" data-zh="从想法到过闸成片">From an idea to a signed-off film</h2>
       <p data-en="Three content lines share the same back half. Adding a new source type means writing a brief contract and a planning prompt — rendering, QA, audio and assembly stay untouched." data-zh="三条内容生成线共用同一后半程。新增内容类型只需写 brief 契约与规划任务书，渲染、QA、音频、合成零改动。">Three content lines share the same back half. Adding a new source type means writing a brief contract and a planning prompt — rendering, QA, audio and assembly stay untouched.</p>
     </div>
     <div class="steps">
@@ -373,43 +373,23 @@
 
   <section id="engage" class="wrap">
     <div class="sec-head">
-      <p class="eyebrow" data-en="How we work together" data-zh="合作方式">How we work together</p>
-      <h2 data-en="Run it yourself, or have us run it with you" data-zh="自己跑，或者我们一起跑">Run it yourself, or have us run it with you</h2>
-      <p data-en="The core is MIT and self-hosted. Commercial work is scoped around integration depth and production volume — never around a token markup." data-zh="核心开源、MIT、自托管。商业合作按接入深度与产量计价，不按 token 转售加价。">The core is MIT and self-hosted. Commercial work is scoped around integration depth and production volume — never around a token markup.</p>
+      <p class="eyebrow" data-en="One way to use it" data-zh="唯一交付方式">One way to use it</p>
+      <h2 data-en="Free, self-hosted, one person" data-zh="免费，一个人就能跑">Free, self-hosted, one person</h2>
+      <p data-en="This release serves solo creators and people growing a new channel. There is no second tier, no quote and no discovery call." data-zh="这一版只服务个人创作者与起号阶段的人。没有第二档、没有报价、没有发现会。">This release serves solo creators and people growing a new channel. There is no second tier, no quote and no discovery call.</p>
     </div>
     <div class="tiers">
-      <div class="tier"><span class="tag" data-en="Open source" data-zh="开源">Open source</span>
+      <div class="tier featured"><span class="tag" data-en="Open source" data-zh="开源">Open source</span>
         <h3 data-en="Self-host" data-zh="自托管">Self-host</h3>
-        <div class="price" data-en="Free · MIT" data-zh="免费 · MIT">Free · MIT</div>
+        <div class="price" data-en="Free · MIT · no fee" data-zh="免费 · MIT · 零费用">Free · MIT · no fee</div>
         <ul>
-          <li data-en="Full pipeline, 10 blocks, three content lines" data-zh="完整流水线、10 积木、三条内容线">Full pipeline, 10 blocks, three content lines</li>
-          <li data-en="23 numbered playbook documents" data-zh="23 篇编号方法论文档">23 numbered playbook documents</li>
-          <li data-en="QA gate, review page, run reports, CI fixtures" data-zh="QA 门禁、评审页、执行报告、CI 夹具">QA gate, review page, run reports, CI fixtures</li>
-          <li data-en="Your keys, your machine, no telemetry" data-zh="你的密钥、你的机器、无遥测">Your keys, your machine, no telemetry</li>
+          <li data-en="One pipeline, every input and runtime (8–180s)" data-zh="一条主链，各种输入与片长都在（8–180s）">One pipeline, every input and runtime (8–180s)</li>
+          <li data-en="11-metric QA gate: no pass, no film" data-zh="11 项像素级 QA：不过闸不出片">11-metric QA gate: no pass, no film</li>
+          <li data-en="Reproducible render source and run report" data-zh="可复现渲染源与执行报告">Reproducible render source and run report</li>
+          <li data-en="Your keys, your machine, no telemetry, no GPU" data-zh="你的密钥、你的机器、无遥测、无需独显">Your keys, your machine, no telemetry, no GPU</li>
         </ul>
-        <a class="btn" href="https://github.com/chenlong548/vibe-dsf" target="_blank" rel="noopener" data-en="Clone the repo" data-zh="克隆仓库">Clone the repo</a></div>
-      <div class="tier featured"><span class="tag" data-en="Most requested" data-zh="最常选择">Most requested</span>
-        <h3 data-en="Integration" data-zh="接入定制">Integration</h3>
-        <div class="price" data-en="Scoped quote" data-zh="按范围报价">Scoped quote</div>
-        <ul>
-          <li data-en="Private deployment into your content stack" data-zh="私有化部署，接入现有内容栈">Private deployment into your content stack</li>
-          <li data-en="Custom blocks, palettes and brand contract" data-zh="定制积木、配色与品牌契约">Custom blocks, palettes and brand contract</li>
-          <li data-en="SCENE-PLAN mapping for your sources" data-zh="把你的素材映射成 SCENE-PLAN">SCENE-PLAN mapping for your sources</li>
-          <li data-en="Acceptance report and team workshops" data-zh="验收报告与团队工作坊">Acceptance report and team workshops</li>
-        </ul>
-        <a class="btn primary" href="https://github.com/chenlong548/vibe-dsf/issues" target="_blank" rel="noopener" data-en="Start a conversation" data-zh="发起沟通">Start a conversation</a></div>
-      <div class="tier"><span class="tag" data-en="Done with you" data-zh="联合生产">Done with you</span>
-        <h3 data-en="Managed series" data-zh="系列化生产">Managed series</h3>
-        <div class="price" data-en="Per-series quote" data-zh="按系列报价">Per-series quote</div>
-        <ul>
-          <li data-en="Release-ready 1080p30 film per episode" data-zh="每期交付可发布 1080p30 成片">Release-ready 1080p30 film per episode</li>
-          <li data-en="QA report, run report and reproducible sources" data-zh="QA 报告、执行报告与可复现源文件">QA report, run report and reproducible sources</li>
-          <li data-en="Separate BGM / SFX / narration stems" data-zh="BGM / 音效 / 旁白分轨">Separate BGM / SFX / narration stems</li>
-          <li data-en="Human review by our team before delivery" data-zh="交付前由团队人工复核">Human review by our team before delivery</li>
-        </ul>
-        <a class="btn" href="https://github.com/chenlong548/vibe-dsf/discussions" target="_blank" rel="noopener" data-en="Plan a series" data-zh="规划一个系列">Plan a series</a></div>
+        <a class="btn primary" href="https://github.com/chenlong548/vibe-dsf" target="_blank" rel="noopener" data-en="Clone the repo" data-zh="克隆仓库">Clone the repo</a></div>
     </div>
-    <p class="note" style="margin-top:22px" data-en="We scope a quote after a short discovery call covering volume, runtime, visual language and cadence. No fixed price list — the main variable cost is your own model API usage." data-zh="发现会确认产量、片长、画风与节奏后给范围报价。没有统一价目表——主要可变成本是你自己的模型 API 用量。">We scope a quote after a short discovery call covering volume, runtime, visual language and cadence. No fixed price list — the main variable cost is your own model API usage.</p>
+    <p class="note" style="margin-top:22px" data-en="Need something specific? Open an issue or a discussion — we do not set quote tiers or delivery schedules. Integration, Managed series and per-episode delivery have been dropped from this release because they do not fit solo creators. The active pipeline stays small on purpose; older methods and experiments remain in the repo as frozen archive." data-zh="有具体需求？开一个 Issue 或 Discussion，我们不设报价档、不排交付期。Integration、Managed series 与按系列交付已从本版移除——它们不适合个人创作者。活跃主链刻意保持小；旧方法论与实验留在仓库作为冻结档案。">Need something specific? Open an issue or a discussion — we do not set quote tiers or delivery schedules. Integration, Managed series and per-episode delivery have been dropped from this release because they do not fit solo creators. The active pipeline stays small on purpose; older methods and experiments remain in the repo as frozen archive.</p>
   </section>
 
   <section id="faq" class="wrap">
@@ -428,11 +408,11 @@
   </section>
 
   <section class="closing wrap">
-    <h2 data-en="Bring your topic. Leave with a film." data-zh="带来一个主题，带走一条成片。">Bring your topic. Leave with a film.</h2>
-    <p data-en="Start from the open-source core, or talk to us about a series. Either way, the quality gate is the same." data-zh="从开源核心开始，或者和我们聊一个系列。无论哪种方式，质量门禁都一样。">Start from the open-source core, or talk to us about a series. Either way, the quality gate is the same.</p>
+    <h2 data-en="Bring your topic. Leave with a film." data-zh="带个主题，带走成片">Bring your topic. Leave with a film.</h2>
+    <p data-en="Clone it, run it on your own machine, and let the gate decide when a film is good enough to publish. Free, MIT, no team required." data-zh="克隆下来，在本机跑，让门禁决定这条片够不够发。免费、MIT、不需要团队。">Clone it, run it on your own machine, and let the gate decide when a film is good enough to publish. Free, MIT, no team required.</p>
     <div class="actions">
       <a class="btn primary" href="https://github.com/chenlong548/vibe-dsf" target="_blank" rel="noopener" data-en="Get the code" data-zh="获取源码">Get the code</a>
-      <a class="btn" href="https://github.com/chenlong548/vibe-dsf/issues" target="_blank" rel="noopener" data-en="Talk to us" data-zh="联系我们">Talk to us</a>
+      <a class="btn" href="https://github.com/chenlong548/vibe-dsf/issues" target="_blank" rel="noopener" data-en="Ask a question" data-zh="提个问题">Ask a question</a>
     </div>
     <div class="copy"><code>git clone https://github.com/chenlong548/vibe-dsf.git</code>
       <button class="btn small" id="copyBtn" type="button" data-en="Copy" data-zh="复制">Copy</button></div>
@@ -441,10 +421,10 @@
 
 <footer>
   <div class="wrap foot">
-    <span class="num">VIBE·DSF · v1.6.0</span>
+    <span class="num">VIBE·DSF</span>
     <a href="https://github.com/chenlong548/vibe-dsf/blob/main/LICENSE" target="_blank" rel="noopener" data-en="MIT License" data-zh="MIT 许可">MIT License</a>
     <a href="https://github.com/chenlong548/vibe-dsf/blob/main/SECURITY.md" target="_blank" rel="noopener" data-en="Security" data-zh="安全政策">Security</a>
-    <a href="https://github.com/chenlong548/vibe-dsf/blob/main/docs/22-COMMERCIAL.md" target="_blank" rel="noopener" data-en="Commercial" data-zh="商业化">Commercial</a>
+    <a href="https://github.com/chenlong548/vibe-dsf/blob/main/docs/22-COMMERCIAL.md" target="_blank" rel="noopener" data-en="Who it's for" data-zh="给谁用">Who it's for</a>
     <a href="https://github.com/chenlong548/vibe-dsf/blob/main/CHANGELOG.md" target="_blank" rel="noopener" data-en="Changelog" data-zh="更新日志">Changelog</a>
     <span class="sp" data-en="Built and maintained by our team." data-zh="由我们团队构建与维护。">Built and maintained by our team.</span>
   </div>

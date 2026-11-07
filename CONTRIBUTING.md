@@ -35,8 +35,8 @@ vibe-dsf/
 │   └── qa-gate/               # QA 门禁技能
 ├── styles/                    # 画风规范（fable / nocturne / paper-gold / romance）
 ├── scripts/                   # verify.py（MVP 一键验收）/ setup.ps1（体检）/ env*.ps1（模型环境）
-├── docs/                      # 00-25 编号文档（24 MVP 发布面 / 25 升级计划；见 docs/16 全景总结）
-└── .github/workflows/ci.yml   # CI：python scripts/verify.py（与本地同一套 9 项验收）
+├── docs/                      # 活跃：22 对外定位 / 23 发布清单 / 24 MVP 定义 / 25 升级计划；00–21 为冻结档案
+└── .github/workflows/ci.yml   # CI：python scripts/verify.py（与本地同源，不检查冻结档案）
 ```
 
 **依赖方向**（保持单向，不加反向引用）：
@@ -126,10 +126,11 @@ node pipeline\review.mjs --project projects\<slug> --qa path\to\qa.json   # 手�
 
 改了 `blocks/`、`scene_writer/`、`run_all.ps1` 或任何被引用路径后：
 
-1. 先跑 `python scripts/verify.py`（9/9 PASS 才算 MVP READY）；CI 跑的是同一条命令，
-   覆盖版本同步、发布面文件、Python / Node 语法、`_probe` 规划硬闸 + 组装冒烟、
-   `qa/test_edge_v4.py`、`report/test_generate.py`、`site/check.py`。
-   发布面定义在 `docs/24-MVP.md`，`docs/25-ROADMAP.md` 里的计划项不进验收；
+1. 先跑 `python scripts/verify.py`（全项 PASS 才算 MVP READY）；CI 跑同一条命令，
+   只覆盖**活跃维护面**：版本同步、验收必需文件、Python / Node 语法、`_probe`
+   规划硬闸 + 组装冒烟、`qa/test_edge_v4.py`、`report/test_generate.py`、`site/check.py`。
+   MVP 产品定义与活跃 / 冻结分层见 `docs/24-MVP.md`；冻结档案与
+   `docs/25-ROADMAP.md` 的计划项都不进验收，新增积木 / 文档 / 样片不需要登记；
 2. 本地跑一次最小端到端：
 
    ```powershell

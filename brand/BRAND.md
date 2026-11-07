@@ -1,6 +1,6 @@
 # VIBE·DSF 品牌规范
 
-> 这一层是**对外包装的单一真相**：站点、README、样片水印、合作材料都从这里取名称与色值。
+> 这一层是**对外包装的单一真相**：站点、README、样片水印、对外材料都从这里取名称与色值。
 > 视觉令牌与 `pipeline/palette.json` 的 `deep-space`（QA 9.1 / 9.2 过闸配色）逐项一致，
 > 不另造一套色。改动配色必须先过 QA 门禁再入库（见 `docs/18-BRAND.md`）。
 
@@ -15,12 +15,16 @@
 
 ## 二、定位与口径
 
-- 中文 tagline：**自动化知识视频流水线 · 从一句话到可发布成片**
-- English tagline：**The automated knowledge-video pipeline — from one line to a release-ready film**
+- 中文 tagline：**给个人创作者的知识视频流水线 · 不过 QA 闸不出片**
+- English tagline：**A knowledge-video pipeline for solo creators — no QA pass, no film**
 - 短标（hero / 分享卡）：**Rendered. Scored. Shipped.**
+- **当前 MVP 只服务一类客户**：个人视频制作者 / 起号阶段创作者，只有「免费自托管」一种交付。
+  不写机构客户、不写报价档、不写按系列交付。完整产品定义见 `docs/24-MVP.md`。
 - 主体口径一律是**团队**：`we` / `our team` / 「我们」。不用个人、学生、接单口径。
+  **注意**：「个人创作者」指用户，不是我们；别把服务对象写成自身定位。
 - 面向海外的材料只讲 Web / CLI / 桌面工具形态，不引入国内平台专有概念。
-- 不承诺分数：QA 数字只对应具体样片，写成「实测 8.5–9.5」，不写「保证 9 分」。
+- 不承诺分数：QA 数字只对应具体样片，写成「实测 8.8–9.5」，不写「保证 9 分」。
+- 站点页脚不写死版本号；版本只由 `VERSION` / `CHANGELOG.md` / README 双语维护。
 
 ## 三、配色（deep-space）
 
@@ -61,4 +65,5 @@ mark 四周留白 ≥0.25×mark 宽度。深底版 logo **不可直接放浅底*
 - 改强调色、加第二个强调色、渐变文字、投影、拉伸变形、旋转字标
 - 把「VIBE·DSF」拆成两行或改变字母间距
 - 在数字上做循环动画（与全项目的「去晃动」纪律冲突）
-- 把样片 QA 分数当成服务 SLA 写在报价材料里
+- 把样片 QA 分数当成服务 SLA 写在对外材料里
+- 把冻结档案（旧方法论、额外画风、归档样片）包装成当前对外承诺

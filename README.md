@@ -2,11 +2,11 @@
 
 <img src="brand/logo.svg" width="420" alt="VIBE·DSF — knowledge video pipeline"/>
 
-**自动化知识视频流水线 · 从一句话到可发布成片**
+**给个人创作者的知识视频流水线 · 不过 QA 闸不出片**
 
-[展示站点](site/index.html) · [English](README.en.md) · **v1.6.0** · [更新日志](CHANGELOG.md) · [MVP 发布面](docs/24-MVP.md) · [升级计划](docs/25-ROADMAP.md) · [商业化](docs/22-COMMERCIAL.md)
+[展示站点](site/index.html) · [English](README.en.md) · **v1.7.0** · [更新日志](CHANGELOG.md) · [MVP 定义](docs/24-MVP.md) · [升级计划](docs/25-ROADMAP.md) · [对外定位](docs/22-COMMERCIAL.md)
 
-`MIT` · `QA ≥ 8 硬门禁` · `零付费依赖` · `自托管`
+`免费 · MIT` · `QA ≥ 8 硬门禁` · `零付费依赖` · `自托管`
 
 </div>
 
@@ -14,11 +14,14 @@
 
 # VIBE·DSF
 
-> 我们把一句话主题、一篇论文或一个代码仓库，变成可发布的 1080p 知识视频。
-> 画面由代码绘制，音频确定性合成，逐帧渲染后由**像素级 QA 门禁**验收——不过线不放行。
+> 我们把一句话主题变成可发布的 1080p 知识视频：画面由代码绘制，音频确定性合成，
+> 逐帧渲染后由**像素级 QA 门禁**验收——不过线不放行。
 
-这不是剪辑软件，也不依赖 SaaS：一条本地跑完的流水线，产出成片、验收报告和可复现的渲染源。
-模型可以随时换，唯一不变的是「数字说了算」。
+**这一版只服务个人视频制作者 / 起号阶段创作者**：一个人做选题、出片、发布，没有
+剪辑、设计、工程同事可依赖，也没第二双眼睛把关。我们把「把关」交给可测的数字。
+输入源与片长都有（一句话 / 论文 PDF / 仓库 README，8–180s），但只有一条主链；
+开源免费、本机跑完，不需要团队、服务器或付费服务。完整产品定义见
+[docs/24-MVP.md](docs/24-MVP.md)。
 
 ## 一、为什么这么做
 
@@ -82,17 +85,17 @@ pipeline/
 └── project2video/     仓库 → PROJECT-BRIEF → SCENE-PLAN
 projects/              5 条正式样片 + _probe 回归夹具 + _archive 历史归档
 skills/ styles/ docs/ scripts/ .github/
-docs/                  00–25 编号方法论与工程文档（24 MVP 发布面 / 25 升级计划）
+docs/                  活跃：22 对外定位 / 23 发布清单 / 24 MVP 定义 / 25 升级计划；00–21 冻结档案
 ```
 
 完整目录地图、依赖方向与加积木流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 五、跑起来（MVP 三步）
 
-**只想确认当前功能完整、可发布**——三步，前两步不需要 Chrome / ffmpeg：
+**只想确认这一版能不能跑**——三步，前两步不需要 Chrome / ffmpeg：
 
 ```bash
-python scripts/verify.py                 # 1) 9 项验收，9/9 PASS 即 MVP READY
+python scripts/verify.py                 # 1) 全项 PASS 即 MVP READY
 ```
 
 ```powershell
@@ -102,7 +105,7 @@ powershell -File pipeline\run_all.ps1 -Project projects\demo-hook-compound -Skip
 ```
 
 `run_all.ps1` 去掉 `-SkipRender` 并加 `-Duration <秒>` 即全片渲染；
-成功后看 `pipeline_report.json`。发布面定义见 [docs/24-MVP.md](docs/24-MVP.md)，
+成功后看 `pipeline_report.json`。产品定义见 [docs/24-MVP.md](docs/24-MVP.md)，
 后续增强都是不阻塞发布的计划项，见 [docs/25-ROADMAP.md](docs/25-ROADMAP.md)。
 
 依赖：Python 3.10+（`numpy` / `pillow` / `edge-tts`）、Node 20+、本机 Chrome、ffmpeg。
@@ -133,8 +136,9 @@ node pipeline\review.mjs --project projects\demo-hook-compound
   取代旧版绝对亮度线的双盲；`--v2` / `--legacy-edge` 可回退做同帧对比（`docs/20`）。
 - **执行报告**：阶段耗时、QA 摘要、8 类产物字节数、`verdict` 与 `failed_stage`；
   QA 拦截时同样落盘（`docs/21`）。
-- **CI 与本地同源**：CI 只跑 `python scripts/verify.py`（版本同步、发布面文件、
-  语法、规划硬闸、组装冒烟、两个回归夹具、站点自检共 9 项），本地与远端不会漂移。
+- **CI 与本地同源**：CI 只跑 `python scripts/verify.py`（版本同步、活跃面文件、
+  语法、规划硬闸、组装冒烟、两个回归夹具、站点自检），本地与远端不会漂移；
+  冻结档案不进检查，新增积木 / 文档 / 样片不需要登记。
 - **诚实边界**：只做 1920×1080 横屏；方法论中的部分禁令来自观察、未全部做 A/B；
   竖屏是实测后主动放弃，不写成「后续支持」。
 
@@ -150,33 +154,40 @@ node pipeline\review.mjs --project projects\demo-hook-compound
 | paper-shannon-deep | PAPER2VIDEO 章节化长片 | 180s | 9.2 |
 | project-vibe-dsf | PROJECT2VIDEO 项目自举片 | 50s | 9.1 |
 
+五条都在**同一条主链**上，只是输入源与片长不同（8–180s）——不是五条产品线。
 分数来自各片实际渲染帧的 `qa.json`（短片在 v2/v3/v4 口径下逐项等价）。
 帧、音频与成片都是本地可重建产物，不入库。
 
-## 八、商业化
+## 八、给谁用 · 怎么拿到
 
-开源核心 MIT、自托管、无遥测；商业服务分三档：
+**只服务个人视频制作者 / 起号阶段创作者**，只有一种交付方式：
 
-| 档位 | 适用 | 计价 |
-|---|---|---|
-| Self-host | 有工程团队，自己掌控 | 免费（MIT） |
-| Integration | 接入现有内容栈、定制积木与画风 | 按范围报价 |
-| Managed series | 按系列交付成片，团队人工复核 | 按系列报价 |
+| | |
+|---|---|
+| 得到 | 完整开源仓库（MIT），本机跑完，无账号、无遥测、无服务器 |
+| 花费 | ¥0；无订阅费、无 token 加价，只可能花自己的模型 API 用量与算力 |
+| 定制 | 有具体需求可在 Issues / Discussions 提，不设报价档、不排期、不承诺交付 |
 
-无 SaaS 订阅费，客户只付自己的模型 API 与算力；报价不做 token 转售加价。
-详见 [docs/22-COMMERCIAL.md](docs/22-COMMERCIAL.md) 与[展示站点](site/index.html)。
+Integration / Managed series / 发现会报价这类 B2B 档位已从对外材料移除 ——
+它们对个人创作者不成立。详见 [docs/22-COMMERCIAL.md](docs/22-COMMERCIAL.md)。
 
-## 九、文档地图
+## 九、文档地图（活跃 / 冻结分层）
+
+**活跃维护面**（随版本同步、进 CI、保证可跑）：README 双语、
+[docs/22](docs/22-COMMERCIAL.md) 对外定位、[docs/24](docs/24-MVP.md) MVP 定义、
+[docs/23](docs/23-RELEASE.md) 发布清单、`site/`、一条主链与 `scripts/verify.py`。
+
+**冻结档案**（留仓库可回退，不进对外承诺、不进 CI、不随版本同步）：
 
 | 编号 | 主题 |
 |---|---|
 | 00–09 | 配齐清单、模型画像、flash 方法论、风格 DNA、失败模式、构图模板 |
-| 10–11 | 差距分析、引擎选型结论（不换 Remotion，引擎不是瓶颈） |
-| 12–15 | SCENE-WRITER / 旁白 / PAPER2VIDEO / PROJECT2VIDEO 三条内容线 |
-| 16 | 全景总结与踩坑知识库 |
-| 17–21 | SFX、品牌契约、QA v3、QA v4、执行报告 |
-| 22–23 | 商业化定位、发布清单 |
-| 24–25 | MVP 发布面与一键验收、后续升级计划（不阻塞发布） |
+| 10–11 | 差距分析、引擎选型结论 |
+| 12–15 | SCENE-WRITER / 旁白 / PAPER2VIDEO / PROJECT2VIDEO 三条内容线的额外契约 |
+| 16–21 | 全景总结、SFX、品牌契约、QA v3 / v4、执行报告 |
+| 25 | 后续升级计划（计划项，不进验收、不阻塞发布） |
+
+文件一个都不删；冻结档案随时可重新激活，激活前先评估维护成本（`docs/24` 第六节）。
 
 ## 十、合规与维护
 

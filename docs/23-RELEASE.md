@@ -11,14 +11,14 @@
 | 门面 | 双语 README、更新日志、贡献指南 | `README.md` `README.en.md` `CHANGELOG.md` `CONTRIBUTING.md` |
 | 品牌 | 主标 / 图标 / 分享卡 / 使用规范 | `brand/` `site/og-card.svg` |
 | 站点 | 单文件双语展示页 + 自检脚本 | `site/index.html` `site/check.py` |
-| 商业 | 定位与合作方式 | `docs/22-COMMERCIAL.md` |
+| 对外定位 | 单一客户与单一档位 | `docs/22-COMMERCIAL.md` |
 | 法务 | 许可 / 安全政策 / 行为准则 | `LICENSE` `SECURITY.md` `CODE_OF_CONDUCT.md` |
-| MVP 定义 | 发布面清单与一键验收判据 | `docs/24-MVP.md` `scripts/verify.py` |
+| MVP 定义 | 产品定义、活跃 / 冻结分层与验收判据 | `docs/24-MVP.md` `scripts/verify.py` |
 | 升级计划 | 可选取舍的后续增强（不进发布检查） | `docs/25-ROADMAP.md` |
-| 方法论 | 00–25 编号文档（编号连续） | `docs/` |
-| 样片 | 5 条正式样片（产物不入库，README 用分数呈现） | `projects/` |
+| 冻结档案 | 00–21 方法论 / 历史样片 / 额外画风（留仓库，不进对外承诺） | `docs/` `projects/_archive/` `styles/` |
+| 样片 | 同一主链上不同输入与片长（产物不入库） | `projects/` |
 
-## 二、版本纪律（每次 push GitHub 必做，CI 有守卫）
+## 二、版本纪律（每次 push GitHub 必做，`verify.py` 有守卫）
 
 1. 按 SemVer 递增根目录 `VERSION`：功能/工具增强 → MINOR，修 bug/文档同步 → PATCH，
    破坏性改动（渲染契约、plan 格式不兼容）→ MAJOR；
@@ -27,13 +27,15 @@
 4. 打附注 tag `vX.Y.Z`；
 5. `git push origin main && git push origin vX.Y.Z`。
 
-CI 守卫：`grep -qF "[$v]" CHANGELOG.md`，缺当前版本条目直接 fail。
+**同步点共 4 个文件**：`VERSION` / `CHANGELOG.md` / `README.md` / `README.en.md`。
+站点页脚**不写死版本号**（`site/check.py` 会检查这点），`scripts/verify.py` 的
+`version-sync` 卡住 3 个引用文件，缺一处直接 fail。冻结档案不随版本同步。
 
 ## 三、静态站点自检
 
 ```bash
 python scripts/verify.py             # MVP 一键验收（含站点自检）
-python site/check.py                 # 单独复检：零外链 / i18n key 对齐 / 锚点 / meta / 版本同步
+python site/check.py                 # 单独复检：零外链 / i18n 成对 / 锚点 / meta / 页脚不写死版本
 ```
 
 再用浏览器打开 `site/index.html` 目检：
@@ -41,7 +43,8 @@ python site/check.py                 # 单独复检：零外链 / i18n key 对�
 - EN / 中文切换是否覆盖全部文案（无残留占位符）；
 - 窄屏（375px）不溢出、导航可用；
 - `prefers-reduced-motion` 下环境动效停止；
-- 站点里的版本、样片分数、服务包描述与 `VERSION` / `registry.json` / `docs/22` 一致；
+- 站点里的样片分数、定位与服务描述与 `registry.json` / `docs/22` / README 双语一致
+  （站点不展示版本号）；
 - `og-card.svg` 的数据行与站点一致。
 
 站点是**单文件、零外部依赖**，`site/` 整个目录可直接作为静态站点根目录发布；

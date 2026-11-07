@@ -1,96 +1,78 @@
-# 24 · MVP 发布面（当前版本功能完整，可直接发布）
+# 24 · MVP 产品定义（单一客户、单一能力、低维护）
 
-> **MVP 在这里是「发布面」的定义，不是功能削减。**
-> 当前版本已经能完整跑通「一句话主题 → 可发布成片 + 像素级验收 + 执行报告」。
-> 本文只回答三个问题：哪条链路必须稳、怎么一条命令证明它稳、哪些东西保留但不参与验收。
-> **仓库里所有现有文件一律保留**（历史归档、额外内容线、风格与技能包都是回退资产），
-> 收敛的是心智负担和发布检查面，不是删文件。
+> 本文是**当前版本对外与维护的唯一产品定义**。
+> MVP = 最小可行性产品：不把产品做冗余，只在**一个方面**做到高质量，
+> 只服务**一类**目标客户，并且**不增加维护成本**。
+> 上一版把「发布面清单 + 验收自动化」当成 MVP，那是工程收敛，不是产品 MVP，已按本定义重收。
 
-## 一、MVP 的一句话
+## 一、只服务谁
 
-> 给一个主题，产出一条 1080p30 知识视频，附带逐帧 QA 分数与机器可读执行报告；
-> 不过 QA 闸就不出片。整条链路本地跑完，不需要 GPU、不需要付费服务、不需要账号。
+**个人视频制作者 / 起号阶段创作者**（规模尚未达到专业团队）。
 
-## 二、必备链路（发布面）
+- 一个人完成选题、出片、发布，没有剪辑、设计、工程同事可依赖；
+- 在海外社交平台做计算机技术科普内容，需要稳定试选题、快速迭代；
+- 预算敏感：订阅费、私有化部署、工作坊、按系列报价这类 B2B 交付都不成立；
+- 最怕的不是「慢」，而是**做出来不好看却没人告诉他为什么**。
 
-| 阶段 | 文件 | 作用 |
+不服务的对象（能力仍在仓库，只是不作对外承诺、不为他们维护材料与报价）：
+机构内容团队、DevRel / 技术市场、教育课程团队、研究论文传播团队。
+
+对外口径仍是**团队**（we / our team）——我们是做工具的团队，用户是个人创作者，两者不冲突。
+
+## 二、只在哪个方面做到高质量
+
+**一个方面：不过 QA 闸不出片。**
+
+一句话主题 → `SCENE-PLAN.json` 硬闸 → 单文件 HTML → 逐帧 1080p 渲染 →
+11 项像素级 QA（`avg < 8 → exit 1`）→ BGM / 音效 / 旁白 → 合成 → `pipeline_report.json`。
+
+把「一个人做片没有第二双眼睛」交给可测的数字：确定性渲染（同 `t` 同像素）、
+可按秒局部重渲、失败也落执行报告、CI 回归夹具。
+**这是唯一被承诺做到高质量的能力**，其余不写「我们擅长」。
+
+## 三、片型「都有」，但不是多条产品线
+
+8s 钩子片 / 11s 带旁白 / 23s 论文科普 / 50s 项目片 / 180s 深讲片**全部保留可用** ——
+起号阶段本来就要试不同形态，不该由工具替用户收窄选题。
+
+但它们共用 **100% 后半程**：`render → qa → audio → compose → report`。
+片型只是同一条主链上的**输入源与长度差异**，不是三种产品：
+不各配一条对外产品线、不各写一套交付承诺、不各建一套维护文档。
+判据：新增或改一个片型，不该要求动主链代码。
+
+## 四、活跃维护面 vs 冻结档案（「不增加维护成本」的落地）
+
+| | 内容 | 义务 |
 |---|---|---|
-| 规划 | `pipeline/scene_writer/PROMPT.md`、`SCENE-PLAN.schema.md` | 主题 → 结构化场景计划 |
-| 硬闸 | `pipeline/scene_writer/validate_plan.py` | 11 组检查：拍点、密度、构图重心、字幕不跨场景 |
-| 组装 | `pipeline/scene_writer/build_html.mjs` + `blocks/lib/*.js` ×10 | 积木拼成单文件 HTML，`render(t)` 纯时间函数 |
-| 渲染 | `pipeline/render/render_frames.mjs` | CDP fast 模式逐帧 1080p PNG，可局部重渲 |
-| 门禁 | `pipeline/qa/qa_check.py` | QA v4 十一项评分，`avg < 8 → exit 1` |
-| 音频 | `pipeline/audio/`（BGM / SFX / TTS / 闪避混音） | 确定性合成，三层混音 |
-| 合成 | `pipeline/compose/build.ps1` | ffmpeg 输出 `final.mp4` |
-| 一键 | `pipeline/run_all.ps1` | 串起全部阶段，退出码 0–4 定位失败段 |
-| 可观测 | `pipeline/report/generate.py` | 成功与失败都产出 `pipeline_report.json` |
-| 夹具 | `projects/_probe/`、`qa/test_edge_v4.py`、`report/test_generate.py` | 无需真实成片的回归基线 |
-| 门面 | 双语 README、`site/`、`brand/`、`CHANGELOG.md`、`SECURITY.md` 等 | 对外发布所需 |
+| **活跃面** | 一条主链（规划硬闸 / 组装 / 渲染 / QA / 音频 / 合成 / 报告）+ 对外文档（README 双语、`docs/22`、`docs/24`）+ 站点 + 一键验收 | 随版本同步、进 CI、保证可跑、修 bug |
+| **冻结档案** | 论文线 / 项目线 / 长片的额外契约与任务书、其余 3 套画风、非核心积木、历史样片、`docs/00–21` 方法论、`_archive/`、`skills/`、`styles/` | **留仓库可回退**，不进对外承诺、不进 CI、不随版本同步、不承诺维护 |
 
-`scripts/verify.py` 里的 `CORE_FILES` 是这份清单的机器可读版本，改动此处必须同步那里。
+**文件一个都不删**。冻结档案随时能重新激活，但激活前先按第六节判据评估维护成本。
 
-## 三、一条命令验收
+## 五、维护成本怎么被压住
 
-```bash
-python scripts/verify.py
-```
+- **版本同步 4 个文件**：`VERSION` / `CHANGELOG.md` / `README.md` / `README.en.md`；
+  站点页脚**不写死版本号**（比上一版少一处漂移）。
+- **验收清单只列跑得起来的必需文件**：新增积木、新文档、新样片**不需要登记**。
+- **CI 一条命令**：`python scripts/verify.py`，本地与远端同源。
+- **对外文案互为摘要**：README 双语、`docs/22`、站点，改一处必须三处同步。
+- **计划项不进检查**：`docs/25-ROADMAP.md` 是路线图，不进验收、不进发布清单必选项。
 
-不需要 Chrome、ffmpeg、音频或任何渲染帧；约几秒出结果：
+## 六、发布判据（只有这四条）
 
-```
-=== VIBE-DSF MVP acceptance ===
-[PASS] version-sync ...
-...
---- 9/9 PASS | MVP READY ---
-```
+1. `python scripts/verify.py` → 全项 PASS；
+2. `run_all.ps1 -SkipRender` → `exit 0`、`verdict=success`、QA 过闸；
+3. 版本四处同步，附注 tag 已推送；
+4. 站点可离线打开，EN / 中文切换完整。
 
-九项检查：`version-sync`（VERSION ↔ CHANGELOG ↔ 双语 README ↔ 站点页脚）、
-`core-files`（发布面文件齐全）、`python-syntax`、`node-syntax`、`plan-gate`、
-`assemble-smoke`（组装出含 `render()` 的单文件 HTML）、`qa-edge-regression`、
-`report-regression`、`site-self-check`。任意一项失败即 `exit 1`，并指出失败项。
+**加东西的判据**：先问「它会不会让活跃面变大」。
+如果会，而它又不直接服务个人创作者的「不过闸不出片」，就放冻结档案或路线图，
+不进当前版本。计划项的变化不影响当前发布。
 
-**CI 跑的是同一条命令**（`.github/workflows/ci.yml`），本地与远端不会漂移。
+## 七、明确的边界（不做，也不写成「后续支持」）
 
-### 出片链路的完整验证（需要本机 Chrome / ffmpeg）
-
-```powershell
-powershell -File scripts\setup.ps1                 # 环境与文件体检（只读）
-powershell -File pipeline\run_all.ps1 -Project projects\demo-hook-compound -SkipRender
-```
-
-`exit 0` 且 `pipeline_report.json` 的 `verdict=success`、`pipeline_version` 等于当前 `VERSION`。
-全片渲染去掉 `-SkipRender` 并加 `-Duration <秒>`。
-
-### 发布判据
-
-1. `python scripts/verify.py` → 9/9 PASS；
-2. 出片链路 `run_all.ps1` → `exit 0`、QA 过闸、`verdict=success`；
-3. `VERSION` / `CHANGELOG` / 双语 README / 站点页脚四处版本一致，附注 tag 已推送；
-4. 站点 `site/index.html` 可离线打开，EN / 中文切换完整。
-
-完整人工清单见 `docs/23-RELEASE.md`；本文是它的「发布面」前置定义。
-
-## 四、保留但不进发布面（可选扩展，均不阻塞发布）
-
-| 内容 | 位置 | 处理方式 |
-|---|---|---|
-| 论文→视频线 | `pipeline/paper2video/` | 保留可用，独立内容线，不进 `verify.py` |
-| 项目→视频线 | `pipeline/project2video/` | 同上 |
-| 静帧评审页 | `pipeline/review.mjs` | 人工挑卡点用，按需调用 |
-| Agent 技能包 / 画风规范 | `skills/`、`styles/` | 方法论资产，供创作阶段查阅 |
-| 强模型创意帧 | `scripts/env-creative.ps1` | 需自备 Key，缺失不影响主链 |
-| 历史方法论文档 | `docs/00–23` | 档案，不作为当前发布门槛 |
-| 实验样片归档 | `projects/_archive/` | 保留回退，不清理、不维护 |
-| Linux 合成入口 | `pipeline/compose/build.sh` | 跨平台备用 |
-
-判据很简单：**删掉它，`run_all.ps1` 仍能出片、`verify.py` 仍 9/9，它就是可选扩展。**
-反过来，动到上表任何一项都不需要走发布门禁。
-
-## 五、明确的边界（不做，也不写成「后续支持」）
-
-- 只做 1920×1080 横屏；竖屏是实测后主动放弃。
-- 不引入第二套渲染引擎（Remotion / Motion Canvas / HyperFrames 的结论见 `docs/11`）。
-- 无 SaaS、无遥测、无付费连接器、无账号体系；客户只付自己的模型 API 与算力。
-- 方法论中部分禁令来自观察而非完整 A/B，文档如实标注，不伪装成实测结论。
-
-后续增强想法统一放在 `docs/25-ROADMAP.md`，**全部是计划项，不进当前验收，也不影响当前版本发布**。
+- 只做 1920×1080 横屏；竖屏实测后主动放弃。
+- 不引入第二套渲染引擎（结论见 `docs/11`）。
+- 无 SaaS、无遥测、无付费连接器、无账号体系、无 GPU 要求。
+- 方法论中部分禁令来自观察而非严格 A/B，文档如实标注，不伪装成实测结论。
+- 目前需要命令行，没有图形界面 —— 不包装成「零门槛」。
