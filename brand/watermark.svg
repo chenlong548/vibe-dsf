@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 96" width="380" height="96" role="img" aria-label="@VIBE·DSF">
+  <title>@VIBE·DSF</title>
+  <g transform="translate(10,24) scale(0.62)">
+    <rect x="11" y="11" width="42" height="42" rx="6" fill="none" stroke="#EAEAF2" stroke-opacity="0.22" stroke-width="1.5"/>
+    <path d="M16 26 H48 M16 33 H38 M16 40 H44" stroke="#EAEAF2" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="45" cy="33" r="4.5" fill="#E8A87C"/>
+    <path d="M16 47 H32" stroke="#E8A87C" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <text x="52" y="48" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="1.5">@VIBE<tspan fill="#E8A87C">·</tspan>DSF</text>
+  <text x="54" y="74" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="11" font-weight="500" letter-spacing="3">KNOWLEDGE VIDEO PIPELINE</text>
+  <path d="M54 84 H150" stroke="#E8A87C" stroke-width="2" stroke-linecap="round"/>
+</svg>

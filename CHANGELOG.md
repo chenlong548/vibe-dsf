@@ -4,6 +4,19 @@
 **纪律：每一次推送到 GitHub 都递增版本 + 在本文件记录 + 打同名 tag。**
 版本判定：新功能/工具增强 → MINOR；修 bug/文档同步 → PATCH；破坏性改动（渲染契约、plan 格式不兼容）→ MAJOR。
 
+## [1.8.0] - 2026-11-07
+
+### Added — 品牌设计模式与扩展资产
+- 定义 6 个可复用**品牌设计模式**（P1 深空场 / P2 胶片帧标 / P3 强调扫线 / P4 光带 /
+  P5 字标 / P6 组合），所有资产从同一套模式与 deep-space 令牌生成，不另造视觉语言。
+- 新增 6 个品牌资产：`brand/icon.svg`（透明 mark）、`brand/wordmark.svg`（纯字标）、
+  `brand/watermark.svg`（成片角标 `@VIBE·DSF`，对应 `palette.json → brand.watermark`）、
+  `brand/patterns.svg`（设计模式品牌板）、`brand/social-x.svg`（1200×675 分享卡）、
+  `brand/social-yt.svg`（1280×720 缩略图，含播放按钮暗示）。
+- `brand/BRAND.md` 新增「设计模式」章节与模式表、资产清单扩到 10 项，并写清「新增资产只复用
+  既有模式与令牌，不引入新色或新图形」。
+- 资产未纳入 `scripts/verify.py` 的 `CORE_FILES`，保持验收清单精简（符合 v1.7.0 的减负纪律）。
+
 ## [1.7.0] - 2026-11-07
 
 ### Changed — 按产品 MVP 定义重收（纠正 v1.6.0 的理解偏差）

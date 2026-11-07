@@ -48,19 +48,42 @@
   alpha 闪烁；强调靠一次性下划线扫出，运动感交给巡游光带 / 粒子流（见 `docs/05`）。
 - 入场淡入 ≤0.2s；`prefers-reduced-motion` 下停止全部环境动效。
 
-## 五、资产清单
+## 五、设计模式（可复用构件）
+
+品牌所有资产都从以下 6 个模式组合而来；改任何资产先对照这些模式，不另造视觉语言。
+
+| 模式 | 含义 | 构件 |
+|---|---|---|
+| P1 Deep-space field | 深空场背景 | 线性渐变 `#141026` → `#05050F` |
+| P2 Frame mark | 胶片帧标记 | 圆角外框 + 内框 + 时间线（3 条）+ 强调命中圆点 + 强调下划线 |
+| P3 Accent sweep | 强调扫线 | 一次性 accent 下划线（**禁循环动画**，与全项目「去晃动」纪律一致） |
+| P4 Light band | 光带 | 横向 accent 渐变带（0→0.14→0），用于分隔与氛围 |
+| P5 Wordmark | 字标 | `VIBE·DSF`（accent 中点）+ 副标，固定字距，不可拆行 |
+| P6 Lockup | 组合 | mark + wordmark + 副标 的标准排布 |
+
+mark 几何以 `brand/logo.svg` 的 108 框为基准（外框 rx18 / 内框 rx8 / 时间线笔宽 2.5 /
+命中圆 r7 / 下划线宽 3），其余尺寸按比例缩放。强调色只用 `#E8A87C`，禁止第二个强调色。
+完整图例见 `brand/patterns.svg`。
+
+## 六、资产清单
 
 | 文件 | 用途 | 最小尺寸 |
 |---|---|---|
 | `brand/logo.svg` | 主标（深底、透明背景） | 字标高度 ≥20px |
 | `brand/favicon.svg` | 站点图标 / 头像 | ≥24px |
+| `brand/icon.svg` | 透明底 mark（叠在照片 / 视频上的纯字形） | ≥24px |
+| `brand/wordmark.svg` | 纯字标（页脚 / 页眉，mark 已在别处出现时） | 字标高度 ≥16px |
+| `brand/watermark.svg` | 成片角标 `@VIBE·DSF`，对应 `palette.json → brand.watermark` | 原尺寸使用 |
+| `brand/patterns.svg` | 设计模式品牌板（6 模式图例 + 色板） | 原尺寸使用 |
+| `brand/social-x.svg` | X / Twitter 分享卡（1200×675） | 原尺寸使用 |
+| `brand/social-yt.svg` | YouTube 缩略图（1280×720，含播放按钮暗示） | 原尺寸使用 |
 | `site/og-card.svg` | 社交分享卡（1200×630） | 原尺寸使用 |
 | `docs/demo.gif` | README 首屏动图 | 宽度 ≤800px |
 
 mark 四周留白 ≥0.25×mark 宽度。深底版 logo **不可直接放浅底**；需要浅底版时另出反色资产，
-不要临时改 `fill` 凑合。
+不要临时改 `fill` 凑合。新增资产只复用上述 6 个模式与 deep-space 令牌，不引入新色或新图形。
 
-## 六、禁用示例
+## 七、禁用示例
 
 - 改强调色、加第二个强调色、渐变文字、投影、拉伸变形、旋转字标
 - 把「VIBE·DSF」拆成两行或改变字母间距

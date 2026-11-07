@@ -4,7 +4,7 @@
 
 **A knowledge-video pipeline for solo creators — no QA pass, no film**
 
-[简体中文](README.md) | [Live site](site/index.html) · **v1.7.0** · [Changelog](CHANGELOG.md) · [MVP definition](docs/24-MVP.md) · [Roadmap](docs/25-ROADMAP.md) · [Who it's for](docs/22-COMMERCIAL.md)
+[简体中文](README.md) | [Live site](site/index.html) · **v1.8.0** · [Changelog](CHANGELOG.md) · [MVP definition](docs/24-MVP.md) · [Roadmap](docs/25-ROADMAP.md) · [Who it's for](docs/22-COMMERCIAL.md)
 
 `Free · MIT` · `QA ≥ 8 hard gate` · `Zero paid dependencies` · `Self-hosted`
 

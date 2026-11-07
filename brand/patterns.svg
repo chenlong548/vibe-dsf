@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 880" width="1200" height="880" role="img" aria-label="VIBE·DSF — design patterns">
+  <title>VIBE·DSF — design patterns</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141026"/>
+      <stop offset="1" stop-color="#05050F"/>
+    </linearGradient>
+    <linearGradient id="band" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E8A87C" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#E8A87C" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#E8A87C" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="sweep" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#E8A87C" stop-opacity="0"/>
+      <stop offset="0.62" stop-color="#E8A87C" stop-opacity="1"/>
+      <stop offset="1" stop-color="#E8A87C" stop-opacity="0.35"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="880" fill="url(#bg)"/>
+
+  <!-- header -->
+  <text x="40" y="62" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="32" font-weight="700" letter-spacing="2">VIBE<tspan fill="#E8A87C">·</tspan>DSF</text>
+  <text x="40" y="96" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="18" font-weight="500" letter-spacing="2">设计模式 · Reusable visual building blocks</text>
+
+  <!-- card frame helper: 6 cards, 2 columns, 3 rows -->
+  <!-- ===== P1 ===== -->
+  <rect x="40" y="130" width="560" height="200" rx="16" fill="#100e1e" stroke="#8A8AA0" stroke-opacity="0.18" stroke-width="1.5"/>
+  <text x="64" y="170" fill="#E8A87C" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="2">P1</text>
+  <text x="64" y="198" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="600">Deep-space field</text>
+  <text x="64" y="224" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="13">深空场 · 背景 #141026 → #05050F</text>
+  <rect x="372" y="158" width="200" height="150" rx="10" fill="url(#bg)" stroke="#E8A87C" stroke-opacity="0.35" stroke-width="1.5"/>
+
+  <!-- ===== P2 ===== -->
+  <rect x="600" y="130" width="560" height="200" rx="16" fill="#100e1e" stroke="#8A8AA0" stroke-opacity="0.18" stroke-width="1.5"/>
+  <text x="624" y="170" fill="#E8A87C" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="2">P2</text>
+  <text x="624" y="198" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="600">Frame mark</text>
+  <text x="624" y="224" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="13">胶片帧 + 时间线 + 强调命中</text>
+  <g transform="translate(800,150)">
+    <rect x="6" y="6" width="108" height="108" rx="18" fill="#141026" stroke="#8A8AA0" stroke-opacity="0.45" stroke-width="2"/>
+    <rect x="22" y="22" width="76" height="76" rx="8" fill="none" stroke="#EAEAF2" stroke-opacity="0.22" stroke-width="1.5"/>
+    <path d="M30 48 H90 M30 62 H74 M30 76 H84" stroke="#EAEAF2" stroke-opacity="0.55" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="86" cy="62" r="7" fill="#E8A87C"/>
+    <path d="M30 88 H58" stroke="#E8A87C" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- ===== P3 ===== -->
+  <rect x="40" y="350" width="560" height="200" rx="16" fill="#100e1e" stroke="#8A8AA0" stroke-opacity="0.18" stroke-width="1.5"/>
+  <text x="64" y="390" fill="#E8A87C" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="2">P3</text>
+  <text x="64" y="418" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="600">Accent sweep</text>
+  <text x="64" y="444" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="13">一次性强调下划线 · 禁循环动画</text>
+  <rect x="80" y="498" width="440" height="9" rx="4.5" fill="url(#sweep)"/>
+  <path d="M512 502.5 l16 -7 v14 z" fill="#E8A87C"/>
+
+  <!-- ===== P4 ===== -->
+  <rect x="600" y="350" width="560" height="200" rx="16" fill="#100e1e" stroke="#8A8AA0" stroke-opacity="0.18" stroke-width="1.5"/>
+  <text x="624" y="390" fill="#E8A87C" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="2">P4</text>
+  <text x="624" y="418" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="600">Light band</text>
+  <text x="624" y="444" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="13">横向渐变光带 · 分隔 / 氛围</text>
+  <rect x="620" y="490" width="520" height="64" fill="url(#band)"/>
+
+  <!-- ===== P5 ===== -->
+  <rect x="40" y="570" width="560" height="200" rx="16" fill="#100e1e" stroke="#8A8AA0" stroke-opacity="0.18" stroke-width="1.5"/>
+  <text x="64" y="610" fill="#E8A87C" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="2">P5</text>
+  <text x="64" y="638" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="600">Wordmark</text>
+  <text x="64" y="664" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="13">VIBE·DSF · 固定字距，不可拆行</text>
+  <text x="80" y="716" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="700" letter-spacing="3">VIBE<tspan fill="#E8A87C">·</tspan>DSF</text>
+
+  <!-- ===== P6 ===== -->
+  <rect x="600" y="570" width="560" height="200" rx="16" fill="#100e1e" stroke="#8A8AA0" stroke-opacity="0.18" stroke-width="1.5"/>
+  <text x="624" y="610" fill="#E8A87C" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="2">P6</text>
+  <text x="624" y="638" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="20" font-weight="600">Lockup</text>
+  <text x="624" y="664" fill="#8A8AA0" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="13">mark + wordmark + 副标</text>
+  <g transform="translate(636,672)">
+    <rect x="0" y="0" width="60" height="60" rx="10" fill="#141026" stroke="#8A8AA0" stroke-opacity="0.45" stroke-width="1.5"/>
+    <rect x="10" y="10" width="40" height="40" rx="5" fill="none" stroke="#EAEAF2" stroke-opacity="0.22" stroke-width="1.2"/>
+    <path d="M15 23 H45 M15 30 H33 M15 37 H39" stroke="#EAEAF2" stroke-opacity="0.55" stroke-width="1.8" stroke-linecap="round"/>
+    <circle cx="41" cy="30" r="4" fill="#E8A87C"/>
+    <path d="M15 44 H29" stroke="#E8A87C" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <text x="716" y="708" fill="#EAEAF2" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="2">VIBE<tspan fill="#E8A87C">·</tspan>DSF</text>
+
+  <!-- token strip -->
+  <path d="M40 798 H1160" stroke="#8A8AA0" stroke-opacity="0.2" stroke-width="1"/>
+  <g font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="13">
+    <rect x="40" y="818" width="34" height="34" rx="6" fill="#141026" stroke="#8A8AA0" stroke-opacity="0.4"/>
+    <text x="84" y="840" fill="#8A8AA0">bg_in #141026</text>
+    <rect x="300" y="818" width="34" height="34" rx="6" fill="#05050F" stroke="#8A8AA0" stroke-opacity="0.4"/>
+    <text x="344" y="840" fill="#8A8AA0">bg_out #05050F</text>
+    <rect x="560" y="818" width="34" height="34" rx="6" fill="#E8A87C"/>
+    <text x="604" y="840" fill="#8A8AA0">accent #E8A87C</text>
+    <rect x="820" y="818" width="34" height="34" rx="6" fill="#EAEAF2"/>
+    <text x="864" y="840" fill="#8A8AA0">ink #EAEAF2</text>
+    <rect x="1020" y="818" width="34" height="34" rx="6" fill="#8A8AA0"/>
+    <text x="1064" y="840" fill="#8A8AA0">gray #8A8AA0</text>
+  </g>
+</svg>

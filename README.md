@@ -4,7 +4,7 @@
 
 **给个人创作者的知识视频流水线 · 不过 QA 闸不出片**
 
-[展示站点](site/index.html) · [English](README.en.md) · **v1.7.0** · [更新日志](CHANGELOG.md) · [MVP 定义](docs/24-MVP.md) · [升级计划](docs/25-ROADMAP.md) · [对外定位](docs/22-COMMERCIAL.md)
+[展示站点](site/index.html) · [English](README.en.md) · **v1.8.0** · [更新日志](CHANGELOG.md) · [MVP 定义](docs/24-MVP.md) · [升级计划](docs/25-ROADMAP.md) · [对外定位](docs/22-COMMERCIAL.md)
 
 `免费 · MIT` · `QA ≥ 8 硬门禁` · `零付费依赖` · `自托管`
 

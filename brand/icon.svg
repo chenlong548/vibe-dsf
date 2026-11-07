@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="VIBE·DSF mark">
+  <title>VIBE·DSF</title>
+  <rect x="11" y="11" width="42" height="42" rx="6" fill="none" stroke="#EAEAF2" stroke-opacity="0.22" stroke-width="1.5"/>
+  <path d="M16 26 H48 M16 33 H38 M16 40 H44" stroke="#EAEAF2" stroke-opacity="0.6" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="45" cy="33" r="4.5" fill="#E8A87C"/>
+  <path d="M16 47 H32" stroke="#E8A87C" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
